@@ -1,5 +1,6 @@
 package com.fixeam.icoserkt
 
+import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.util.TypedValue
@@ -90,6 +91,12 @@ class HomeFragment : Fragment() {
         }
         .build()
 
+    private fun OpenAlbumView(id: Int){
+        val intent = Intent(requireContext(), AlbumViewActivity::class.java)
+        intent.putExtra("id", id)
+        startActivity(intent)
+    }
+
     private fun requestCarouselData() {
         val displayMetrics = resources.displayMetrics
         val dpWidth = displayMetrics.widthPixels / displayMetrics.density
@@ -142,7 +149,8 @@ class HomeFragment : Fragment() {
                         ?.setIndicator(CircleIndicator(requireContext()))
                         ?.setOnBannerListener { carousel, position ->
                             val albumId = carousels[position].link.content.id
-                            Toast.makeText(requireContext(), "点击的写真集ID是${albumId}", Toast.LENGTH_SHORT).show()
+                            OpenAlbumView(albumId)
+                            // Toast.makeText(requireContext(), "点击的写真集ID是${albumId}", Toast.LENGTH_SHORT).show()
                         }
 
                         layoutParams?.height = 0
@@ -195,6 +203,11 @@ class HomeFragment : Fragment() {
                                     .placeholder(R.drawable.image_holder)
                                     .into(imageView)
                                 textView.text = album.name
+
+                                // 设置点击打开写真集预览页面
+                                cardView.setOnClickListener {
+                                    OpenAlbumView(album.id)
+                                }
                             }
                         }
                     }
@@ -207,6 +220,7 @@ class HomeFragment : Fragment() {
             }
         })
     }
+
     companion object {
         /**
          * Use this factory method to create a new instance of
