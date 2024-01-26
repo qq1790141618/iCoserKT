@@ -1,0 +1,12 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.ICoserKT" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorOnBackground">@color/background_color</item>
+        <item name="colorPrimary">@color/text_color</item>
+        <item name="android:fontFamily">@font/pingfang</item>
+    </style>
+
+    <style name="Theme.ICoserKT" parent="Base.Theme.ICoserKT" />
+</resources>

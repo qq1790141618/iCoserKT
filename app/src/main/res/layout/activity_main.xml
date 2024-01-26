@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:orientation="vertical"
+    android:background="?attr/colorOnBackground" >
+
+    <FrameLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="66dp"
+        app:cardElevation="12dp"
+        app:cardCornerRadius="8dp" >
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/tab_bar"
+            android:layout_width="match_parent"
+            android:layout_height="66dp"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            android:background="?attr/colorOnBackground" >
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/home_button"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="@string/home"
+                android:textSize="12sp"
+                android:backgroundTint="?attr/colorOnBackground"
+                android:textColor="?attr/colorPrimary"
+                app:icon="@drawable/home"
+                app:iconGravity="textTop"
+                app:iconTint="@color/black"
+                app:cornerRadius="0dp"
+                app:iconSize="20dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/smart_video_button"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="@string/smart_video"
+                android:textSize="12sp"
+                android:backgroundTint="?attr/colorOnBackground"
+                android:textColor="?attr/colorPrimary"
+                app:icon="@drawable/video"
+                app:iconGravity="textTop"
+                app:iconTint="@color/black"
+                app:iconSize="20dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/search_button"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="@string/search"
+                android:textSize="12sp"
+                android:backgroundTint="?attr/colorOnBackground"
+                android:textColor="?attr/colorPrimary"
+                app:icon="@drawable/search"
+                app:iconGravity="textTop"
+                app:iconTint="@color/black"
+                app:iconSize="20dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/user_button"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="@string/user"
+                android:textSize="12sp"
+                android:backgroundTint="?attr/colorOnBackground"
+                android:textColor="?attr/colorPrimary"
+                app:icon="@drawable/user"
+                app:iconGravity="textTop"
+                app:iconTint="@color/black"
+                app:cornerRadius="0dp"
+                app:iconSize="20dp" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+    </androidx.cardview.widget.CardView>
+</LinearLayout>
