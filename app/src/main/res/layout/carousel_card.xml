@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="15dp"
+    android:layout_marginBottom="15dp"
+    app:cardElevation="2dp"
+    app:cardCornerRadius="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/colorOnBackground"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/banner_placeholder"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:src="@drawable/image_holder"
+            android:scaleType="centerCrop" />
+
+        <com.youth.banner.Banner
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/banner"
+            android:layout_width="match_parent"
+            android:layout_height="0dp" />
+
+        <LinearLayout
+            android:id="@+id/fast_host"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            android:background="?attr/cardBackgroundColor" >
+
+            <com.google.android.material.button.MaterialButton
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:paddingLeft="38dp"
+                android:paddingRight="38dp"
+                android:text="@string/hot"
+                android:textSize="12sp"
+                android:backgroundTint="?attr/cardBackgroundColor"
+                android:textColor="?attr/colorPrimary"
+                app:icon="@drawable/hot"
+                app:iconTint="#ed6452"
+                app:cornerRadius="0dp"
+                app:iconSize="26dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:paddingLeft="38dp"
+                android:paddingRight="38dp"
+                android:text="@string/new_"
+                android:textSize="12sp"
+                android:backgroundTint="?attr/cardBackgroundColor"
+                android:textColor="?attr/colorPrimary"
+                app:icon="@drawable/new_"
+                app:iconTint="#3cd38e"
+                app:cornerRadius="0dp"
+                app:iconSize="26dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

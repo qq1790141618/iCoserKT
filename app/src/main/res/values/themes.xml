@@ -6,6 +6,7 @@
         <item name="colorOnBackground">@color/background_color</item>
         <item name="colorPrimary">@color/text_color</item>
         <item name="android:fontFamily">@font/pingfang</item>
+        <item name="cardBackgroundColor">@color/card_background_color</item>
     </style>
 
     <style name="Theme.ICoserKT" parent="Base.Theme.ICoserKT" />

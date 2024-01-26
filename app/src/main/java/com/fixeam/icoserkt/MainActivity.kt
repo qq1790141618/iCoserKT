@@ -1,8 +1,10 @@
 package com.fixeam.icoserkt
 
+import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
+import android.net.ConnectivityManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import android.os.Bundle
@@ -12,6 +14,8 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import java.lang.IllegalStateException
 import android.os.Build
 import android.view.View
+import android.widget.Toast
+import androidx.core.content.ContentProviderCompat.requireContext
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +61,23 @@ class MainActivity : AppCompatActivity() {
             switchFragment(selectIndex)
         }
         toggleButton.check(R.id.home_button)
+
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetworkInfo = connectivityManager.activeNetworkInfo
+        val isConnected = activeNetworkInfo?.isConnectedOrConnecting == true
+
+        if(!isConnected){
+            Toast.makeText(this, "网络连接失败, 请检查您的网络和应用权限配置", Toast.LENGTH_SHORT).show()
+        } else {
+            val networkType = activeNetworkInfo?.type
+            if (networkType == ConnectivityManager.TYPE_WIFI) {
+                // 当前连接为 Wi-Fi
+                Toast.makeText(this, "当前为WIFI环境，可放心浏览本APP", Toast.LENGTH_SHORT).show()
+            } else if (networkType == ConnectivityManager.TYPE_MOBILE) {
+                // 当前连接为移动网络
+                Toast.makeText(this, "当前为流量环境，APP加载资源较多，请注意您的流量消耗", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private var homeFragment: HomeFragment? = null

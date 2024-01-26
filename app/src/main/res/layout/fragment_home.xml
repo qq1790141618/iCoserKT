@@ -1,36 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".HomeFragment"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:background="?attr/colorOnBackground"
-    android:padding="15dp">
+    android:orientation="vertical" >
 
-    <LinearLayout
+    <include layout="@layout/app_header" />
+
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="35dp"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        >
 
-        <TextView
-            android:id="@+id/top_text"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="@string/app_name"
-            android:textSize="24dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/home_search_button"
-            android:layout_width="30dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:backgroundTint="?attr/colorOnBackground"
-            android:padding="5dp"
-            app:iconTint="?attr/colorPrimary"
-            app:icon="@drawable/search"
-            app:iconSize="18dp" />
+            android:orientation="vertical" >
 
-    </LinearLayout>
+            <include layout="@layout/carousel_card" />
 
+            <TextView
+                android:id="@+id/hot_text"
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:layout_marginLeft="15dp"
+                android:text="HOT RANK"
+                android:textSize="20sp" />
+
+            <include layout="@layout/hot_card" />
+
+            <TextView
+                android:id="@+id/model_text"
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:layout_marginLeft="15dp"
+                android:text="MODELS"
+                android:textSize="20sp" />
+
+            <include layout="@layout/model_card" />
+
+            <TextView
+                android:id="@+id/like_text"
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:layout_marginLeft="15dp"
+                android:text="MAYBE LIKE"
+                android:textSize="20sp" />
+
+        </LinearLayout>
+
+    </ScrollView>
 </LinearLayout>
