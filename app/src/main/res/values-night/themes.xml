@@ -6,5 +6,17 @@
         <item name="colorOnBackground">@color/text_color</item>
         <item name="colorPrimary">@color/background_color</item>
         <item name="android:fontFamily">@font/pingfang</item>
+        <item name="cardBackgroundColor">@color/card_background_color_night</item>
+    </style>
+
+    <!-- 设置Toolbar标题字体的颜色大小 -->
+    <style name="Toolbar.TitleText" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
+        <item name="android:textSize">14sp</item><!--toolbar标题字体大小-->
+        <item name="android:textColor">#F4F4F4</item><!--toolbar标题字体颜色-->
+    </style>
+    <!-- 设置Toolbar 子标题subtitle标题字体的大小 -->
+    <style name="Toolbar.SubTitleText" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
+        <item name="android:textSize">10sp</item><!--子标题字体大小-->
+        <item name="android:textColor">#DDDDDD</item><!--子标题字体颜色-->
     </style>
 </resources>

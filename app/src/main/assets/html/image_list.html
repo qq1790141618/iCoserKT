@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image List View</title>
+    <script>
+        function addView(dom, index){
+            return new Promise((resolve) => {
+                document.body.appendChild(dom)
+
+                var io = new IntersectionObserver(entries => {
+                    if (entries[0].intersectionRatio <= 0){
+                        return
+                    }
+
+                    dom.src = dom.dataset.src
+                })
+
+                io.observe(dom)
+                resolve()
+            })
+        }
+        async function initList(list){
+            for (let i = 0; i < list.length; i++) {
+                if(typeof(list[i]) !== 'string'){
+                    continue
+                }
+
+                let img = document.createElement('img')
+                img.style.width = '100%'
+                img.src = 'file:///android_res/drawable/image_holder.png'
+                img.dataset.src = list[i] + '?imageMogr2/thumbnail/1200x/format/webp/interlace/1/quality/95'
+                img.loading= 'lazy'
+                await addView(img, i)
+            }
+        }
+    </script>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+        img {
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+</body>
+</html>

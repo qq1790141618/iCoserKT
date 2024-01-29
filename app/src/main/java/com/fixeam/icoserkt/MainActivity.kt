@@ -15,6 +15,7 @@ import java.lang.IllegalStateException
 import android.os.Build
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContentProviderCompat.requireContext
 
 class MainActivity : AppCompatActivity() {

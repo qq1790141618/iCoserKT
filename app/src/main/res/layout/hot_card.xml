@@ -7,7 +7,8 @@
     android:layout_marginBottom="15dp"
     android:layout_marginTop="5dp"
     app:cardElevation="2dp"
-    app:cardCornerRadius="12dp">
+    app:cardCornerRadius="12dp"
+    app:cardBackgroundColor="?attr/cardBackgroundColor" >
 
     <LinearLayout
         android:id="@+id/hot_content"

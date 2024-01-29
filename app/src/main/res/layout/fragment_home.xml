@@ -1,26 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<LinearLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".HomeFragment"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:background="?attr/colorOnBackground"
     android:orientation="vertical" >
 
     <include layout="@layout/app_header" />
 
     <ScrollView
+        android:id="@+id/home_scroll_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        >
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@+id/home_header"
+        app:layout_constraintBottom_toBottomOf="parent" >
 
         <LinearLayout
+            android:id="@+id/home_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" >
+            android:orientation="vertical"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:descendantFocusability="blocksDescendants">
 
             <include layout="@layout/carousel_card" />
 
@@ -42,8 +48,6 @@
                 android:text="MODELS"
                 android:textSize="20sp" />
 
-            <include layout="@layout/model_card" />
-
             <TextView
                 android:id="@+id/like_text"
                 android:layout_width="match_parent"
@@ -52,7 +56,37 @@
                 android:text="MAYBE LIKE"
                 android:textSize="20sp" />
 
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/like_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="10dp">
+            </androidx.recyclerview.widget.RecyclerView>
+
+            <ImageView
+                android:id="@+id/like_loading"
+                android:layout_width="match_parent"
+                android:layout_height="30dp"
+                android:layout_margin="12dp"
+                android:src="@drawable/loading" />
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="80dp" />
+
         </LinearLayout>
 
     </ScrollView>
-</LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/to_up"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginVertical="90dp"
+        android:src="@drawable/up"
+        android:backgroundTint="?attr/colorOnBackground" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
