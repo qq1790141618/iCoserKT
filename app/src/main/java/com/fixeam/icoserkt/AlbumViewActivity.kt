@@ -1,22 +1,24 @@
 package com.fixeam.icoserkt
 
-import android.animation.ValueAnimator
-import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.AnimationUtils
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
-import android.webkit.WebView
+import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
@@ -30,6 +32,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class AlbumViewActivity : AppCompatActivity() {
     private var albumImages: MutableList<String> = mutableListOf()
+    private var imageList: List<FileInfo> = listOf()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_album_view)
@@ -57,16 +60,9 @@ class AlbumViewActivity : AppCompatActivity() {
 
         // 设置悬浮按钮
         val toUpButton: FloatingActionButton = findViewById(R.id.to_up)
-        val webView: WebView = findViewById(R.id.image_list)
+        val list: RecyclerView = findViewById(R.id.image_list)
         toUpButton.setOnClickListener {
-            webView.flingScroll(0, 0)
-            val animator = ValueAnimator.ofInt(webView.scrollY, 0)
-            animator.addUpdateListener { valueAnimator ->
-                val value = valueAnimator.animatedValue as Int
-                webView.scrollTo(0, value)
-            }
-            animator.duration = 500
-            animator.start()
+            list.smoothScrollToPosition(0)
         }
 
         val id = intent.getIntExtra("id", -1)
@@ -126,18 +122,71 @@ class AlbumViewActivity : AppCompatActivity() {
     }
 
     private fun initImageList(){
-        val webView = this@AlbumViewActivity.findViewById<WebView>(R.id.image_list)
-        webView.settings.javaScriptEnabled = true
-        webView.webChromeClient = WebChromeClient()
-        webView.loadUrl("file:///android_asset/html/image_list.html")
+        val retrofit = Retrofit.Builder()
+            .client(client)
+            .baseUrl(SERVE_HOST)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        val ApiService = retrofit.create(ApiService::class.java)
 
-        val albumJSInterface = AlbumJSInterface(this)
-        webView.addJavascriptInterface(albumJSInterface, "AlbumJSInterface")
+        val urls = Gson().toJson(albumImages)
+        val urlRequestBody = UrlRequestBody(urls)
+        val call = ApiService.PostFileAndInformation(urlRequestBody)
 
-        val json = Gson().toJson(albumImages)
-        webView.postDelayed({
-            webView.evaluateJavascript("initList($json);", null)
-        }, 3000)
+        call.enqueue(object : Callback<List<FileInfo>> {
+            override fun onResponse(call: Call<List<FileInfo>>, response: Response<List<FileInfo>>) {
+                // 处理响应结果
+                val fileInfoList = response.body()
+                if (fileInfoList != null) {
+                    val urlComparator = compareBy<FileInfo> { fileInfo ->
+                        albumImages.indexOf(fileInfo.url)
+                    }
+                    imageList = fileInfoList.sortedWith(urlComparator)
+
+                    val list: RecyclerView = findViewById(R.id.image_list)
+                    list.layoutManager = LinearLayoutManager(this@AlbumViewActivity, LinearLayoutManager.VERTICAL, false)
+                    val adapter = listAdapter()
+                    list.adapter = adapter
+                    list.setItemViewCacheSize(16)
+                    list.setHasTransientState(true)
+
+                    for ((index, _) in fileInfoList.withIndex()){
+                        if(imageList[index].meta != null){
+                            continue
+                        }
+
+                        val retrofit = Retrofit.Builder()
+                            .client(client)
+                            .baseUrl(SERVE_HOST)
+                            .addConverterFactory(GsonConverterFactory.create())
+                            .build()
+                        val ApiService = retrofit.create(com.fixeam.icoserkt.ApiService::class.java)
+                        val call = ApiService.GetFileInfoByUrl("${imageList[index].url}?imageInfo")
+
+                        call.enqueue(object : Callback<FileMeta> {
+                            override fun onResponse(call: Call<FileMeta>, response: Response<FileMeta>) {
+                                // 处理响应结果
+                                val fileMetaItem = response.body()
+                                if(fileMetaItem != null){
+                                    imageList[index].meta = Gson().toJson(fileMetaItem)
+                                    adapter.notifyItemChanged(index)
+                                }
+                            }
+
+                            override fun onFailure(call: Call<FileMeta>, t: Throwable) {
+                                // 处理请求失败
+                                Toast.makeText(this@AlbumViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+                            }
+                        })
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<List<FileInfo>>, t: Throwable) {
+                // 处理请求失败
+                Toast.makeText(this@AlbumViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun setStatusBarColor(color: Int) {
@@ -159,12 +208,44 @@ class AlbumViewActivity : AppCompatActivity() {
         }
     }
 
+    inner class listAdapter : RecyclerView.Adapter<viewHolder>() {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): viewHolder {
+            val itemView = LayoutInflater.from(this@AlbumViewActivity).inflate(R.layout.margin_image, parent, false)
+            return viewHolder(itemView)
+        }
+        override fun getItemCount(): Int {
+            return albumImages.size
+        }
+        override fun onBindViewHolder(holder: viewHolder, position: Int) {
+            // 修改holder
+            val image = imageList[position]
+            val imageView = holder.itemView.findViewById<ImageView>(R.id.image_content)
+            val imageDisplayWidth = getScreenWidth(this@AlbumViewActivity) - (resources.displayMetrics.density * 12 * 2).toInt()
 
-}
+            // 设置图片显示的大小
+            if(image.meta != null){
+                val gson = Gson()
+                val fileMeta = gson.fromJson(image.meta, FileMeta::class.java)
 
-class AlbumJSInterface(private val context: Context) {
-    @JavascriptInterface
-    fun onImageSelected(url: String) {
-        // 长按了图片URL
+                val imageDisplayHeight = imageDisplayWidth.toFloat() / fileMeta.width.toInt() * fileMeta.height.toInt()
+                imageView.layoutParams = FrameLayout.LayoutParams(
+                    imageDisplayWidth,
+                    imageDisplayHeight.toInt()
+                )
+
+                Glide.with(this@AlbumViewActivity)
+                    .load(image.url + "/short1200px")
+                    .placeholder(R.drawable.image_holder)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .override(
+                        imageDisplayWidth,
+                        imageDisplayHeight.toInt()
+                    )
+                    .into(imageView)
+            }
+        }
+    }
+    class viewHolder(view: View) : RecyclerView.ViewHolder(view) {
+
     }
 }

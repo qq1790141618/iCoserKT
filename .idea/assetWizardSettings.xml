@@ -308,8 +308,8 @@
                         <option name="values">
                           <map>
                             <entry key="assetSourceType" value="FILE" />
-                            <entry key="outputName" value="loading2" />
-                            <entry key="sourceFile" value="D:\Users\Downloads\Loading (1).svg" />
+                            <entry key="outputName" value="image" />
+                            <entry key="sourceFile" value="D:\Users\Downloads\pic.svg" />
                           </map>
                         </option>
                       </PersistentState>

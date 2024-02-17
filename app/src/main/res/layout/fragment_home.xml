@@ -60,8 +60,9 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/like_list"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="10dp"></androidx.recyclerview.widget.RecyclerView>
+                android:layout_height="400dp"
+                android:paddingHorizontal="8dp" >
+            </androidx.recyclerview.widget.RecyclerView>
 
             <ImageView
                 android:id="@+id/like_loading"

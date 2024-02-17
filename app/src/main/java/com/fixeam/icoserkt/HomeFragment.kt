@@ -1,10 +1,7 @@
 package com.fixeam.icoserkt
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.ArgbEvaluator
-import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -12,9 +9,8 @@ import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
-import android.net.Uri
 import android.os.Bundle
-import android.provider.ContactsContract.CommonDataKinds.Im
+import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
@@ -25,9 +21,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.VideoView
 import androidx.cardview.widget.CardView
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
@@ -47,32 +41,18 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
 /**
  * A simple [Fragment] subclass.
  * Use the [HomeFragment.newInstance] factory method to
  * create an instance of this fragment.
  */
 class HomeFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
-
     // 猜你喜欢的推荐列表内容
     private var albumList: MutableList<Albums> = mutableListOf()
     private var albumIsLoading: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
     }
 
     override fun onCreateView(
@@ -81,6 +61,11 @@ class HomeFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_home, container, false)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshLikeList(0)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -104,13 +89,15 @@ class HomeFragment : Fragment() {
         val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
         imageView.startAnimation(animation)
         imageView.visibility = View.VISIBLE
-        requestLikesData(20)
+        requestLikesData(80)
         initLikeList()
 
         // 监听页面滚动
         val toUpButton: FloatingActionButton = view.findViewById(R.id.to_up)
         val scrollView = view.findViewById<ScrollView>(R.id.home_scroll_view)
         toUpButton.setOnClickListener {
+            scrollView.isScrollContainer = true
+
             scrollView.fling(0)
             val animator = ValueAnimator.ofInt(scrollView.scrollY, 0)
             animator.addUpdateListener { valueAnimator ->
@@ -119,17 +106,24 @@ class HomeFragment : Fragment() {
             }
             animator.duration = 500
             animator.start()
+
+            val likeList: RecyclerView? = view.findViewById(R.id.like_list)
+            if (likeList != null) {
+                likeList.scrollToPosition(0)
+            }
         }
 
         scrollView.viewTreeObserver.addOnScrollChangedListener {
             val scrollY = scrollView.scrollY
             val contentHeight = scrollView.getChildAt(0).height
-            if (contentHeight - scrollY - scrollView.height <= 3800 && !albumIsLoading) {
-                val imageView: ImageView = view.findViewById<ImageView>(R.id.like_loading)
-                val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
-                imageView.startAnimation(animation)
-                imageView.visibility = View.VISIBLE
-                requestLikesData(4)
+            if (contentHeight - scrollY - scrollView.height <= 50) {
+                val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
+                likeList?.setNestedScrollingEnabled(true)
+
+                scrollView.post {
+                    scrollView.fullScroll(ScrollView.FOCUS_DOWN)
+                }
+                scrollView.isScrollContainer = false
             }
         }
     }
@@ -341,19 +335,66 @@ class HomeFragment : Fragment() {
 
     private fun initLikeList(){
         val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
+
+        // 计算滚动区域高度
+        val displayMetrics = DisplayMetrics()
+        requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val screenHeight = displayMetrics.heightPixels
+        val layoutParams = likeList?.layoutParams
+        layoutParams?.height = screenHeight - 366
+
         likeList?.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
         likeList?.adapter = likeListAdapter()
         likeList?.setHasFixedSize(true)
         likeList?.setNestedScrollingEnabled(false)
-        likeList?.setItemViewCacheSize(16)
+//        likeList?.setItemViewCacheSize(12)
         likeList?.setHasTransientState(true)
+
+        likeList?.addOnScrollListener(object: RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                val layoutManager = recyclerView.layoutManager as StaggeredGridLayoutManager
+                val lastVisibleItemPositions = layoutManager.findLastVisibleItemPositions(null)
+                val lastVisibleItemPosition = lastVisibleItemPositions.max()
+                val itemCount = layoutManager.itemCount
+
+                if (itemCount > 0) {
+                    val lastVisibleItemView = layoutManager.findViewByPosition(lastVisibleItemPosition)
+                    val distanceToBottom = recyclerView.height - lastVisibleItemView?.bottom!!
+
+                    if (!recyclerView.canScrollVertically(-1)) {
+                        // 列表已经滚动到顶部
+                        likeList.setNestedScrollingEnabled(false)
+                        val scrollView:ScrollView? = view?.findViewById(R.id.home_scroll_view)
+                        scrollView?.isScrollContainer = true
+                    }
+                    if (!recyclerView.canScrollVertically(1)) {
+                        // 列表已经滚动到低部
+                        val imageView: ImageView? = view?.findViewById<ImageView>(R.id.like_loading)
+                        val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
+                        imageView?.startAnimation(animation)
+                        imageView?.visibility = View.VISIBLE
+                    }
+                    if (distanceToBottom < 3000 && !albumIsLoading) {
+                        // 距离底部小于 3000
+                        requestLikesData(50)
+                    }
+                }
+            }
+        })
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun refreshLikeList(loadedNumber: Int) {
         val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
         val adapter = likeList?.adapter as? likeListAdapter
 
-        adapter?.notifyItemInserted(albumList.size - loadedNumber)
+        if(loadedNumber == 0){
+            adapter?.notifyDataSetChanged()
+        } else {
+            adapter?.notifyItemInserted(albumList.size - loadedNumber)
+        }
     }
 
     private fun requestLikesData(number: Int){
@@ -415,40 +456,12 @@ class HomeFragment : Fragment() {
             }
 
             val imageView = holder.itemView.findViewById<ImageView>(R.id.image_view)
-            val videoView = holder.itemView.findViewById<VideoView>(R.id.video_view)
 
-            if(album.media != null){
-                imageView.visibility = View.GONE
-                videoView.visibility = View.VISIBLE
-
-                val medias = album.media
-                val random = (0..(medias.size - 1)).random()
-                val media = medias[random]
-                val format = media.format
-                val video = format.last()
-
-                val videoUri = Uri.parse(video.url)
-                videoView.setVideoURI(videoUri)
-                videoView.setOnPreparedListener { mp ->
-                    mp.setVolume(0f, 0f)
-
-                    val ratio: Float = (media.height.toFloat() / media.width.toFloat()).toFloat()
-                    val viewWidth = videoView.width
-                    val viewHeight = (viewWidth * ratio).toInt()
-                    videoView.layoutParams.height = viewHeight
-                }
-                videoView.setOnCompletionListener { mp ->
-                    videoView.resume()
-                }
-
-                videoView.start()
-            } else {
-                Glide.with(requireContext())
-                    .load("${album.images}/short1200px")
-                    .placeholder(R.drawable.image_holder)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .into(imageView)
-            }
+            Glide.with(requireContext())
+                .load("${album.images}/short1200px")
+                .placeholder(R.drawable.image_holder)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(imageView)
 
             val textView = holder.itemView.findViewById<TextView>(R.id.text_view)
             textView.text = "${album.model} ${album.name}"

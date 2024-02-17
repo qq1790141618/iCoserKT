@@ -8,11 +8,11 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.media.MediaFormat
+import android.util.DisplayMetrics
 import android.view.View
+import android.view.WindowManager
 import androidx.cardview.widget.CardView
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.content.ContextCompat.startActivity
 import androidx.fragment.app.Fragment
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
@@ -21,8 +21,12 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Headers
+import retrofit2.http.POST
 import retrofit2.http.Query
+import retrofit2.http.Url
 import java.util.concurrent.TimeUnit
 
 var homeFragment: HomeFragment? = null
@@ -71,6 +75,11 @@ interface ApiService {
     fun RemoveCollectionItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String): Call<ActionResponse>
     @GET("forbidden/set")
     fun SetForbiddenItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String): Call<ActionResponse>
+    @Headers("Content-Type: application/json")
+    @POST("file/infomation")
+    fun PostFileAndInformation(@Body requestBody: UrlRequestBody): Call<List<FileInfo>>
+    @GET
+    fun GetFileInfoByUrl(@Url url: String): Call<FileMeta>
 }
 data class ActionResponse(
     val result: Boolean
@@ -129,6 +138,32 @@ data class AlbumDownload(
     var url: String,
     var password: String,
     var encryption: Boolean
+)
+data class FileInfo(
+    var id: Int,
+    var name: String,
+    var size: Long,
+    var url: String,
+    var mime: String,
+    var meta: String?,
+    var suffix: String,
+    var time: String,
+    var userid: String,
+    var violation: String?
+)
+data class FileMeta(
+    var width: String,
+    var height: String,
+    var format: String?,
+    var size: String?,
+    var md5: String?,
+    var frame_count: String?,
+    var bit_depth: String?,
+    var horizontal_dpi: String?,
+    var vertical_dpi: String?
+)
+data class UrlRequestBody(
+    val url: String
 )
 data class ModelsResponse(
     val result: Boolean,
@@ -271,4 +306,11 @@ fun shareTextContent(text: String, title: String = "来自iCoser的分享", cont
     shareIntent.type = "text/plain"
     shareIntent.putExtra(Intent.EXTRA_TEXT, text)
     context.startActivity(Intent.createChooser(shareIntent, title))
+}
+
+fun getScreenWidth(context: Context): Int {
+    val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+    val displayMetrics = DisplayMetrics()
+    windowManager.defaultDisplay.getMetrics(displayMetrics)
+    return displayMetrics.widthPixels
 }
