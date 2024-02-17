@@ -1,10 +1,20 @@
 package com.fixeam.icoserkt
 
+import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.widget.AppCompatImageView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.google.android.material.button.MaterialButton
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -37,23 +47,81 @@ class UserFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_user, container, false)
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment UserFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            UserFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val goLogin: MaterialButton = view.findViewById(R.id.go_login)
+        goLogin.setOnClickListener {
+            val intent = Intent(requireContext(), LoginActivity::class.java)
+            startActivity(intent)
+        }
+
+        val logout = view.findViewById<MaterialButton>(R.id.log_out)
+        logout.setOnClickListener {
+            val builder = AlertDialog.Builder(context)
+            builder.setMessage("确认退出此用户的登录状态吗? 用户在此设备上的信息将会被清空。")
+
+            builder.setPositiveButton("确定") { dialog, which ->
+                logout()
             }
+            builder.setNegativeButton("取消") { dialog, which ->
+                // 不退出登录
+            }
+
+            val alertDialog = builder.create()
+            alertDialog.show()
+        }
+
+        userInform?.let { initUserCard(it) }
+    }
+
+    fun initUserCard(userInform: UserInform) {
+        val avatar = view?.findViewById<ImageView>(R.id.avatar_image)
+        avatar?.let {
+            Glide.with(requireContext())
+                .load("${userInform.header}")
+                .placeholder(R.drawable.image_holder)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(it)
+        }
+        avatar?.setOnClickListener {
+            imageViewInstantiate(userInform.header)
+        }
+
+        val nickname = view?.findViewById<TextView>(R.id.nickname)
+        nickname?.text = userInform.nickname
+
+        val goLogin = view?.findViewById<MaterialButton>(R.id.go_login)
+        val logout = view?.findViewById<MaterialButton>(R.id.log_out)
+        goLogin?.visibility = View.GONE
+        logout?.visibility = View.VISIBLE
+    }
+
+    private fun logout(){
+        removeSharedPreferencesKey("access_token", requireContext())
+        userInform = null
+        userToken = null
+
+        val avatar = view?.findViewById<ImageView>(R.id.avatar_image)
+        avatar?.setImageResource(R.drawable.image_holder)
+
+        val nickname = view?.findViewById<TextView>(R.id.nickname)
+        nickname?.text = getString(R.string.un_log_user)
+
+        val goLogin = view?.findViewById<MaterialButton>(R.id.go_login)
+        val logout = view?.findViewById<MaterialButton>(R.id.log_out)
+        goLogin?.visibility = View.VISIBLE
+        logout?.visibility = View.GONE
+    }
+
+     fun imageViewInstantiate(url: String){
+        val imageViewPrev = imagePreview?.findViewById<AppCompatImageView>(R.id.image_view_prev)
+        imageViewPrev?.let {
+            Glide.with(this)
+                .load(url)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(imageViewPrev)
+        }
+        imagePreview?.visibility = View.VISIBLE
     }
 }

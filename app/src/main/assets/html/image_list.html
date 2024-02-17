@@ -7,21 +7,32 @@
     <script>
         function addView(dom, index){
             return new Promise((resolve) => {
-                document.body.appendChild(dom)
+                document.querySelector('.content').appendChild(dom)
 
-                var io = new IntersectionObserver(entries => {
-                    if (entries[0].intersectionRatio <= 0){
-                        return
-                    }
+                if(index > 5){
+                    var io = new IntersectionObserver(entries => {
+                        if (entries[0].intersectionRatio <= 0){
+                            return
+                        }
 
-                    dom.src = dom.dataset.src
-                })
+                        dom.src = dom.dataset.src
+                    })
 
-                io.observe(dom)
-                resolve()
+                    io.observe(dom)
+                    return resolve()
+                }
+
+                dom.src = dom.dataset.src
+                dom.onload = () => {
+                    return resolve()
+                }
             })
         }
+
+        let timer
         async function initList(list){
+            let loadDom = document.querySelector('.load')
+
             for (let i = 0; i < list.length; i++) {
                 if(typeof(list[i]) !== 'string'){
                     continue
@@ -32,8 +43,26 @@
                 img.src = 'file:///android_res/drawable/image_holder.png'
                 img.dataset.src = list[i] + '?imageMogr2/thumbnail/1200x/format/webp/interlace/1/quality/95'
                 img.loading= 'lazy'
+                img.ontouchstart = () => {
+                    timer = setTimeout(() => {
+                        AlbumJSInterface.onImageSelected(list[i])
+                    }, 500)
+                }
+                img.ontouchmove = () => {
+                    clearTimeout(timer)
+                }
+                img.ontouchend = () => {
+                    clearTimeout(timer)
+                }
+
+                if(i == 0){
+                    loadDom.style.height = '50px'
+                    loadDom.style.lineHeight = '50px'
+                }
                 await addView(img, i)
             }
+
+            loadDom.style.display = 'none'
         }
     </script>
     <style>
@@ -44,8 +73,32 @@
         img {
             vertical-align: middle;
         }
+        .content {
+            width: 100vw;
+        }
+        .load {
+            width: 100vw;
+            height: 90vh;
+            line-height: 90vh;
+            text-align: center;
+        }
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        .loading-icon {
+            animation: rotate 1s linear infinite;
+        }
     </style>
 </head>
 <body>
+    <div class="content"></div>
+    <div class="load">
+        <img src="file:///android_res/drawable/loading_png.png" width="30" class="loading-icon" >
+    </div>
 </body>
 </html>

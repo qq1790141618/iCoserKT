@@ -1,26 +1,39 @@
 package com.fixeam.icoserkt
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.content.res.Configuration
+import android.graphics.Color
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Bundle
+import android.provider.ContactsContract.CommonDataKinds.Im
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
-import android.webkit.WebView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.VideoView
 import androidx.cardview.widget.CardView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
 import com.youth.banner.Banner
@@ -33,6 +46,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -86,13 +100,18 @@ class HomeFragment : Fragment() {
         // 加载模特推荐
         requestModelData()
         // 加载瀑布流推荐
-        requestLikesData()
+        val imageView: ImageView = view.findViewById<ImageView>(R.id.like_loading)
+        val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
+        imageView.startAnimation(animation)
+        imageView.visibility = View.VISIBLE
+        requestLikesData(20)
         initLikeList()
 
         // 监听页面滚动
         val toUpButton: FloatingActionButton = view.findViewById(R.id.to_up)
         val scrollView = view.findViewById<ScrollView>(R.id.home_scroll_view)
         toUpButton.setOnClickListener {
+            scrollView.fling(0)
             val animator = ValueAnimator.ofInt(scrollView.scrollY, 0)
             animator.addUpdateListener { valueAnimator ->
                 val value = valueAnimator.animatedValue as Int
@@ -105,15 +124,12 @@ class HomeFragment : Fragment() {
         scrollView.viewTreeObserver.addOnScrollChangedListener {
             val scrollY = scrollView.scrollY
             val contentHeight = scrollView.getChildAt(0).height
-            if (contentHeight - scrollY - scrollView.height <= 5000 && !albumIsLoading) {
-                if (!scrollView.canScrollVertically(1)){
-                    // 设置加载动画
-                    val imageView: ImageView = view.findViewById<ImageView>(R.id.like_loading)
-                    val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
-                    imageView.startAnimation(animation)
-                    imageView.visibility = View.VISIBLE
-                }
-                requestLikesData()
+            if (contentHeight - scrollY - scrollView.height <= 3800 && !albumIsLoading) {
+                val imageView: ImageView = view.findViewById<ImageView>(R.id.like_loading)
+                val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
+                imageView.startAnimation(animation)
+                imageView.visibility = View.VISIBLE
+                requestLikesData(4)
             }
         }
     }
@@ -329,18 +345,18 @@ class HomeFragment : Fragment() {
         likeList?.adapter = likeListAdapter()
         likeList?.setHasFixedSize(true)
         likeList?.setNestedScrollingEnabled(false)
-        likeList?.setItemViewCacheSize(20)
+        likeList?.setItemViewCacheSize(16)
         likeList?.setHasTransientState(true)
     }
 
-    private fun refreshLikeList() {
+    private fun refreshLikeList(loadedNumber: Int) {
         val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
         val adapter = likeList?.adapter as? likeListAdapter
 
-        adapter?.notifyItemInserted(albumList.size - 4)
+        adapter?.notifyItemInserted(albumList.size - loadedNumber)
     }
 
-    private fun requestLikesData(){
+    private fun requestLikesData(number: Int){
         albumIsLoading = true
 
         val retrofit = Retrofit.Builder()
@@ -349,7 +365,10 @@ class HomeFragment : Fragment() {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val ApiService = retrofit.create(ApiService::class.java)
-        val call = ApiService.GetRecAlbum()
+        var call = ApiService.GetRecAlbum(number)
+        if(userToken != null){
+            call = ApiService.GetRecAlbum(number, userToken!!)
+        }
 
         call.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
@@ -369,7 +388,7 @@ class HomeFragment : Fragment() {
 
                     albumIsLoading = false
 
-                    refreshLikeList()
+                    refreshLikeList(albumsResponse.data.size)
                 }
             }
 
@@ -390,18 +409,214 @@ class HomeFragment : Fragment() {
         }
         override fun onBindViewHolder(holder: likeViewHolder, position: Int) {
             // 修改holder
+            val album = albumList[position]
+            holder.itemView.setOnClickListener{
+                openAlbumView(album.id)
+            }
+
             val imageView = holder.itemView.findViewById<ImageView>(R.id.image_view)
-            Glide.with(requireContext())
-                .load("${albumList[position].images}?short500px")
-                .placeholder(R.drawable.image_holder)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .into(imageView)
+            val videoView = holder.itemView.findViewById<VideoView>(R.id.video_view)
+
+            if(album.media != null){
+                imageView.visibility = View.GONE
+                videoView.visibility = View.VISIBLE
+
+                val medias = album.media
+                val random = (0..(medias.size - 1)).random()
+                val media = medias[random]
+                val format = media.format
+                val video = format.last()
+
+                val videoUri = Uri.parse(video.url)
+                videoView.setVideoURI(videoUri)
+                videoView.setOnPreparedListener { mp ->
+                    mp.setVolume(0f, 0f)
+
+                    val ratio: Float = (media.height.toFloat() / media.width.toFloat()).toFloat()
+                    val viewWidth = videoView.width
+                    val viewHeight = (viewWidth * ratio).toInt()
+                    videoView.layoutParams.height = viewHeight
+                }
+                videoView.setOnCompletionListener { mp ->
+                    videoView.resume()
+                }
+
+                videoView.start()
+            } else {
+                Glide.with(requireContext())
+                    .load("${album.images}/short1200px")
+                    .placeholder(R.drawable.image_holder)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .into(imageView)
+            }
 
             val textView = holder.itemView.findViewById<TextView>(R.id.text_view)
-            textView.text = "${albumList[position].model} ${albumList[position].name}"
+            textView.text = "${album.model} ${album.name}"
 
-            holder.itemView.setOnClickListener{
-                openAlbumView(albumList[position].id)
+            // 喜欢按钮操作
+            val likeButton = holder.itemView.findViewById<MaterialButton>(R.id.like_button)
+            val currentTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+            if(album.is_collection != null){
+                likeButton.setIconResource(R.drawable.like_fill)
+                likeButton.iconTint = ColorStateList.valueOf(Color.RED)
+            }
+            likeButton.setOnClickListener{
+                if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
+                    likeButton.iconTint = ColorStateList.valueOf(Color.WHITE)
+                } else {
+                    likeButton.iconTint = ColorStateList.valueOf(Color.BLACK)
+                }
+
+                likeButton.setIconResource(R.drawable.loading)
+                val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
+                likeButton.startAnimation(animation)
+
+                fun callback() {
+                    likeButton.clearAnimation()
+                    if(album.is_collection != null){
+                        likeButton.setIconResource(R.drawable.like)
+                        if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
+                            likeButton.iconTint = ColorStateList.valueOf(Color.WHITE)
+                        } else {
+                            likeButton.iconTint = ColorStateList.valueOf(Color.BLACK)
+                        }
+                        album.is_collection = null
+                    } else {
+                        likeButton.setIconResource(R.drawable.like_fill)
+                        likeButton.iconTint = ColorStateList.valueOf(Color.RED)
+                        album.is_collection = "like"
+                    }
+                }
+                fun unlog(){
+                    likeButton.clearAnimation()
+                    likeButton.setIconResource(R.drawable.like)
+                }
+
+                setAlbumCollection(album, "like", { callback() }, { unlog() })
+            }
+
+            // 更多按钮操作
+            val moreButton = holder.itemView.findViewById<MaterialButton>(R.id.more_button)
+            moreButton.setOnClickListener{
+                val falshPanel = layoutInflater.inflate(R.layout.album_flash_panel, overCard, false) as LinearLayout
+                val container = overCard?.findViewById<LinearLayout>(R.id.content_layout)
+                container?.removeAllViews()
+                if (falshPanel.parent != null) {  // 判断视图是否已有父视图
+                    (falshPanel.parent as ViewGroup).removeView(falshPanel)  // 将视图从父视图中移除
+                }
+                container?.addView(falshPanel)
+
+                // 调整面板内容
+                overCard?.findViewById<TextView>(R.id.text_info)?.text = "${album.model} ${album.name}"
+                val posterImage = overCard?.findViewById<ImageView>(R.id.poster_info)
+                posterImage?.let { it1 ->
+                    Glide.with(requireContext())
+                        .load("${album.poster}/short500px")
+                        .placeholder(R.drawable.image_holder)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .into(it1)
+                }
+
+                // 调整按钮操作
+                val closeButton = overCard?.findViewById<MaterialButton>(R.id.close)
+                closeButton?.setOnClickListener {
+                    closeOverCard()
+                }
+                val viewAlbums = overCard?.findViewById<MaterialButton>(R.id.view_album)
+                viewAlbums?.setOnClickListener {
+                    openAlbumView(album.id)
+                }
+                val collection = overCard?.findViewById<MaterialButton>(R.id.collection)
+                if(album.is_collection != null){
+                    collection?.setIconResource(R.drawable.favor_fill)
+                    collection?.text = getString(R.string.uncollection)
+                }
+                collection?.setOnClickListener {
+                    collection.setIconResource(R.drawable.loading2)
+
+                    fun collectioncallback() {
+                        if(album.is_collection != null){
+                            collection.setIconResource(R.drawable.favor)
+                            album.is_collection = null
+                            collection.text = getString(R.string.collection)
+                        } else {
+                            collection.setIconResource(R.drawable.favor_fill)
+                            album.is_collection = "default"
+                            collection.text = getString(R.string.uncollection)
+                        }
+                    }
+                    fun unlog(){
+                        collection.setIconResource(R.drawable.favor)
+                    }
+
+                    setAlbumCollection(album, "default", { collectioncallback() }, { unlog() })
+                }
+                val share = overCard?.findViewById<MaterialButton>(R.id.share)
+                share?.setOnClickListener {
+                    shareTextContent(
+                        context = requireContext(),
+                        text = "来自iCoser的分享内容：模特 - ${album.model}, 写真集 - ${album.name}, 访问链接：https://app.fixeam.com/album?id=${album.id}"
+                    )
+                }
+                val forbbiden = overCard?.findViewById<MaterialButton>(R.id.forbidden)
+                forbbiden?.setOnClickListener {
+                    val builder = AlertDialog.Builder(context)
+                    val inflater = requireContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+                    val dialogView: View = inflater.inflate(R.layout.forbidden_option, null)
+
+                    builder.setView(dialogView)
+                    val alertDialog = builder.create()
+                    alertDialog.show()
+
+                    val dialogClose = dialogView.findViewById<MaterialButton>(R.id.close)
+                    dialogClose.setOnClickListener {
+                        alertDialog.cancel()
+                    }
+                    val dialogForbiddenAlbums = dialogView.findViewById<MaterialButton>(R.id.forbidden_album)
+                    dialogForbiddenAlbums.setOnClickListener {
+                        dialogForbiddenAlbums.setIconResource(R.drawable.loading2)
+
+                        fun callback() {
+                            dialogForbiddenAlbums.setIcon(null)
+                            Toast.makeText(requireContext(), "操作成功, 后续将不会加载相关内容", Toast.LENGTH_SHORT).show()
+                            alertDialog.cancel()
+                            val blockOverlay = holder.itemView.findViewById<LinearLayout>(R.id.block_overlay)
+                            blockOverlay.visibility = View.VISIBLE
+                            holder.itemView.setOnClickListener(null)
+                            closeOverCard()
+                        }
+                        fun unlog(){
+                            dialogForbiddenAlbums.setIcon(null)
+                        }
+
+                        setForbidden(album.id, "album", { callback() }, { unlog() })
+                    }
+                    val dialogForbiddenModel = dialogView.findViewById<MaterialButton>(R.id.forbidden_model)
+                    dialogForbiddenModel.setOnClickListener {
+                        dialogForbiddenModel.setIconResource(R.drawable.loading2)
+
+                        fun callback() {
+                            dialogForbiddenModel.setIcon(null)
+                            Toast.makeText(requireContext(), "操作成功, 后续将不会加载相关内容", Toast.LENGTH_SHORT).show()
+                            alertDialog.cancel()
+                            val blockOverlay = holder.itemView.findViewById<LinearLayout>(R.id.block_overlay)
+                            blockOverlay.visibility = View.VISIBLE
+                            holder.itemView.setOnClickListener(null)
+                            closeOverCard()
+                        }
+                        fun unlog(){
+                            dialogForbiddenModel.setIcon(null)
+                        }
+
+                        setForbidden(album.model_id, "model", { callback() }, { unlog() })
+                    }
+                }
+
+                // 显示面板
+                overCard!!.visibility = View.VISIBLE
+
+                // 执行面板动画
+                openOverCard()
             }
         }
     }
@@ -409,24 +624,81 @@ class HomeFragment : Fragment() {
 
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment HomeFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            HomeFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+    private fun setForbidden(id: Int, type: String, callback: () -> Unit, unlog: () -> Unit){
+        if(userToken != null){
+            val retrofit = Retrofit.Builder()
+                .client(client)
+                .baseUrl(SERVE_HOST)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+            val ApiService = retrofit.create(ApiService::class.java)
+            var call = ApiService.SetForbiddenItem(userToken!!, id, "album")
+
+            call.enqueue(object : Callback<ActionResponse> {
+                override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
+                    if (response.isSuccessful) {
+                        val responseBody = response.body()
+
+                        if(!responseBody?.result!!){
+                            Toast.makeText(requireContext(), "操作失败", Toast.LENGTH_SHORT).show()
+                            return
+                        }
+
+                        callback()
+                    }
                 }
+
+                override fun onFailure(call: Call<ActionResponse>, t: Throwable) {
+                    // 处理请求失败的逻辑
+                    Toast.makeText(requireContext(), "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+                }
+            })
+        } else {
+            unlog()
+            val intent = Intent(requireContext(), LoginActivity::class.java)
+            startActivity(intent)
+        }
+    }
+
+    private fun setAlbumCollection(album: Albums, fold: String, callback: () -> Unit, unlog: () -> Unit){
+        if(userToken != null){
+            val retrofit = Retrofit.Builder()
+                .client(client)
+                .baseUrl(SERVE_HOST)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+            val ApiService = retrofit.create(ApiService::class.java)
+            var call = ApiService.SetCollectionItem(userToken!!, album.id, "album", fold)
+            if(album.is_collection != null){
+                call = ApiService.RemoveCollectionItem(userToken!!, album.id, "album")
             }
+
+            call.enqueue(object : Callback<ActionResponse> {
+                override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
+                    if (response.isSuccessful) {
+                        val responseBody = response.body()
+
+                        if(!responseBody?.result!!){
+                            Toast.makeText(requireContext(), "操作失败", Toast.LENGTH_SHORT).show()
+                            return
+                        }
+
+                        callback()
+
+                        Toast.makeText(requireContext(), "操作成功", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onFailure(call: Call<ActionResponse>, t: Throwable) {
+                    // 处理请求失败的逻辑
+                    Toast.makeText(requireContext(), "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+                }
+            })
+        } else {
+            unlog()
+            val intent = Intent(requireContext(), LoginActivity::class.java)
+            startActivity(intent)
+        }
     }
 }
 

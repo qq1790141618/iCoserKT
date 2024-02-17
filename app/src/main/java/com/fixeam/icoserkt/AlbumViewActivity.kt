@@ -1,15 +1,23 @@
 package com.fixeam.icoserkt
 
 import android.animation.ValueAnimator
+import android.content.Context
+import android.content.res.Configuration
+import android.graphics.Color
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.view.animation.AnimationUtils
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.widget.Toolbar
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
 import okhttp3.ResponseBody
@@ -25,6 +33,15 @@ class AlbumViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_album_view)
+
+        val currentTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
+            setStatusBarColor(Color.BLACK)
+            setStatusBarTextColor(false)
+        } else {
+            setStatusBarColor(Color.WHITE)
+            setStatusBarTextColor(true)
+        }
 
         // 设置加载动画
         val imageView = findViewById<ImageView>(R.id.image_loading)
@@ -42,6 +59,7 @@ class AlbumViewActivity : AppCompatActivity() {
         val toUpButton: FloatingActionButton = findViewById(R.id.to_up)
         val webView: WebView = findViewById(R.id.image_list)
         toUpButton.setOnClickListener {
+            webView.flingScroll(0, 0)
             val animator = ValueAnimator.ofInt(webView.scrollY, 0)
             animator.addUpdateListener { valueAnimator ->
                 val value = valueAnimator.animatedValue as Int
@@ -91,6 +109,11 @@ class AlbumViewActivity : AppCompatActivity() {
                     toolbar.title = album.name
                     toolbar.subtitle = album.model
 
+                    if(album.media != null){
+                        val goToVideo = findViewById<MaterialButton>(R.id.go_to_video)
+                        goToVideo.visibility = View.VISIBLE
+                    }
+
                     initImageList()
                 }
             }
@@ -108,9 +131,40 @@ class AlbumViewActivity : AppCompatActivity() {
         webView.webChromeClient = WebChromeClient()
         webView.loadUrl("file:///android_asset/html/image_list.html")
 
+        val albumJSInterface = AlbumJSInterface(this)
+        webView.addJavascriptInterface(albumJSInterface, "AlbumJSInterface")
+
         val json = Gson().toJson(albumImages)
         webView.postDelayed({
             webView.evaluateJavascript("initList($json);", null)
         }, 3000)
+    }
+
+    private fun setStatusBarColor(color: Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            window.statusBarColor = color
+        }
+    }
+
+    private fun setStatusBarTextColor(isDark: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val decorView = window.decorView
+            var flags = decorView.systemUiVisibility
+            if (isDark) {
+                flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            } else {
+                flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+            }
+            decorView.systemUiVisibility = flags
+        }
+    }
+
+
+}
+
+class AlbumJSInterface(private val context: Context) {
+    @JavascriptInterface
+    fun onImageSelected(url: String) {
+        // 长按了图片URL
     }
 }

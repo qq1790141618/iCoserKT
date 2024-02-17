@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="15dp" >
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:text="@string/forbidden" />
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="10dp"
+        android:orientation="vertical">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/forbidden_album"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="?attr/colorOnBackground"
+            android:textColor="?attr/colorPrimary"
+            android:text="@string/forbidden_album"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:cornerRadius="7dp"
+            app:strokeColor="?attr/colorOnTertiary"
+            app:strokeWidth="0.5sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/forbidden_model"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="?attr/colorOnBackground"
+            android:textColor="?attr/colorPrimary"
+            android:text="@string/forbidden_model"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:cornerRadius="7dp"
+            app:strokeColor="?attr/colorOnTertiary"
+            app:strokeWidth="0.5sp" />
+
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/close"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/close"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:cornerRadius="7dp" />
+
+</LinearLayout>

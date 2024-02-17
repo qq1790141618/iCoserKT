@@ -6,6 +6,29 @@
     <string name="user">用户</string>
     <string name="new_">最新发布</string>
     <string name="hot">最热推荐</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="view_album_video">查看写真集视频</string>
+    <string name="login">登录</string>
+    <string name="un_log_user">未登录用户</string>
+    <string name="go_login">去登录</string>
+    <string name="account">账号</string>
+    <string name="logout">退出登录</string>
+    <string name="username_phone_or_mail">用户名/手机号/电子邮箱</string>
+    <string name="password">密码</string>
+    <string name="login_with_account_and_password">通过账号密码登录</string>
+    <string name="login_with_verify_code">通过验证码登录</string>
+    <string name="phone_or_mail">手机号或电子邮箱</string>
+    <string name="verify_code">验证码</string>
+    <string name="send_verify_code">发送验证码</string>
+    <string name="second_later_resend">秒后重发</string>
+    <string name="view_album">查看写真集</string>
+    <string name="view_model">查看模特</string>
+    <string name="view_info">查看详细信息</string>
+    <string name="forbidden">屏蔽内容</string>
+    <string name="blocked">用户已屏蔽</string>
+    <string name="forbidden_album">屏蔽此写真集</string>
+    <string name="forbidden_model">屏蔽此模特</string>
+    <string name="share">分享内容</string>
+    <string name="collection">收藏</string>
+    <string name="uncollection">取消收藏</string>
+    <string name="close">关闭</string>
 </resources>

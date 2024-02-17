@@ -17,12 +17,14 @@
         app:layout_constraintBottom_toBottomOf="parent" />
 
     <androidx.cardview.widget.CardView
+        android:id="@+id/tab_bar_card"
         android:layout_width="match_parent"
         android:layout_height="66dp"
         android:layout_margin="12dp"
         app:cardCornerRadius="33dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:cardBackgroundColor="?attr/cardBackgroundColor" >
+
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/tab_bar"
             android:layout_width="match_parent"
@@ -44,7 +46,7 @@
                 app:iconGravity="textTop"
                 app:iconTint="@color/black"
                 app:cornerRadius="0dp"
-                app:iconSize="20dp" />
+                app:iconSize="21dp" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/smart_video_button"
                 android:layout_width="0dp"
@@ -58,7 +60,7 @@
                 app:icon="@drawable/video"
                 app:iconGravity="textTop"
                 app:iconTint="@color/black"
-                app:iconSize="20dp" />
+                app:iconSize="21dp" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/search_button"
                 android:layout_width="0dp"
@@ -72,7 +74,7 @@
                 app:icon="@drawable/search"
                 app:iconGravity="textTop"
                 app:iconTint="@color/black"
-                app:iconSize="20dp" />
+                app:iconSize="21dp" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/user_button"
                 android:layout_width="0dp"
@@ -87,7 +89,8 @@
                 app:iconGravity="textTop"
                 app:iconTint="@color/black"
                 app:cornerRadius="0dp"
-                app:iconSize="20dp" />
+                app:iconSize="21dp" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
     </androidx.cardview.widget.CardView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -5,6 +5,7 @@
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
         <item name="colorOnBackground">@color/text_color</item>
         <item name="colorPrimary">@color/background_color</item>
+        <item name="colorOnTertiary">@color/text_grey_night</item>
         <item name="android:fontFamily">@font/pingfang</item>
         <item name="cardBackgroundColor">@color/card_background_color_night</item>
     </style>
@@ -18,5 +19,9 @@
     <style name="Toolbar.SubTitleText" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
         <item name="android:textSize">10sp</item><!--子标题字体大小-->
         <item name="android:textColor">#DDDDDD</item><!--子标题字体颜色-->
+    </style>
+
+    <style name="CustomHintTextAppearance" parent="TextAppearance.Design.Hint">
+        <item name="android:textSize">11sp</item>
     </style>
 </resources>
