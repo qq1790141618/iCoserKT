@@ -24,7 +24,7 @@
         <ImageView
             android:id="@+id/poster_info"
             android:layout_width="match_parent"
-            android:layout_height="135dp"
+            android:layout_height="150dp"
             android:scaleType="fitCenter"
             android:src="@drawable/image_holder" />
 
@@ -76,21 +76,6 @@
             android:insetTop="0dp"
             android:insetBottom="0dp"
             app:icon="@drawable/favor"
-            app:iconTint="?attr/colorPrimary"
-            app:cornerRadius="7dp"
-            app:strokeColor="?attr/colorOnTertiary"
-            app:strokeWidth="0.5sp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/view_info"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:backgroundTint="?attr/colorOnBackground"
-            android:textColor="?attr/colorPrimary"
-            android:text="@string/view_info"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            app:icon="@drawable/info"
             app:iconTint="?attr/colorPrimary"
             app:cornerRadius="7dp"
             app:strokeColor="?attr/colorOnTertiary"

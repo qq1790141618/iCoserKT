@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">iCoser</string>
+    <string name="app_name">iCoser Kotlin Test</string>
     <string name="home">首页</string>
     <string name="smart_video">小视频</string>
     <string name="search">搜索</string>
@@ -27,8 +27,9 @@
     <string name="blocked">用户已屏蔽</string>
     <string name="forbidden_album">屏蔽此写真集</string>
     <string name="forbidden_model">屏蔽此模特</string>
-    <string name="share">分享内容</string>
+    <string name="share">分享</string>
     <string name="collection">收藏</string>
     <string name="uncollection">取消收藏</string>
     <string name="close">关闭</string>
+    <string name="download">下载</string>
 </resources>

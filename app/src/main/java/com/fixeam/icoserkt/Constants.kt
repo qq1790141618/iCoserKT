@@ -5,14 +5,29 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.app.DownloadManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.BroadcastReceiver
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.WindowManager
+import android.widget.ImageView
+import android.widget.Toast
 import androidx.cardview.widget.CardView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.app.NotificationCompat
 import androidx.fragment.app.Fragment
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
@@ -27,6 +42,7 @@ import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Query
 import retrofit2.http.Url
+import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 
 var homeFragment: HomeFragment? = null
@@ -39,22 +55,15 @@ var overCard: ConstraintLayout? = null
 
 const val SERVE_HOST = "https://api.fixeam.com/api/"
 val client: OkHttpClient = OkHttpClient.Builder()
-.connectTimeout(10, TimeUnit.SECONDS)
-.readTimeout(10, TimeUnit.SECONDS)
-.writeTimeout(10, TimeUnit.SECONDS)
-.addInterceptor { chain ->
-    val originalRequest = chain.request()
-    val authenticatedRequest = originalRequest.newBuilder()
-        .header("Authorization", "iCoser_Android_Application_By_Kotlin")
-        .build()
-    chain.proceed(authenticatedRequest)
-}
+.connectTimeout(60, TimeUnit.SECONDS)
+.readTimeout(60, TimeUnit.SECONDS)
+.writeTimeout(60, TimeUnit.SECONDS)
 .build()
 interface ApiService {
     @GET("carousel")
     fun GetCarousel(): Call<ResponseBody>
     @GET("album")
-    fun GetAlbum(@Query("condition") condition: String?): Call<ResponseBody>
+    fun GetAlbum(@Query("condition") condition: String?, @Query("access_token") access_token: String = ""): Call<ResponseBody>
     @GET("album?random=true")
     fun GetRecAlbum(@Query("number") number: Int?, @Query("access_token") access_token: String = ""): Call<ResponseBody>
     @GET("album/hot")
@@ -80,6 +89,8 @@ interface ApiService {
     fun PostFileAndInformation(@Body requestBody: UrlRequestBody): Call<List<FileInfo>>
     @GET
     fun GetFileInfoByUrl(@Url url: String): Call<FileMeta>
+    @GET("file/meta/update")
+    fun UpdateFileMeta(@Query("url") url: String, @Query("meta") meta: String): Call<ActionResponse>
 }
 data class ActionResponse(
     val result: Boolean
@@ -142,7 +153,7 @@ data class AlbumDownload(
 data class FileInfo(
     var id: Int,
     var name: String,
-    var size: Long,
+    var size: Int,
     var url: String,
     var mime: String,
     var meta: String?,
@@ -308,9 +319,149 @@ fun shareTextContent(text: String, title: String = "来自iCoser的分享", cont
     context.startActivity(Intent.createChooser(shareIntent, title))
 }
 
+fun shareImageContent(imageUrl: String, title: String = "来自iCoser的分享", context: Context) {
+    val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+
+    // 创建下载请求
+    val request = DownloadManager.Request(Uri.parse(imageUrl))
+        .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, imageUrl.substringAfterLast("/"))
+
+    // 将下载请求加入下载队列
+    val downloadId = downloadManager.enqueue(request)
+
+    // 注册下载完成的广播接收器
+    val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val action = intent?.action
+            if (DownloadManager.ACTION_DOWNLOAD_COMPLETE == action) {
+                val downloadIdCompleted = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0)
+                if (downloadIdCompleted == downloadId) {
+                    val downloadedUri = downloadManager.getUriForDownloadedFile(downloadIdCompleted)
+                    context?.let { shareImageUri(downloadedUri, title, it) }
+                }
+            }
+        }
+    }
+    val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+    context.registerReceiver(receiver, filter)
+}
+
+fun shareImageUri(imageUri: Uri?, title: String = "来自iCoser的分享", context: Context) {
+    imageUri?.let {
+        val shareIntent = Intent()
+        shareIntent.action = Intent.ACTION_SEND
+        shareIntent.type = "image/*"
+        shareIntent.putExtra(Intent.EXTRA_STREAM, imageUri)
+        context.startActivity(Intent.createChooser(shareIntent, title))
+    }
+}
+
 fun getScreenWidth(context: Context): Int {
     val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     val displayMetrics = DisplayMetrics()
     windowManager.defaultDisplay.getMetrics(displayMetrics)
     return displayMetrics.widthPixels
+}
+
+fun sendNotification(context: Context, title: String, message: String, notificationId: Int) {
+    val CHANNEL_ID = "icoser_channel_01"
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val name = "iCoser"
+        val descriptionText = "iCoser写真分享"
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+            description = descriptionText
+        }
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
+
+    val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        .setSmallIcon(R.mipmap.ic_launcher)
+        .setContentTitle(title)
+        .setContentText(message)
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .build()
+
+    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    notificationManager.notify(notificationId, notification)
+}
+
+// 保存图片到相册
+fun saveImageToGallery(context: Context, imageView: ImageView) {
+    val drawable = imageView.drawable
+    if (drawable is BitmapDrawable) {
+        val bitmap = drawable.bitmap
+        val savedUri = saveBitmapToGallery(context, bitmap)
+        if (savedUri != null) {
+            // 发送媒体扫描广播，通知相册更新
+            val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+            mediaScanIntent.data = savedUri
+            context.sendBroadcast(mediaScanIntent)
+            // 提示保存成功
+            Toast.makeText(context, "图片已保存到相册", Toast.LENGTH_SHORT).show()
+        } else {
+            // 提示保存失败
+            Toast.makeText(context, "图片保存失败", Toast.LENGTH_SHORT).show()
+        }
+    } else {
+        // 提示无法获取图片
+        Toast.makeText(context, "无法获取图片", Toast.LENGTH_SHORT).show()
+    }
+}
+
+// 保存 Bitmap 到相册
+fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Uri? {
+    val displayName = "${System.currentTimeMillis()}.png"
+
+    val imageCollection = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+    } else {
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+    }
+
+    val contentValues = ContentValues().apply {
+        put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
+        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+    }
+
+    val resolver = context.contentResolver
+    var stream: OutputStream? = null
+    var uri: Uri? = null
+
+    try {
+        // 插入图片
+        uri = resolver.insert(imageCollection, contentValues)
+        if (uri == null) {
+            throw Exception("Failed to create new MediaStore record.")
+        }
+
+        // 写入数据
+        stream = resolver.openOutputStream(uri)
+        if (stream == null) {
+            throw Exception("Failed to get output stream.")
+        }
+        if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)) {
+            throw Exception("Failed to save bitmap.")
+        }
+    } catch (e: Exception) {
+        uri = null
+        e.printStackTrace()
+    } finally {
+        stream?.close()
+    }
+
+    return uri
+}
+
+fun bytesToReadableSize(size: Int): String {
+    if (size <= 0) {
+        return "0 B"
+    }
+    val units = arrayOf("B", "KB", "MB")
+    val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
+    return String.format("%.1f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
 }

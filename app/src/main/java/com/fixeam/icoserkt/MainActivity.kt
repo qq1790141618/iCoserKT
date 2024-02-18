@@ -4,21 +4,14 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
-import android.content.ContentValues
 import android.content.Context
-import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
-import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.drawable.BitmapDrawable
 import android.net.ConnectivityManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.View
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatImageView
@@ -27,7 +20,6 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
-import java.io.OutputStream
 
 
 class MainActivity : AppCompatActivity() {
@@ -305,72 +297,7 @@ class MainActivity : AppCompatActivity() {
         application.addView(imagePreview)
     }
 
-    // 保存图片到相册
-    fun saveImageToGallery(context: Context, imageView: ImageView) {
-        val drawable = imageView.drawable
-        if (drawable is BitmapDrawable) {
-            val bitmap = drawable.bitmap
-            val savedUri = saveBitmapToGallery(context, bitmap)
-            if (savedUri != null) {
-                // 发送媒体扫描广播，通知相册更新
-                val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
-                mediaScanIntent.data = savedUri
-                context.sendBroadcast(mediaScanIntent)
-                // 提示保存成功
-                Toast.makeText(this@MainActivity, "图片已保存到相册", Toast.LENGTH_SHORT).show()
-            } else {
-                // 提示保存失败
-                Toast.makeText(this@MainActivity, "图片保存失败", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            // 提示无法获取图片
-            Toast.makeText(this@MainActivity, "无法获取图片", Toast.LENGTH_SHORT).show()
-        }
-    }
 
-    // 保存 Bitmap 到相册
-    fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Uri? {
-        val displayName = "${System.currentTimeMillis()}.png"
-
-        val imageCollection = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-        } else {
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        }
-
-        val contentValues = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
-            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-        }
-
-        val resolver = context.contentResolver
-        var stream: OutputStream? = null
-        var uri: Uri? = null
-
-        try {
-            // 插入图片
-            uri = resolver.insert(imageCollection, contentValues)
-            if (uri == null) {
-                throw Exception("Failed to create new MediaStore record.")
-            }
-
-            // 写入数据
-            stream = resolver.openOutputStream(uri)
-            if (stream == null) {
-                throw Exception("Failed to get output stream.")
-            }
-            if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)) {
-                throw Exception("Failed to save bitmap.")
-            }
-        } catch (e: Exception) {
-            uri = null
-            e.printStackTrace()
-        } finally {
-            stream?.close()
-        }
-
-        return uri
-    }
 
     private fun setOverlay(){
         val application = findViewById<ConstraintLayout>(R.id.application)

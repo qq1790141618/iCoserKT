@@ -18,10 +18,10 @@ import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
+import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
@@ -41,11 +41,6 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-/**
- * A simple [Fragment] subclass.
- * Use the [HomeFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class HomeFragment : Fragment() {
     // 猜你喜欢的推荐列表内容
     private var albumList: MutableList<Albums> = mutableListOf()
@@ -61,11 +56,6 @@ class HomeFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_home, container, false)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        refreshLikeList(0)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -85,19 +75,14 @@ class HomeFragment : Fragment() {
         // 加载模特推荐
         requestModelData()
         // 加载瀑布流推荐
-        val imageView: ImageView = view.findViewById<ImageView>(R.id.like_loading)
-        val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
-        imageView.startAnimation(animation)
-        imageView.visibility = View.VISIBLE
-        requestLikesData(80)
+        showAlbumLoading()
+        requestLikesData(50)
         initLikeList()
 
         // 监听页面滚动
         val toUpButton: FloatingActionButton = view.findViewById(R.id.to_up)
-        val scrollView = view.findViewById<ScrollView>(R.id.home_scroll_view)
+        val scrollView = view.findViewById<NestedScrollView>(R.id.home_scroll_view)
         toUpButton.setOnClickListener {
-            scrollView.isScrollContainer = true
-
             scrollView.fling(0)
             val animator = ValueAnimator.ofInt(scrollView.scrollY, 0)
             animator.addUpdateListener { valueAnimator ->
@@ -107,25 +92,32 @@ class HomeFragment : Fragment() {
             animator.duration = 500
             animator.start()
 
-            val likeList: RecyclerView? = view.findViewById(R.id.like_list)
-            if (likeList != null) {
-                likeList.scrollToPosition(0)
-            }
+            view.findViewById<RecyclerView?>(R.id.like_list)?.scrollToPosition(0)
         }
+//        scrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { v, _, scrollY, _, _ ->
+//            if (scrollY == v.getChildAt(0).measuredHeight - v.measuredHeight) {
+//                val likeList: RecyclerView = view.findViewById(R.id.like_list)
+//                likeList.setNestedScrollingEnabled(true)
+//                scrollView.isNestedScrollingEnabled = false
+//            }
+//        })
+    }
 
-        scrollView.viewTreeObserver.addOnScrollChangedListener {
-            val scrollY = scrollView.scrollY
-            val contentHeight = scrollView.getChildAt(0).height
-            if (contentHeight - scrollY - scrollView.height <= 50) {
-                val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
-                likeList?.setNestedScrollingEnabled(true)
+    private fun showAlbumLoading(){
+        val imageView: ImageView? = view?.findViewById<ImageView>(R.id.like_loading)
+        val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
+        imageView?.startAnimation(animation)
+        imageView?.visibility = View.VISIBLE
+    }
 
-                scrollView.post {
-                    scrollView.fullScroll(ScrollView.FOCUS_DOWN)
-                }
-                scrollView.isScrollContainer = false
-            }
-        }
+    private fun initLikeListHeight(){
+        val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
+
+        val displayMetrics = DisplayMetrics()
+        requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val screenHeight = displayMetrics.heightPixels
+        val layoutParams = likeList?.layoutParams
+        layoutParams?.height = screenHeight - (resources.displayMetrics.density * 130).toInt()
     }
 
     private fun openAlbumView(id: Int){
@@ -336,51 +328,33 @@ class HomeFragment : Fragment() {
     private fun initLikeList(){
         val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
 
-        // 计算滚动区域高度
-        val displayMetrics = DisplayMetrics()
-        requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
-        val screenHeight = displayMetrics.heightPixels
-        val layoutParams = likeList?.layoutParams
-        layoutParams?.height = screenHeight - 366
-
         likeList?.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
         likeList?.adapter = likeListAdapter()
         likeList?.setHasFixedSize(true)
-        likeList?.setNestedScrollingEnabled(false)
-//        likeList?.setItemViewCacheSize(12)
+        likeList?.isFocusable = false
         likeList?.setHasTransientState(true)
+//        likeList?.setNestedScrollingEnabled(false)
 
-        likeList?.addOnScrollListener(object: RecyclerView.OnScrollListener() {
+        likeList?.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
 
                 val layoutManager = recyclerView.layoutManager as StaggeredGridLayoutManager
                 val lastVisibleItemPositions = layoutManager.findLastVisibleItemPositions(null)
-                val lastVisibleItemPosition = lastVisibleItemPositions.max()
-                val itemCount = layoutManager.itemCount
+                val lastVisibleItem = lastVisibleItemPositions.max() ?: 0
+                val totalItemCount = layoutManager.itemCount
 
-                if (itemCount > 0) {
-                    val lastVisibleItemView = layoutManager.findViewByPosition(lastVisibleItemPosition)
-                    val distanceToBottom = recyclerView.height - lastVisibleItemView?.bottom!!
-
-                    if (!recyclerView.canScrollVertically(-1)) {
-                        // 列表已经滚动到顶部
-                        likeList.setNestedScrollingEnabled(false)
-                        val scrollView:ScrollView? = view?.findViewById(R.id.home_scroll_view)
-                        scrollView?.isScrollContainer = true
-                    }
-                    if (!recyclerView.canScrollVertically(1)) {
-                        // 列表已经滚动到低部
-                        val imageView: ImageView? = view?.findViewById<ImageView>(R.id.like_loading)
-                        val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
-                        imageView?.startAnimation(animation)
-                        imageView?.visibility = View.VISIBLE
-                    }
-                    if (distanceToBottom < 3000 && !albumIsLoading) {
-                        // 距离底部小于 3000
-                        requestLikesData(50)
-                    }
+                if (lastVisibleItem + 2000 > totalItemCount) {
+                    requestLikesData(30)
                 }
+
+//                val firstVisibleItemPositions = layoutManager.findFirstVisibleItemPositions(null)
+//                val firstVisibleItem = firstVisibleItemPositions.min() ?: 0
+//                if (firstVisibleItem == 0) {
+//                    likeList.setNestedScrollingEnabled(false)
+//                    val scrollView = view?.findViewById<NestedScrollView>(R.id.home_scroll_view)
+//                    scrollView?.isNestedScrollingEnabled = true
+//                }
             }
         })
     }
@@ -429,6 +403,7 @@ class HomeFragment : Fragment() {
 
                     albumIsLoading = false
 
+                    initLikeListHeight()
                     refreshLikeList(albumsResponse.data.size)
                 }
             }
@@ -510,6 +485,10 @@ class HomeFragment : Fragment() {
 
             // 更多按钮操作
             val moreButton = holder.itemView.findViewById<MaterialButton>(R.id.more_button)
+            holder.itemView.setOnLongClickListener {
+                moreButton.callOnClick()
+                true
+            }
             moreButton.setOnClickListener{
                 val falshPanel = layoutInflater.inflate(R.layout.album_flash_panel, overCard, false) as LinearLayout
                 val container = overCard?.findViewById<LinearLayout>(R.id.content_layout)
