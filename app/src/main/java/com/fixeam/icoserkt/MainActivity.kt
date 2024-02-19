@@ -95,10 +95,10 @@ class MainActivity : AppCompatActivity() {
             val networkType = activeNetworkInfo?.type
             if (networkType == ConnectivityManager.TYPE_WIFI) {
                 // 当前连接为 Wi-Fi
-                Toast.makeText(this, "当前为WIFI环境，可放心浏览本APP", Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this, "当前为WIFI环境，可放心浏览本APP", Toast.LENGTH_SHORT).show()
             } else if (networkType == ConnectivityManager.TYPE_MOBILE) {
                 // 当前连接为移动网络
-                Toast.makeText(this, "当前为流量环境，APP加载资源较多，请注意您的流量消耗", Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this, "当前为流量环境，APP加载资源较多，请注意您的流量消耗", Toast.LENGTH_SHORT).show()
             }
             checkForUser()
         }

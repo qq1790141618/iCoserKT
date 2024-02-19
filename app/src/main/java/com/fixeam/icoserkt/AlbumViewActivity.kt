@@ -265,6 +265,12 @@ class AlbumViewActivity : AppCompatActivity() {
 
                 albumInfo?.let { it1 -> setAlbumCollection(it1, "default", { collectioncallback() }, { unlog() }) }
             }
+            val model = dialogView.findViewById<MaterialButton>(R.id.view_model)
+            model?.setOnClickListener {
+                val intent = Intent(this@AlbumViewActivity, ModelViewActivity::class.java)
+                intent.putExtra("id", albumInfo?.model_id)
+                startActivity(intent)
+            }
 
             alertDialog.show()
         }
@@ -413,6 +419,7 @@ class AlbumViewActivity : AppCompatActivity() {
             }
         }
     }
+
     class viewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
     }

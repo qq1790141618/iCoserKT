@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">iCoser Kotlin Test</string>
+    <string name="app_name">iCoser Test</string>
     <string name="home">首页</string>
     <string name="smart_video">小视频</string>
     <string name="search">搜索</string>
@@ -32,4 +32,5 @@
     <string name="uncollection">取消收藏</string>
     <string name="close">关闭</string>
     <string name="download">下载</string>
+    <string name="title_activity_model_view">ModelViewActivity</string>
 </resources>

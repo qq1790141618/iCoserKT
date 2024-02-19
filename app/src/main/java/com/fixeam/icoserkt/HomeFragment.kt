@@ -94,17 +94,31 @@ class HomeFragment : Fragment() {
 
             view.findViewById<RecyclerView?>(R.id.like_list)?.scrollToPosition(0)
         }
-//        scrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { v, _, scrollY, _, _ ->
-//            if (scrollY == v.getChildAt(0).measuredHeight - v.measuredHeight) {
-//                val likeList: RecyclerView = view.findViewById(R.id.like_list)
-//                likeList.setNestedScrollingEnabled(true)
-//                scrollView.isNestedScrollingEnabled = false
-//            }
-//        })
+        scrollView.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { v, _, scrollY, _, _ ->
+            if (scrollY >= v.getChildAt(0).measuredHeight - v.measuredHeight - 30) {
+                val likeList: RecyclerView = view.findViewById(R.id.like_list)
+                likeList.setNestedScrollingEnabled(true)
+                scrollView.isNestedScrollingEnabled = false
+            }
+        })
+    }
+
+    override fun onResume() {
+        val scrollView = view?.findViewById<NestedScrollView>(R.id.home_scroll_view)
+        val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
+
+        if (scrollView != null) {
+            if (scrollView.scrollY >= scrollView.getChildAt(0).measuredHeight - scrollView.measuredHeight - 30) {
+                likeList?.setNestedScrollingEnabled(true)
+                scrollView.isNestedScrollingEnabled = false
+            }
+        }
+
+        super.onResume()
     }
 
     private fun showAlbumLoading(){
-        val imageView: ImageView? = view?.findViewById<ImageView>(R.id.like_loading)
+        val imageView: ImageView? = view?.findViewById(R.id.like_loading)
         val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
         imageView?.startAnimation(animation)
         imageView?.visibility = View.VISIBLE
@@ -122,6 +136,12 @@ class HomeFragment : Fragment() {
 
     private fun openAlbumView(id: Int){
         val intent = Intent(requireContext(), AlbumViewActivity::class.java)
+        intent.putExtra("id", id)
+        startActivity(intent)
+    }
+
+    private fun openModelView(id: Int){
+        val intent = Intent(requireContext(), ModelViewActivity::class.java)
         intent.putExtra("id", id)
         startActivity(intent)
     }
@@ -281,7 +301,7 @@ class HomeFragment : Fragment() {
                                 modelNameTextView.text = model.name + model.other_name
                             }
                             modelNameTextView.setOnClickListener {
-                                Toast.makeText(requireContext(), "模特：${model.id}", Toast.LENGTH_SHORT).show()
+                                openModelView(model.id)
                             }
 
                             // 修改写真集
@@ -333,7 +353,7 @@ class HomeFragment : Fragment() {
         likeList?.setHasFixedSize(true)
         likeList?.isFocusable = false
         likeList?.setHasTransientState(true)
-//        likeList?.setNestedScrollingEnabled(false)
+        likeList?.setNestedScrollingEnabled(false)
 
         likeList?.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -348,13 +368,13 @@ class HomeFragment : Fragment() {
                     requestLikesData(30)
                 }
 
-//                val firstVisibleItemPositions = layoutManager.findFirstVisibleItemPositions(null)
-//                val firstVisibleItem = firstVisibleItemPositions.min() ?: 0
-//                if (firstVisibleItem == 0) {
-//                    likeList.setNestedScrollingEnabled(false)
-//                    val scrollView = view?.findViewById<NestedScrollView>(R.id.home_scroll_view)
-//                    scrollView?.isNestedScrollingEnabled = true
-//                }
+                val firstVisibleItemPositions = layoutManager.findFirstVisibleItemPositions(null)
+                val firstVisibleItem = firstVisibleItemPositions.min() ?: 0
+                if (firstVisibleItem == 0) {
+                    likeList.setNestedScrollingEnabled(false)
+                    val scrollView = view?.findViewById<NestedScrollView>(R.id.home_scroll_view)
+                    scrollView?.isNestedScrollingEnabled = true
+                }
             }
         })
     }
@@ -603,6 +623,10 @@ class HomeFragment : Fragment() {
                         setForbidden(album.model_id, "model", { callback() }, { unlog() })
                     }
                 }
+                val model = overCard?.findViewById<MaterialButton>(R.id.view_model)
+                model?.setOnClickListener {
+                    openModelView(album.model_id)
+                }
 
                 // 显示面板
                 overCard!!.visibility = View.VISIBLE
@@ -612,6 +636,7 @@ class HomeFragment : Fragment() {
             }
         }
     }
+
     class likeViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
     }

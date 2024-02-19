@@ -4,13 +4,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".SmartVideoFragment"
-    android:background="?attr/colorOnBackground"
-    android:padding="15dp">
+    android:background="?attr/colorOnBackground" >
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/view_pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="@string/smart_video" />
+        android:orientation="vertical" />
 
 </FrameLayout>

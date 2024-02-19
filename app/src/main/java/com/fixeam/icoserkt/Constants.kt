@@ -63,13 +63,15 @@ interface ApiService {
     @GET("carousel")
     fun GetCarousel(): Call<ResponseBody>
     @GET("album")
-    fun GetAlbum(@Query("condition") condition: String?, @Query("access_token") access_token: String = ""): Call<ResponseBody>
+    fun GetAlbum(@Query("condition") condition: String?, @Query("access_token") access_token: String = "", @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<ResponseBody>
     @GET("album?random=true")
     fun GetRecAlbum(@Query("number") number: Int?, @Query("access_token") access_token: String = ""): Call<ResponseBody>
     @GET("album/hot")
     fun GetHot(): Call<ResponseBody>
     @GET("model?withalbum=true")
     fun GetRecModel(): Call<ResponseBody>
+    @GET("model")
+    fun GetModel(@Query("condition") condition: String?, @Query("access_token") access_token: String = ""): Call<ModelsResponse>
     @GET("login/send-code")
     fun SendVerifyCode(@Query("target") target: String?): Call<SendVerifyCodeResponse>
     @GET("login/bypass")
@@ -91,6 +93,12 @@ interface ApiService {
     fun GetFileInfoByUrl(@Url url: String): Call<FileMeta>
     @GET("file/meta/update")
     fun UpdateFileMeta(@Query("url") url: String, @Query("meta") meta: String): Call<ActionResponse>
+    @GET("collection/fold/get")
+    fun GetUserCollectionFold(@Query("access_token") access_token: String)
+    @GET("collection/get")
+    fun GetUserCollection(@Query("access_token") access_token: String)
+    @GET("media")
+    fun GetMedia(@Query("access_token") access_token: String = "", @Query("number") number: Int = 20): Call<MediaResponse>
 }
 data class ActionResponse(
     val result: Boolean
@@ -213,6 +221,13 @@ data class Media(
     var create_time: String,
     var create_user: String,
     var status: String,
+    var model_avatar_image: String,
+    var album_name: String,
+    var model_name: String
+)
+data class MediaResponse(
+    val result: Boolean,
+    val data: List<Media>
 )
 data class MediaFormatItem(
     var url: String,
@@ -464,4 +479,40 @@ fun bytesToReadableSize(size: Int): String {
     val units = arrayOf("B", "KB", "MB")
     val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
     return String.format("%.1f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
+}
+
+fun getBestMedia(list: List<MediaFormatItem>, bestResolutionRatio: Int = 540): Int{
+    fun getIntResolution(resolutionRatio: String): Int{
+        return resolutionRatio.replace("p", "").toInt()
+    }
+
+    for ((index, _) in list.withIndex()){
+        if(index == 0){
+            continue
+        }
+
+        val thisResolutionRatio = getIntResolution(list[index].resolution_ratio)
+        if(thisResolutionRatio == bestResolutionRatio){
+            return index
+        }
+
+        val lastResolutionRatio = getIntResolution(list[index - 1].resolution_ratio)
+        if(bestResolutionRatio in (thisResolutionRatio + 1)..<lastResolutionRatio){
+            return index
+        }
+    }
+    return 0
+}
+
+fun formatTime(milliseconds: Long): String {
+    val totalSeconds = (milliseconds / 1000).toInt()
+    val hours = totalSeconds / 3600
+    val minutes = totalSeconds % 3600 / 60
+    val remainingSeconds = totalSeconds % 60
+
+    return if (hours > 0) {
+        String.format("%02d:%02d:%02d", hours, minutes, remainingSeconds)
+    } else {
+        String.format("%02d:%02d", minutes, remainingSeconds)
+    }
 }
