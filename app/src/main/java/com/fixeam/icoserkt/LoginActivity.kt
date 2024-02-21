@@ -1,8 +1,6 @@
 package com.fixeam.icoserkt
 
-import android.content.res.Configuration
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.View
@@ -14,8 +12,6 @@ import com.google.android.material.textfield.TextInputEditText
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 class LoginActivity : AppCompatActivity() {
     private var loginMode: Int = 1
@@ -24,14 +20,8 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
-        val currentTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
-            setStatusBarColor(Color.BLACK)
-            setStatusBarTextColor(false)
-        } else {
-            setStatusBarColor(Color.WHITE)
-            setStatusBarTextColor(true)
-        }
+        // 设置颜色主题
+        setStatusBar(this, Color.parseColor("#fdfbfe"), Color.parseColor("#1c1b20"))
 
         // 绑定按钮事件
         val changeModeButton1 = findViewById<MaterialButton>(R.id.change_mode_to_1)
@@ -92,14 +82,8 @@ class LoginActivity : AppCompatActivity() {
         val sendButton = findViewById<MaterialButton>(R.id.send_verify_code)
         sendButton.isEnabled = false
         sendButton.text = "发送中..."
-
-        val retrofit = Retrofit.Builder()
-            .client(client)
-            .baseUrl(SERVE_HOST)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val ApiService = retrofit.create(ApiService::class.java)
-        val call = ApiService.SendVerifyCode(target)
+        
+        val call = ApiNetService.SendVerifyCode(target)
 
         val countDownTimer = object : CountDownTimer(60000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
@@ -164,13 +148,7 @@ class LoginActivity : AppCompatActivity() {
         login1.isEnabled = false
         login1.text = "登录中..."
 
-        val retrofit = Retrofit.Builder()
-            .client(client)
-            .baseUrl(SERVE_HOST)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val ApiService = retrofit.create(ApiService::class.java)
-        val call = ApiService.LoginByPass(account, password)
+        val call = ApiNetService.LoginByPass(account, password)
 
         call.enqueue(object : Callback<LoginResponse> {
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
@@ -236,14 +214,8 @@ class LoginActivity : AppCompatActivity() {
         val login2 = findViewById<MaterialButton>(R.id.login_1)
         login2.isEnabled = false
         login2.text = "登录中..."
-
-        val retrofit = Retrofit.Builder()
-            .client(client)
-            .baseUrl(SERVE_HOST)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val ApiService = retrofit.create(ApiService::class.java)
-        val call = ApiService.LoginByCode(target, verifyId, code)
+        
+        val call = ApiNetService.LoginByCode(target, verifyId, code)
 
         call.enqueue(object : Callback<LoginResponse> {
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
@@ -277,24 +249,5 @@ class LoginActivity : AppCompatActivity() {
         editor.apply()
         verifyTokenAndGetUserInform(access_token, this)
         onBackPressed()
-    }
-
-    private fun setStatusBarColor(color: Int) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            window.statusBarColor = color
-        }
-    }
-
-    private fun setStatusBarTextColor(isDark: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val decorView = window.decorView
-            var flags = decorView.systemUiVisibility
-            if (isDark) {
-                flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-            } else {
-                flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
-            }
-            decorView.systemUiVisibility = flags
-        }
     }
 }

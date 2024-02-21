@@ -1,0 +1,156 @@
+package com.fixeam.icoserkt
+
+data class ActionResponse(
+    val result: Boolean
+)
+data class LoginResponse(
+    val result: Boolean,
+    val token: String?,
+    val message: String?
+)
+data class UserInformResponse(
+    val result: Boolean,
+    val message: String?,
+    val inform: UserInform?
+)
+data class UserInform(
+    val id: Int,
+    val identity: String,
+    val identityLevel: Int?,
+    val username: String,
+    val phone: String,
+    val mail: String,
+    val header: String,
+    val nickname: String,
+    val register: String,
+    val comment_disabled: Int,
+    val location: String,
+    val birthday: String
+)
+data class SendVerifyCodeResponse(
+    val result: Boolean,
+    val verify_id: String?,
+    val effectiveTime: Int?,
+    val message: String?
+)
+data class AlbumsResponse(
+    val result: Boolean,
+    val data: List<Albums>
+)
+data class Albums(
+    var id: Int,
+    var album_id: Int,
+    var name: String,
+    var poster: String,
+    var model: String,
+    var model_id: Int,
+    var model_name: String,
+    var other_model: MutableList<String>?,
+    var tags: MutableList<String>?,
+    var images: Any,
+    var download: AlbumDownload?,
+    var create_time: String,
+    var media: MutableList<Media>,
+    var is_collection: String?
+)
+data class AlbumDownload(
+    var url: String,
+    var password: String,
+    var encryption: Boolean
+)
+data class FileInfo(
+    var id: Int,
+    var name: String,
+    var size: Int,
+    var url: String,
+    var mime: String,
+    var meta: String?,
+    var suffix: String,
+    var time: String,
+    var userid: String,
+    var violation: String?
+)
+data class FileMeta(
+    var width: String,
+    var height: String,
+    var format: String?,
+    var size: String?,
+    var md5: String?,
+    var frame_count: String?,
+    var bit_depth: String?,
+    var horizontal_dpi: String?,
+    var vertical_dpi: String?
+)
+data class UrlRequestBody(
+    val url: String
+)
+data class ModelsResponse(
+    val result: Boolean,
+    val data: List<Models>
+)
+data class Models(
+    var id: Int,
+    var name: String,
+    var other_name: String?,
+    var avatar_image: String,
+    var background_image: String?,
+    var tags: String,
+    var birthday: String?,
+    var social: String,
+    var total: String,
+    var latest_create_time: String,
+    var status: String,
+    var album: MutableList<Albums>
+)
+data class Media(
+    var id: Int,
+    var name: String,
+    var description: String?,
+    var size: Int,
+    var duration: Double,
+    var mime: String?,
+    var suffix: String,
+    var resource: String,
+    var resource_files: Any?,
+    var cover: String,
+    var width: Int,
+    var height: Int,
+    var format: MutableList<MediaFormatItem>,
+    var bind_album_id: Int,
+    var bind_model_id: Int,
+    var create_time: String,
+    var create_user: String,
+    var status: String,
+    var model_avatar_image: String,
+    var album_name: String,
+    var model_name: String
+)
+data class MediaResponse(
+    val result: Boolean,
+    val data: List<Media>
+)
+data class MediaFormatItem(
+    var url: String,
+    var part: MutableList<String>?,
+    var resolution_ratio: String
+)
+data class CarouselResponse(
+    val result: Boolean,
+    val data: List<Carousel>
+)
+data class Carousel(
+    val id: Int,
+    val serial: Int,
+    val url: String,
+    val link: Link
+)
+data class Link(
+    val type: String,
+    val content: Content
+)
+data class Content(
+    val id: Int,
+    val name: String,
+    val model_id: Int,
+    val model: String
+)

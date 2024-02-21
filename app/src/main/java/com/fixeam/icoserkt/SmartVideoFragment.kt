@@ -29,17 +29,11 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 
 class SmartVideoFragment : Fragment() {
     private var mediaList: MutableList<Media> = mutableListOf()
     private var playIndex: Int = 5
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -55,15 +49,9 @@ class SmartVideoFragment : Fragment() {
     }
 
     private fun requestMediaData(insert: Boolean = false, createViewPager: Boolean = false){
-        val retrofit = Retrofit.Builder()
-            .client(client)
-            .baseUrl(SERVE_HOST)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val ApiService = retrofit.create(ApiService::class.java)
-        var call = ApiService.GetMedia(number = 20)
+        var call = ApiNetService.GetMedia(number = 20)
         if(userToken != null){
-            call = ApiService.GetMedia(userToken!!, 20)
+            call = ApiNetService.GetMedia(userToken!!, 20)
         }
 
         call.enqueue(object : Callback<MediaResponse> {
@@ -135,12 +123,37 @@ class SmartVideoFragment : Fragment() {
         })
     }
 
+    private var lastIsPlaying = false
+
+    override fun onPause() {
+        val viewPager: ViewPager2? = view?.findViewById(R.id.view_pager)
+        val lastViewHolder = (viewPager?.getChildAt(0) as RecyclerView).findViewHolderForAdapterPosition(playIndex)
+        if (lastViewHolder is MyViewHolder) {
+            val player = lastViewHolder.itemView.findViewById<PlayerView>(R.id.video_view).player
+
+            if (player != null && player.isPlaying) {
+                lastIsPlaying = true
+                player.pause()
+            }
+        }
+
+        super.onPause()
+    }
+
     override fun onResume() {
-//        val viewPager: ViewPager2? = view?.findViewById(R.id.view_pager)
-//        val adapter = viewPager?.adapter
-//        if (adapter != null) {
-//            adapter.notifyDataSetChanged()
-//        }
+        if(lastIsPlaying){
+            val viewPager: ViewPager2? = view?.findViewById(R.id.view_pager)
+            val lastViewHolder = (viewPager?.getChildAt(0) as RecyclerView).findViewHolderForAdapterPosition(playIndex)
+            if (lastViewHolder is MyViewHolder) {
+                val player = lastViewHolder.itemView.findViewById<PlayerView>(R.id.video_view).player
+
+                if (player != null) {
+                    lastIsPlaying = false
+                    player.play()
+                }
+            }
+        }
+
         super.onResume()
     }
 

@@ -3,10 +3,9 @@ package com.fixeam.icoserkt
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,8 +28,6 @@ import org.json.JSONArray
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 class AlbumViewActivity : AppCompatActivity() {
     private var albumInfo: Albums? = null
@@ -40,14 +37,8 @@ class AlbumViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_album_view)
 
-        val currentTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
-            setStatusBarColor(Color.BLACK)
-            setStatusBarTextColor(false)
-        } else {
-            setStatusBarColor(Color.WHITE)
-            setStatusBarTextColor(true)
-        }
+        // 设置颜色主题
+        setStatusBar(this, Color.WHITE, Color.BLACK)
 
         // 设置加载动画
         val imageView = findViewById<ImageView>(R.id.image_loading)
@@ -74,21 +65,16 @@ class AlbumViewActivity : AppCompatActivity() {
     }
 
     private fun requireAlbumContent(id: Int){
-        val retrofit = Retrofit.Builder()
-            .client(client)
-            .baseUrl(SERVE_HOST)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val ApiService = retrofit.create(ApiService::class.java)
+        val currentTimestampSeconds = System.currentTimeMillis()
 
-        var condition = JSONArray()
+        val condition = JSONArray()
         condition.put(JSONArray().apply {
             put("id")
             put(id.toString())
         })
-        var call = ApiService.GetAlbum(condition.toString())
+        var call = ApiNetService.GetAlbum(condition.toString())
         if(userToken != null){
-            call = ApiService.GetAlbum(condition.toString(), userToken!!)
+            call = ApiNetService.GetAlbum(condition.toString(), userToken!!)
         }
 
         call.enqueue(object : Callback<ResponseBody> {
@@ -115,11 +101,19 @@ class AlbumViewActivity : AppCompatActivity() {
                     if(album.media != null){
                         val goToVideo = findViewById<MaterialButton>(R.id.go_to_video)
                         goToVideo.visibility = View.VISIBLE
+                        goToVideo.setOnClickListener {
+                            val intent = Intent(this@AlbumViewActivity, MediaViewActivity::class.java)
+                            intent.putExtra("album-id", album.id)
+                            startActivity(intent)
+                        }
                     }
 
                     albumInfo = album
                     initImageList()
                     initMoreOptions()
+
+                    val newTimestampSeconds = System.currentTimeMillis()
+                    Log.d("Album Request Time", "请求时长：${(newTimestampSeconds - currentTimestampSeconds).toFloat() / 1000}s")
                 }
             }
 
@@ -131,16 +125,9 @@ class AlbumViewActivity : AppCompatActivity() {
     }
 
     private fun initImageList(){
-        val retrofit = Retrofit.Builder()
-            .client(client)
-            .baseUrl(SERVE_HOST)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val ApiService = retrofit.create(ApiService::class.java)
-
         val urls = Gson().toJson(albumImages)
         val urlRequestBody = UrlRequestBody(urls)
-        val call = ApiService.PostFileAndInformation(urlRequestBody)
+        val call = ApiNetService.PostFileAndInformation(urlRequestBody)
 
         call.enqueue(object : Callback<List<FileInfo>> {
             override fun onResponse(call: Call<List<FileInfo>>, response: Response<List<FileInfo>>) {
@@ -164,7 +151,7 @@ class AlbumViewActivity : AppCompatActivity() {
                             continue
                         }
 
-                        ApiService.GetFileInfoByUrl("${imageList[index].url}?imageInfo").enqueue(object : Callback<FileMeta> {
+                        ApiNetService.GetFileInfoByUrl("${imageList[index].url}?imageInfo").enqueue(object : Callback<FileMeta> {
                             override fun onResponse(call: Call<FileMeta>, response: Response<FileMeta>) {
                                 // 处理响应结果
                                 val fileMetaItem = response.body()
@@ -173,7 +160,7 @@ class AlbumViewActivity : AppCompatActivity() {
                                     imageList[index].meta = json
                                     adapter.notifyItemChanged(index)
 
-                                    ApiService.UpdateFileMeta(imageList[index].url, json).enqueue(object : Callback<ActionResponse> {
+                                    ApiNetService.UpdateFileMeta(imageList[index].url, json).enqueue(object : Callback<ActionResponse> {
                                         override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) { }
                                         override fun onFailure(call: Call<ActionResponse>, t: Throwable) { }
                                     })
@@ -261,9 +248,11 @@ class AlbumViewActivity : AppCompatActivity() {
                 }
                 fun unlog(){
                     collection.setIconResource(R.drawable.favor)
+                    val intent = Intent(this, LoginActivity::class.java)
+                    startActivity(intent)
                 }
 
-                albumInfo?.let { it1 -> setAlbumCollection(it1, "default", { collectioncallback() }, { unlog() }) }
+                albumInfo?.let { it1 -> setAlbumCollection(this, it1, "default", { collectioncallback() }, { unlog() }) }
             }
             val model = dialogView.findViewById<MaterialButton>(R.id.view_model)
             model?.setOnClickListener {
@@ -273,66 +262,6 @@ class AlbumViewActivity : AppCompatActivity() {
             }
 
             alertDialog.show()
-        }
-    }
-
-    private fun setAlbumCollection(album: Albums, fold: String, callback: () -> Unit, unlog: () -> Unit){
-        if(userToken != null){
-            val retrofit = Retrofit.Builder()
-                .client(client)
-                .baseUrl(SERVE_HOST)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-            val ApiService = retrofit.create(ApiService::class.java)
-            var call = ApiService.SetCollectionItem(userToken!!, album.id, "album", fold)
-            if(album.is_collection != null){
-                call = ApiService.RemoveCollectionItem(userToken!!, album.id, "album")
-            }
-
-            call.enqueue(object : Callback<ActionResponse> {
-                override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-
-                        if(!responseBody?.result!!){
-                            Toast.makeText(this@AlbumViewActivity, "操作失败", Toast.LENGTH_SHORT).show()
-                            return
-                        }
-
-                        callback()
-
-                        Toast.makeText(this@AlbumViewActivity, "操作成功", Toast.LENGTH_SHORT).show()
-                    }
-                }
-
-                override fun onFailure(call: Call<ActionResponse>, t: Throwable) {
-                    // 处理请求失败的逻辑
-                    Toast.makeText(this@AlbumViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-                }
-            })
-        } else {
-            unlog()
-            val intent = Intent(this@AlbumViewActivity, LoginActivity::class.java)
-            startActivity(intent)
-        }
-    }
-
-    private fun setStatusBarColor(color: Int) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            window.statusBarColor = color
-        }
-    }
-
-    private fun setStatusBarTextColor(isDark: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val decorView = window.decorView
-            var flags = decorView.systemUiVisibility
-            if (isDark) {
-                flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-            } else {
-                flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
-            }
-            decorView.systemUiVisibility = flags
         }
     }
 

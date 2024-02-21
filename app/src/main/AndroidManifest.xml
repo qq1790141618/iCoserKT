@@ -22,12 +22,10 @@
         android:theme="@style/Theme.ICoserKT"
         tools:targetApi="31">
         <activity
-            android:name=".ModelViewActivity"
-            android:exported="false"
-            android:label="@string/title_activity_model_view"
-            android:theme="@style/Theme.ICoserKT" />
+            android:name=".MediaViewActivity"
+            android:exported="false" />
         <activity
-            android:name=".ui.theme.ModelViewActivity"
+            android:name=".ModelViewActivity"
             android:exported="false" />
         <activity
             android:name=".LoginActivity"

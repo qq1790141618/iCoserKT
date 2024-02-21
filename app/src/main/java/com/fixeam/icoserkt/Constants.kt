@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.app.Activity
 import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -13,6 +14,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
@@ -25,255 +27,28 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.appcompat.widget.AppCompatImageView
 import androidx.cardview.widget.CardView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.NotificationCompat
 import androidx.fragment.app.Fragment
-import okhttp3.OkHttpClient
-import okhttp3.ResponseBody
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.google.android.material.button.MaterialButton
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.Headers
-import retrofit2.http.POST
-import retrofit2.http.Query
-import retrofit2.http.Url
 import java.io.OutputStream
-import java.util.concurrent.TimeUnit
 
+// 界面变量
 var homeFragment: HomeFragment? = null
 var smartVideoFragment: SmartVideoFragment? = null
 var searchFragment: SearchFragment? = null
 var userFragment:   UserFragment? = null
 var showFragment: Fragment? = null
-var imagePreview: ConstraintLayout? = null
 var overCard: ConstraintLayout? = null
 
-const val SERVE_HOST = "https://api.fixeam.com/api/"
-val client: OkHttpClient = OkHttpClient.Builder()
-.connectTimeout(60, TimeUnit.SECONDS)
-.readTimeout(60, TimeUnit.SECONDS)
-.writeTimeout(60, TimeUnit.SECONDS)
-.build()
-interface ApiService {
-    @GET("carousel")
-    fun GetCarousel(): Call<ResponseBody>
-    @GET("album")
-    fun GetAlbum(@Query("condition") condition: String?, @Query("access_token") access_token: String = "", @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<ResponseBody>
-    @GET("album?random=true")
-    fun GetRecAlbum(@Query("number") number: Int?, @Query("access_token") access_token: String = ""): Call<ResponseBody>
-    @GET("album/hot")
-    fun GetHot(): Call<ResponseBody>
-    @GET("model?withalbum=true")
-    fun GetRecModel(): Call<ResponseBody>
-    @GET("model")
-    fun GetModel(@Query("condition") condition: String?, @Query("access_token") access_token: String = ""): Call<ModelsResponse>
-    @GET("login/send-code")
-    fun SendVerifyCode(@Query("target") target: String?): Call<SendVerifyCodeResponse>
-    @GET("login/bypass")
-    fun LoginByPass(@Query("username") username: String?, @Query("password") password: String?): Call<LoginResponse>
-    @GET("login/bycode")
-    fun LoginByCode(@Query("target") target: String?, @Query("verify-id") verifyId: String?, @Query("code") code: Int?): Call<LoginResponse>
-    @GET("login/user/inform")
-    fun GetUserInform(@Query("access_token") access_token: String?): Call<UserInformResponse>
-    @GET("collection/set")
-    fun SetCollectionItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String, @Query("fold") fold: String): Call<ActionResponse>
-    @GET("collection/set?isNuCollect=true")
-    fun RemoveCollectionItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String): Call<ActionResponse>
-    @GET("forbidden/set")
-    fun SetForbiddenItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String): Call<ActionResponse>
-    @Headers("Content-Type: application/json")
-    @POST("file/infomation")
-    fun PostFileAndInformation(@Body requestBody: UrlRequestBody): Call<List<FileInfo>>
-    @GET
-    fun GetFileInfoByUrl(@Url url: String): Call<FileMeta>
-    @GET("file/meta/update")
-    fun UpdateFileMeta(@Query("url") url: String, @Query("meta") meta: String): Call<ActionResponse>
-    @GET("collection/fold/get")
-    fun GetUserCollectionFold(@Query("access_token") access_token: String)
-    @GET("collection/get")
-    fun GetUserCollection(@Query("access_token") access_token: String)
-    @GET("media")
-    fun GetMedia(@Query("access_token") access_token: String = "", @Query("number") number: Int = 20): Call<MediaResponse>
-}
-data class ActionResponse(
-    val result: Boolean
-)
-data class LoginResponse(
-    val result: Boolean,
-    val token: String?,
-    val message: String?
-)
-data class UserInformResponse(
-    val result: Boolean,
-    val message: String?,
-    val inform: UserInform?
-)
-data class UserInform(
-    val id: Int,
-    val identity: String,
-    val identityLevel: Int?,
-    val username: String,
-    val phone: String,
-    val mail: String,
-    val header: String,
-    val nickname: String,
-    val register: String,
-    val comment_disabled: Int,
-    val location: String,
-    val birthday: String
-)
-data class SendVerifyCodeResponse(
-    val result: Boolean,
-    val verify_id: String?,
-    val effectiveTime: Int?,
-    val message: String?
-)
-data class AlbumsResponse(
-    val result: Boolean,
-    val data: List<Albums>
-)
-data class Albums(
-    var id: Int,
-    var album_id: Int,
-    var name: String,
-    var poster: String,
-    var model: String,
-    var model_id: Int,
-    var model_name: String,
-    var other_model: MutableList<String>?,
-    var tags: MutableList<String>?,
-    var images: Any,
-    var download: AlbumDownload?,
-    var create_time: String,
-    var media: MutableList<Media>,
-    var is_collection: String?
-)
-data class AlbumDownload(
-    var url: String,
-    var password: String,
-    var encryption: Boolean
-)
-data class FileInfo(
-    var id: Int,
-    var name: String,
-    var size: Int,
-    var url: String,
-    var mime: String,
-    var meta: String?,
-    var suffix: String,
-    var time: String,
-    var userid: String,
-    var violation: String?
-)
-data class FileMeta(
-    var width: String,
-    var height: String,
-    var format: String?,
-    var size: String?,
-    var md5: String?,
-    var frame_count: String?,
-    var bit_depth: String?,
-    var horizontal_dpi: String?,
-    var vertical_dpi: String?
-)
-data class UrlRequestBody(
-    val url: String
-)
-data class ModelsResponse(
-    val result: Boolean,
-    val data: List<Models>
-)
-data class Models(
-    var id: Int,
-    var name: String,
-    var other_name: String?,
-    var avatar_image: String,
-    var background_image: String?,
-    var tags: String,
-    var birthday: String?,
-    var social: String,
-    var total: String,
-    var latest_create_time: String,
-    var status: String,
-    var album: MutableList<Albums>
-)
-data class Media(
-    var id: Int,
-    var name: String,
-    var description: String?,
-    var size: Int,
-    var duration: Double,
-    var mime: String?,
-    var suffix: String,
-    var resource: String,
-    var resource_files: Any?,
-    var cover: String,
-    var width: Int,
-    var height: Int,
-    var format: MutableList<MediaFormatItem>,
-    var bind_album_id: Int,
-    var bind_model_id: Int,
-    var create_time: String,
-    var create_user: String,
-    var status: String,
-    var model_avatar_image: String,
-    var album_name: String,
-    var model_name: String
-)
-data class MediaResponse(
-    val result: Boolean,
-    val data: List<Media>
-)
-data class MediaFormatItem(
-    var url: String,
-    var part: MutableList<String>?,
-    var resolution_ratio: String
-)
-
-var userToken: String? = null
-var userInform: UserInform? = null
-var userInformFailTime = 0
-fun verifyTokenAndGetUserInform(access_token: String, context: Context){
-    if(userInformFailTime >= 3){
-        return
-    }
-
-    val retrofit = Retrofit.Builder()
-        .client(client)
-        .baseUrl(SERVE_HOST)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-    val ApiService = retrofit.create(ApiService::class.java)
-    val call = ApiService.GetUserInform(access_token)
-
-    call.enqueue(object : Callback<UserInformResponse> {
-        override fun onResponse(call: Call<UserInformResponse>, response: Response<UserInformResponse>) {
-            if (response.isSuccessful) {
-                val responseBody = response.body()
-                if (responseBody != null) {
-                    if(responseBody.result && responseBody.inform != null){
-                        userInform = responseBody.inform
-                        userToken = access_token
-                        userFragment?.initUserCard(responseBody.inform)
-                    } else {
-                        removeSharedPreferencesKey("access_token", context)
-                    }
-                }
-            }
-        }
-
-        override fun onFailure(call: Call<UserInformResponse>, t: Throwable) {
-            // 处理请求失败的逻辑
-            userInformFailTime++
-            verifyTokenAndGetUserInform(access_token, context)
-        }
-    })
-}
+// 移除共享变量
 fun removeSharedPreferencesKey(key: String, context: Context){
     val sharedPreferences = context.getSharedPreferences("user", Context.MODE_PRIVATE)
     val editor = sharedPreferences.edit()
@@ -281,6 +56,7 @@ fun removeSharedPreferencesKey(key: String, context: Context){
     editor.apply()
 }
 
+// 关闭MainActivity遮罩层卡片
 fun closeOverCard(){
     val card = overCard!!.findViewById<CardView>(R.id.overlay_card)
 
@@ -307,6 +83,7 @@ fun closeOverCard(){
     colorAnimation.start()
 }
 
+// 展示MainActivity遮罩层卡片
 fun openOverCard(){
     val card = overCard!!.findViewById<CardView>(R.id.overlay_card)
     val slideAnimation = ObjectAnimator.ofFloat(card, "translationY", overCard!!.height.toFloat(), 0f)
@@ -326,6 +103,7 @@ fun openOverCard(){
     colorAnimation.start()
 }
 
+// 分享文字
 fun shareTextContent(text: String, title: String = "来自iCoser的分享", context: Context) {
     val shareIntent = Intent()
     shareIntent.action = Intent.ACTION_SEND
@@ -334,6 +112,7 @@ fun shareTextContent(text: String, title: String = "来自iCoser的分享", cont
     context.startActivity(Intent.createChooser(shareIntent, title))
 }
 
+// 分享图片调用
 fun shareImageContent(imageUrl: String, title: String = "来自iCoser的分享", context: Context) {
     val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
@@ -362,6 +141,7 @@ fun shareImageContent(imageUrl: String, title: String = "来自iCoser的分享",
     context.registerReceiver(receiver, filter)
 }
 
+// 分享图片
 fun shareImageUri(imageUri: Uri?, title: String = "来自iCoser的分享", context: Context) {
     imageUri?.let {
         val shareIntent = Intent()
@@ -372,6 +152,7 @@ fun shareImageUri(imageUri: Uri?, title: String = "来自iCoser的分享", conte
     }
 }
 
+// 获取屏幕宽度
 fun getScreenWidth(context: Context): Int {
     val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     val displayMetrics = DisplayMetrics()
@@ -379,6 +160,7 @@ fun getScreenWidth(context: Context): Int {
     return displayMetrics.widthPixels
 }
 
+// 发送系统通知
 fun sendNotification(context: Context, title: String, message: String, notificationId: Int) {
     val CHANNEL_ID = "icoser_channel_01"
 
@@ -472,47 +254,203 @@ fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Uri? {
     return uri
 }
 
-fun bytesToReadableSize(size: Int): String {
-    if (size <= 0) {
-        return "0 B"
+// 设置状态栏主题
+fun setStatusBarColor(activity: Activity, color: Int) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        activity.window.statusBarColor = color
     }
-    val units = arrayOf("B", "KB", "MB")
-    val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
-    return String.format("%.1f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
 }
 
-fun getBestMedia(list: List<MediaFormatItem>, bestResolutionRatio: Int = 540): Int{
-    fun getIntResolution(resolutionRatio: String): Int{
-        return resolutionRatio.replace("p", "").toInt()
+// 设置状态栏文字颜色
+fun setStatusBarTextColor(activity: Activity, isDark: Boolean) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val decorView = activity.window.decorView
+        var flags = decorView.systemUiVisibility
+        if (isDark) {
+            flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        } else {
+            flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+        }
+        decorView.systemUiVisibility = flags
     }
-
-    for ((index, _) in list.withIndex()){
-        if(index == 0){
-            continue
-        }
-
-        val thisResolutionRatio = getIntResolution(list[index].resolution_ratio)
-        if(thisResolutionRatio == bestResolutionRatio){
-            return index
-        }
-
-        val lastResolutionRatio = getIntResolution(list[index - 1].resolution_ratio)
-        if(bestResolutionRatio in (thisResolutionRatio + 1)..<lastResolutionRatio){
-            return index
-        }
-    }
-    return 0
 }
 
-fun formatTime(milliseconds: Long): String {
-    val totalSeconds = (milliseconds / 1000).toInt()
-    val hours = totalSeconds / 3600
-    val minutes = totalSeconds % 3600 / 60
-    val remainingSeconds = totalSeconds % 60
-
-    return if (hours > 0) {
-        String.format("%02d:%02d:%02d", hours, minutes, remainingSeconds)
+// 自动设置状态栏
+fun setStatusBar(activity: Activity, lightColor: Int, darkColor: Int){
+    val currentTheme = activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+    if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
+        setStatusBarColor(activity, darkColor)
+        setStatusBarTextColor(activity, false)
     } else {
-        String.format("%02d:%02d", minutes, remainingSeconds)
+        setStatusBarColor(activity, lightColor)
+        setStatusBarTextColor(activity, true)
     }
+}
+
+// 获取是否为深色主题
+fun isDarken(activity: Activity): Boolean{
+    val currentTheme = activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+    return currentTheme == Configuration.UI_MODE_NIGHT_YES
+}
+
+// 设置收藏
+fun setAlbumCollection(context: Context, album: Albums, fold: String, callback: () -> Unit, unlog: () -> Unit){
+    if(userToken != null){
+        var call = ApiNetService.SetCollectionItem(userToken!!, album.id, "album", fold)
+        if(album.is_collection != null){
+            call = ApiNetService.RemoveCollectionItem(userToken!!, album.id, "album")
+        }
+
+        call.enqueue(object : Callback<ActionResponse> {
+            override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
+                if (response.isSuccessful) {
+                    val responseBody = response.body()
+
+                    if(!responseBody?.result!!){
+                        Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
+                        return
+                    }
+
+                    callback()
+                    Toast.makeText(context, "操作成功", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<ActionResponse>, t: Throwable) {
+                // 处理请求失败的逻辑
+                Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+            }
+        })
+    } else {
+        unlog()
+    }
+}
+
+// 创建图片预览框
+fun createImageView(application: ConstraintLayout, activity: Activity): ConstraintLayout {
+    val imagePreview: ConstraintLayout = activity.layoutInflater.inflate(R.layout.image_preview, application, false) as ConstraintLayout
+    val imageViewPrev = imagePreview.findViewById<AppCompatImageView>(R.id.image_view_prev)
+
+    imagePreview.setOnClickListener {
+        imagePreview.visibility = View.GONE
+
+        imageViewPrev?.rotation = 0f
+        imageViewPrev?.scaleX = 1f
+        imageViewPrev?.scaleY = 1f
+    }
+
+    val downloadButton = imagePreview.findViewById<MaterialButton>(R.id.download)
+    downloadButton?.setOnClickListener {
+        imageViewPrev?.let { it1 -> saveImageToGallery(activity, it1) }
+    }
+
+    val scaleUpButton = imagePreview.findViewById<MaterialButton>(R.id.scale_up)
+    scaleUpButton?.setOnClickListener {
+        val currentScale = imageViewPrev?.scaleX ?: 1f
+        val newScale = currentScale + 0.4f
+
+        val clampedScale = newScale.coerceIn(0.21f, 2.99f)
+        if (clampedScale < currentScale) {
+            Toast.makeText(activity, "已经达到最大缩放比例", Toast.LENGTH_SHORT).show()
+            return@setOnClickListener
+        }
+
+        val animator = ValueAnimator.ofFloat(currentScale, clampedScale)
+        animator.addUpdateListener { animation ->
+            val value = animation.animatedValue as Float
+            imageViewPrev?.scaleX = value
+            imageViewPrev?.scaleY = value
+        }
+        animator.start()
+    }
+
+    val scaleDownButton = imagePreview.findViewById<MaterialButton>(R.id.scale_down)
+    scaleDownButton?.setOnClickListener {
+        scaleDownButton.isEnabled = false
+        val currentScale = imageViewPrev?.scaleX ?: 1f
+        val newScale = currentScale - 0.4f
+
+        val clampedScale = newScale.coerceIn(0.21f, 2.99f)
+        if (clampedScale > currentScale) {
+            Toast.makeText(activity, "已经达到最小缩放比例", Toast.LENGTH_SHORT).show()
+            return@setOnClickListener
+        }
+
+        val animator = ValueAnimator.ofFloat(currentScale, clampedScale)
+        animator.addUpdateListener { animation ->
+            val value = animation.animatedValue as Float
+            imageViewPrev?.scaleX = value
+            imageViewPrev?.scaleY = value
+        }
+        animator.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                // 在动画完成时重新启用按钮
+                scaleDownButton.isEnabled = true
+            }
+        })
+        animator.start()
+    }
+
+    val scaleResetButton = imagePreview.findViewById<MaterialButton>(R.id.scale_reset)
+    scaleResetButton?.setOnClickListener {
+        scaleResetButton.isEnabled = false
+        val currentScale = imageViewPrev?.scaleX ?: 1f
+        val newScale = 1f
+
+        val animator = ValueAnimator.ofFloat(currentScale, newScale)
+        animator.addUpdateListener { animation ->
+            val value = animation.animatedValue as Float
+            imageViewPrev?.scaleX = value
+            imageViewPrev?.scaleY = value
+        }
+        animator.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                // 在动画完成时重新启用按钮
+                scaleResetButton.isEnabled = true
+            }
+        })
+        animator.start()
+    }
+
+    val rotateLeftButton = imagePreview.findViewById<MaterialButton>(R.id.rotate_left)
+    rotateLeftButton?.setOnClickListener {
+        // 禁用按钮
+        rotateLeftButton.isEnabled = false
+
+        // 向左旋转 imageViewPrev 90 度
+        val currentRotation = imageViewPrev?.rotation ?: 0f
+        val newRotation = currentRotation - 90f
+
+        val animator = ObjectAnimator.ofFloat(imageViewPrev, "rotation", currentRotation, newRotation)
+        animator.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                // 在动画完成时重新启用按钮
+                rotateLeftButton.isEnabled = true
+            }
+        })
+        animator.start()
+    }
+
+    imagePreview.visibility = View.GONE
+
+
+    val layoutParams = ConstraintLayout.LayoutParams(
+        ConstraintLayout.LayoutParams.MATCH_PARENT,
+        ConstraintLayout.LayoutParams.MATCH_PARENT
+    )
+    layoutParams.topToBottom = R.id.tab_bar_card
+    imagePreview.layoutParams = layoutParams
+
+    application.addView(imagePreview)
+    return imagePreview
+}
+
+// 打开图片预览框
+fun imageViewInstantiate(url: String, context: Context, imagePreview: ConstraintLayout){
+    val imageViewPrev = imagePreview.findViewById<AppCompatImageView>(R.id.image_view_prev)
+    Glide.with(context)
+        .load(url)
+        .diskCacheStrategy(DiskCacheStrategy.ALL)
+        .into(imageViewPrev)
+    imagePreview.visibility = View.VISIBLE
 }

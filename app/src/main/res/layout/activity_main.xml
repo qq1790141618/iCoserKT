@@ -8,7 +8,9 @@
     android:orientation="vertical"
     android:background="?attr/cardBackgroundColor"
     android:id="@+id/application"
-    android:hardwareAccelerated="true">
+    android:hardwareAccelerated="true" >
+
+    <include layout="@layout/launch_image" />
 
     <FrameLayout
         android:id="@+id/container"

@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ModelViewActivity" >
+    tools:context=".ModelViewActivity"
+    android:id="@+id/application">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"

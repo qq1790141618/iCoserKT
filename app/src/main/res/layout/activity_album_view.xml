@@ -5,8 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".AlbumViewActivity"
-    android:background="?attr/colorOnBackground"
-    android:orientation="vertical" >
+    android:background="?attr/colorOnBackground" >
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
@@ -75,6 +74,8 @@
         android:layout_marginBottom="20dp"
         android:layout_marginRight="20dp"
         android:src="@drawable/up"
-        android:backgroundTint="?attr/colorOnBackground" />
+        android:backgroundTint="?attr/colorOnBackground"
+        app:tint="@color/black"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyApp.Rounded" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="15dp"
+    android:layout_marginHorizontal="7dp"
     android:layout_marginBottom="10dp"
     android:layout_marginTop="5dp"
     app:cardElevation="2dp"
@@ -39,11 +39,19 @@
                 android:layout_weight="1.8"
                 android:orientation="vertical"
                 android:layout_marginRight="7dp" >
-                <ImageView
+
+                <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="90dp"
-                    android:src="@drawable/image_holder"
-                    android:scaleType="centerCrop" />
+                    app:cardCornerRadius="5dp"
+                    app:cardElevation="0dp" >
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/image_holder"
+                        android:scaleType="centerCrop" />
+                </androidx.cardview.widget.CardView>
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -61,11 +69,17 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:layout_marginRight="7dp" >
-                <ImageView
+                <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="90dp"
-                    android:src="@drawable/image_holder"
-                    android:scaleType="centerCrop" />
+                    app:cardCornerRadius="5dp"
+                    app:cardElevation="0dp" >
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/image_holder"
+                        android:scaleType="centerCrop" />
+                </androidx.cardview.widget.CardView>
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -83,11 +97,17 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:layout_marginRight="7dp" >
-                <ImageView
+                <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="90dp"
-                    android:src="@drawable/image_holder"
-                    android:scaleType="centerCrop" />
+                    app:cardCornerRadius="5dp"
+                    app:cardElevation="0dp" >
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/image_holder"
+                        android:scaleType="centerCrop" />
+                </androidx.cardview.widget.CardView>
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -104,11 +124,17 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical" >
-                <ImageView
+                <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="90dp"
-                    android:src="@drawable/image_holder"
-                    android:scaleType="centerCrop" />
+                    app:cardCornerRadius="5dp"
+                    app:cardElevation="0dp" >
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/image_holder"
+                        android:scaleType="centerCrop" />
+                </androidx.cardview.widget.CardView>
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

@@ -2,9 +2,7 @@ package com.fixeam.icoserkt
 
 import GlideBlurTransformation
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +15,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -30,27 +29,20 @@ import org.json.JSONArray
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 class ModelViewActivity : AppCompatActivity() {
     private var modelInfo: Models? = null
     private var albumList: MutableList<Albums> = mutableListOf()
     private var isFinished: Boolean = false
     private var albumLoading: Boolean = false
+    private var imagePreview: ConstraintLayout? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_model_view)
 
-        val currentTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
-            setStatusBarColor(Color.BLACK)
-            setStatusBarTextColor(false)
-        } else {
-            setStatusBarColor(Color.WHITE)
-            setStatusBarTextColor(true)
-        }
+        // 设置颜色主题
+        setStatusBar(this, Color.WHITE, Color.BLACK)
 
         // 设置加载动画
         val imageView = findViewById<ImageView>(R.id.image_loading)
@@ -67,24 +59,21 @@ class ModelViewActivity : AppCompatActivity() {
 
         val id = intent.getIntExtra("id", -1)
         requireModelContent(id)
+
+        val application = findViewById<ConstraintLayout>(R.id.application)
+        imagePreview = createImageView(application, this)
     }
 
     private fun requireModelContent(id: Int){
-        val retrofit = Retrofit.Builder()
-            .client(client)
-            .baseUrl(SERVE_HOST)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val ApiService = retrofit.create(ApiService::class.java)
 
         val condition = JSONArray()
         condition.put(JSONArray().apply {
             put("id")
             put(id.toString())
         })
-        var call = ApiService.GetModel(condition.toString())
+        var call = ApiNetService.GetModel(condition.toString())
         if(userToken != null){
-            call = ApiService.GetModel(condition.toString(), userToken!!)
+            call = ApiNetService.GetModel(condition.toString(), userToken!!)
         }
 
         call.enqueue(object : Callback<ModelsResponse> {
@@ -106,12 +95,6 @@ class ModelViewActivity : AppCompatActivity() {
     }
 
     private fun requireAlbumContent(id: Int, create: Boolean = false){
-        val retrofit = Retrofit.Builder()
-            .client(client)
-            .baseUrl(SERVE_HOST)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val ApiService = retrofit.create(ApiService::class.java)
         albumLoading = true
 
         val condition = JSONArray()
@@ -119,12 +102,12 @@ class ModelViewActivity : AppCompatActivity() {
             put("model_id")
             put(id.toString())
         })
-        var call = ApiService.GetAlbum(
+        var call = ApiNetService.GetAlbum(
             condition = condition.toString(),
             start = albumList.size
         )
         if(userToken != null){
-            call = ApiService.GetAlbum(
+            call = ApiNetService.GetAlbum(
                 condition = condition.toString(),
                 access_token = userToken!!,
                 start = albumList.size
@@ -181,6 +164,14 @@ class ModelViewActivity : AppCompatActivity() {
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .transform(RoundedCorners(250))
                 .into(avatar)
+            avatar?.setOnClickListener {
+                imagePreview?.let { it1 ->
+                    imageViewInstantiate(
+                        modelInfo?.avatar_image!!, this,
+                        it1
+                    )
+                }
+            }
         }
 
         if(modelInfo?.tags != null){
@@ -196,7 +187,6 @@ class ModelViewActivity : AppCompatActivity() {
                 linearLayout.addView(chip)
             }
         }
-
     }
 
     private fun initAlbumList(){
@@ -245,7 +235,7 @@ class ModelViewActivity : AppCompatActivity() {
             // 修改海报图
             val posterBackground = holder.itemView.findViewById<ImageView>(R.id.poster_background)
             Glide.with(this@ModelViewActivity)
-                .load("${album.poster}/short1200px")
+                .load("${album.poster}/short500px")
                 .apply(RequestOptions.bitmapTransform(GlideBlurTransformation(this@ModelViewActivity)))
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(posterBackground)
@@ -290,7 +280,7 @@ class ModelViewActivity : AppCompatActivity() {
                 imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
                 Glide.with(this@ModelViewActivity)
-                    .load("${image}/short500px")
+                    .load("${image}/yswidth300px")
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
                     .into(imageView)
 
@@ -304,24 +294,5 @@ class ModelViewActivity : AppCompatActivity() {
 
     class viewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
-    }
-
-    private fun setStatusBarColor(color: Int) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            window.statusBarColor = color
-        }
-    }
-
-    private fun setStatusBarTextColor(isDark: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val decorView = window.decorView
-            var flags = decorView.systemUiVisibility
-            if (isDark) {
-                flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-            } else {
-                flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
-            }
-            decorView.systemUiVisibility = flags
-        }
     }
 }

@@ -32,5 +32,8 @@
     <string name="uncollection">取消收藏</string>
     <string name="close">关闭</string>
     <string name="download">下载</string>
-    <string name="title_activity_model_view">ModelViewActivity</string>
+    <string name="change_media">切换视频</string>
+    <string name="change_ratio">切换清晰度</string>
+    <string name="app_launch">应用程序正在启动中</string>
+    <string name="app_display_name">iCoser 写真分享</string>
 </resources>

@@ -1,42 +1,33 @@
 package com.fixeam.icoserkt
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.ColorStateList
-import android.content.res.Configuration
 import android.graphics.Color
 import android.net.ConnectivityManager
-import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.ViewTreeObserver
+import android.view.animation.AnimationUtils
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.AppCompatImageView
 import androidx.cardview.widget.CardView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 
+var mainImagePreview: ConstraintLayout? = null
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val currentTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
-            setStatusBarColor(Color.BLACK)
-            setStatusBarTextColor(false)
-        } else {
-            setStatusBarColor(Color.WHITE)
-            setStatusBarTextColor(true)
-        }
+        // 设置颜色主题
+        setStatusBar(this, Color.WHITE, Color.BLACK)
 
-        var toggleButton = findViewById<MaterialButtonToggleGroup>(R.id.tab_bar)
+        val toggleButton = findViewById<MaterialButtonToggleGroup>(R.id.tab_bar)
         toggleButton.addOnButtonCheckedListener{group, checkedId, isChecked ->
             if(!isChecked){
                 return@addOnButtonCheckedListener
@@ -62,7 +53,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     childAt.setIconResource(icon)
                 } else {
-                    if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
+                    if (isDarken(this)) {
                         childAt.setTextColor(Color.WHITE)
                         childAt.iconTint = ColorStateList.valueOf(Color.WHITE)
                     } else {
@@ -103,8 +94,17 @@ class MainActivity : AppCompatActivity() {
             checkForUser()
         }
 
-        createImageView()
+        val application = findViewById<ConstraintLayout>(R.id.application)
+        mainImagePreview = createImageView(application, this)
         setOverlay()
+
+        openLaunchLoading()
+    }
+
+    private fun openLaunchLoading(){
+        val imageView = findViewById<ImageView>(R.id.loading)
+        val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
+        imageView?.startAnimation(animation)
     }
 
     private fun switchFragment(selectIndex: Int){
@@ -150,25 +150,6 @@ class MainActivity : AppCompatActivity() {
         ft.commitAllowingStateLoss()
     }
 
-    private fun setStatusBarColor(color: Int) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            window.statusBarColor = color
-        }
-    }
-
-    private fun setStatusBarTextColor(isDark: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val decorView = window.decorView
-            var flags = decorView.systemUiVisibility
-            if (isDark) {
-                flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-            } else {
-                flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
-            }
-            decorView.systemUiVisibility = flags
-        }
-    }
-
     private fun checkForUser() {
         val sharedPreferences = getSharedPreferences("user", MODE_PRIVATE)
         val accessToken = sharedPreferences.getString("access_token", null)
@@ -178,135 +159,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun createImageView(){
-        val application = findViewById<ConstraintLayout>(R.id.application)
-        if(imagePreview == null) {
-            imagePreview = layoutInflater.inflate(R.layout.image_preview, application, false) as ConstraintLayout
-            val imageViewPrev = imagePreview?.findViewById<AppCompatImageView>(R.id.image_view_prev)
-
-            imagePreview?.setOnClickListener {
-                imagePreview?.visibility = View.GONE
-
-                imageViewPrev?.rotation = 0f
-                imageViewPrev?.scaleX = 1f
-                imageViewPrev?.scaleY = 1f
-            }
-
-            val downloadButton = imagePreview?.findViewById<MaterialButton>(R.id.download)
-            downloadButton?.setOnClickListener {
-                imageViewPrev?.let { it1 -> saveImageToGallery(this@MainActivity, it1) }
-            }
-
-            val scaleUpButton = imagePreview?.findViewById<MaterialButton>(R.id.scale_up)
-            scaleUpButton?.setOnClickListener {
-                val currentScale = imageViewPrev?.scaleX ?: 1f
-                val newScale = currentScale + 0.4f
-
-                val clampedScale = newScale.coerceIn(0.21f, 2.99f)
-                if (clampedScale < currentScale) {
-                    Toast.makeText(this, "已经达到最大缩放比例", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-
-                val animator = ValueAnimator.ofFloat(currentScale, clampedScale)
-                animator.addUpdateListener { animation ->
-                    val value = animation.animatedValue as Float
-                    imageViewPrev?.scaleX = value
-                    imageViewPrev?.scaleY = value
-                }
-                animator.start()
-            }
-
-            val scaleDownButton = imagePreview?.findViewById<MaterialButton>(R.id.scale_down)
-            scaleDownButton?.setOnClickListener {
-                scaleDownButton.isEnabled = false
-                val currentScale = imageViewPrev?.scaleX ?: 1f
-                val newScale = currentScale - 0.4f
-
-                val clampedScale = newScale.coerceIn(0.21f, 2.99f)
-                if (clampedScale > currentScale) {
-                    Toast.makeText(this, "已经达到最小缩放比例", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-
-                val animator = ValueAnimator.ofFloat(currentScale, clampedScale)
-                animator.addUpdateListener { animation ->
-                    val value = animation.animatedValue as Float
-                    imageViewPrev?.scaleX = value
-                    imageViewPrev?.scaleY = value
-                }
-                animator.addListener(object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
-                        // 在动画完成时重新启用按钮
-                        scaleDownButton.isEnabled = true
-                    }
-                })
-                animator.start()
-            }
-
-            val scaleResetButton = imagePreview?.findViewById<MaterialButton>(R.id.scale_reset)
-            scaleResetButton?.setOnClickListener {
-                scaleResetButton.isEnabled = false
-                val currentScale = imageViewPrev?.scaleX ?: 1f
-                val newScale = 1f
-
-                val animator = ValueAnimator.ofFloat(currentScale, newScale)
-                animator.addUpdateListener { animation ->
-                    val value = animation.animatedValue as Float
-                    imageViewPrev?.scaleX = value
-                    imageViewPrev?.scaleY = value
-                }
-                animator.addListener(object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
-                        // 在动画完成时重新启用按钮
-                        scaleResetButton.isEnabled = true
-                    }
-                })
-                animator.start()
-            }
-
-            val rotateLeftButton = imagePreview?.findViewById<MaterialButton>(R.id.rotate_left)
-            rotateLeftButton?.setOnClickListener {
-                // 禁用按钮
-                rotateLeftButton.isEnabled = false
-
-                // 向左旋转 imageViewPrev 90 度
-                val currentRotation = imageViewPrev?.rotation ?: 0f
-                val newRotation = currentRotation - 90f
-
-                val animator = ObjectAnimator.ofFloat(imageViewPrev, "rotation", currentRotation, newRotation)
-                animator.addListener(object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
-                        // 在动画完成时重新启用按钮
-                        rotateLeftButton.isEnabled = true
-                    }
-                })
-                animator.start()
-            }
-
-            imagePreview?.visibility = View.GONE
-        }
-
-        val layoutParams = ConstraintLayout.LayoutParams(
-            ConstraintLayout.LayoutParams.MATCH_PARENT,
-            ConstraintLayout.LayoutParams.MATCH_PARENT
-        )
-        layoutParams.topToBottom = R.id.tab_bar_card
-        imagePreview?.layoutParams = layoutParams
-
-        application.addView(imagePreview)
-    }
-
-
-
-    private fun setOverlay(){
+    private fun setOverlay() {
         val application = findViewById<ConstraintLayout>(R.id.application)
         overCard = layoutInflater.inflate(R.layout.overlay_card, application, false) as ConstraintLayout
         val card = overCard!!.findViewById<CardView>(R.id.overlay_card)
 
-        // 初始化面板位置
-        overCard?.setBackgroundColor(Color.parseColor("#00000000"))
-        card.translationY = overCard!!.height.toFloat()
+        // 等待布局测量完成后再设置卡片的初始位置
+        overCard?.viewTreeObserver?.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                overCard?.setBackgroundColor(Color.parseColor("#00000000"))
+                overCard?.viewTreeObserver?.removeOnGlobalLayoutListener(this)
+                card.translationY = overCard!!.height.toFloat()
+            }
+        })
+
         overCard!!.visibility = View.GONE
 
         // 注册遮罩层关闭
