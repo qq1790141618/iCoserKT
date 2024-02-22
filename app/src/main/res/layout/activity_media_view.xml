@@ -73,7 +73,8 @@
             app:iconSize="16dp"
             app:cornerRadius="0dp"
             android:insetTop="0dp"
-            android:insetBottom="0dp" />
+            android:insetBottom="0dp"
+            android:visibility="gone" />
 
     </com.google.android.material.button.MaterialButtonToggleGroup>
 

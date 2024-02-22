@@ -63,6 +63,8 @@
         android:layout_marginRight="20dp"
         android:src="@drawable/more"
         android:backgroundTint="?attr/colorOnBackground"
+        app:tint="?attr/colorPrimary"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyApp.Rounded"
         android:visibility="gone" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -75,7 +77,7 @@
         android:layout_marginRight="20dp"
         android:src="@drawable/up"
         android:backgroundTint="?attr/colorOnBackground"
-        app:tint="@color/black"
+        app:tint="?attr/colorPrimary"
         app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyApp.Rounded" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

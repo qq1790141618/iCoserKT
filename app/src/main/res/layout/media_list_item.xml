@@ -19,8 +19,8 @@
             android:id="@+id/cover_image"
             android:layout_width="160dp"
             android:layout_height="100dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/image_holder"/>
+            android:src="@drawable/image_holder"
+            android:background="#333333"/>
 
     </androidx.cardview.widget.CardView>
 

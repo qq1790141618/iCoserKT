@@ -5,26 +5,25 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingVertical="10dp"
-    android:orientation="horizontal">
+    android:paddingHorizontal="15dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
 
     <TextView
         android:id="@+id/top_text"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:layout_marginLeft="15dp"
         android:text="@string/app_name"
         android:textSize="24sp" />
 
-    <com.google.android.material.button.MaterialButton
+    <ImageView
         android:id="@+id/home_search_button"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:backgroundTint="?attr/colorOnBackground"
+        android:layout_marginTop="3dp"
         android:padding="5dp"
-        android:layout_marginRight="15dp"
-        app:iconTint="?attr/colorPrimary"
-        app:icon="@drawable/search"
-        app:iconSize="18dp" />
+        android:src="@drawable/search"
+        app:tint="?attr/colorPrimary"/>
 
 </LinearLayout>

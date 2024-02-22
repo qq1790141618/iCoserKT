@@ -29,6 +29,7 @@
             android:background="?attr/cardBackgroundColor" >
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/hot"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -44,6 +45,7 @@
                 app:iconSize="26dp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/news"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"

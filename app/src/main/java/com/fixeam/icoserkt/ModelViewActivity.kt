@@ -2,6 +2,7 @@ package com.fixeam.icoserkt
 
 import GlideBlurTransformation
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -16,12 +17,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.RequestOptions
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import okhttp3.ResponseBody
@@ -47,8 +51,8 @@ class ModelViewActivity : AppCompatActivity() {
         // 设置加载动画
         val imageView = findViewById<ImageView>(R.id.image_loading)
         val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
-        imageView?.startAnimation(animation)
-        imageView?.visibility = View.VISIBLE
+        imageView.startAnimation(animation)
+        imageView.visibility = View.VISIBLE
 
         // 设置导航栏
         val toolbar: Toolbar = findViewById(R.id.toolbar)
@@ -56,6 +60,13 @@ class ModelViewActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { onBackPressed() }
+
+        // 设置悬浮按钮
+        val toUpButton: FloatingActionButton = findViewById(R.id.to_up)
+        val list: RecyclerView = findViewById(R.id.album_list)
+        toUpButton.setOnClickListener {
+            list.smoothScrollToPosition(0)
+        }
 
         val id = intent.getIntExtra("id", -1)
         requireModelContent(id)
@@ -82,7 +93,10 @@ class ModelViewActivity : AppCompatActivity() {
                     val responseBody = response.body()
                     if (responseBody != null && responseBody.result) {
                         modelInfo = responseBody.data[0]
+
                         requireAlbumContent(id, true)
+                        requireMedia(id)
+                        setFollowButton()
                     }
                 }
             }
@@ -92,6 +106,52 @@ class ModelViewActivity : AppCompatActivity() {
                 Toast.makeText(this@ModelViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    private fun setFollowButton(){
+        val following = findViewById<FloatingActionButton>(R.id.following)
+        following.visibility = View.VISIBLE
+
+        val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
+
+        following.setOnClickListener {
+            following.startAnimation(animation)
+            following.setImageResource(R.drawable.loading)
+
+            fun collectionCallback() {
+                following.clearAnimation()
+                if(modelInfo!!.is_collection != null){
+                    following.setImageResource(R.drawable.like)
+                    if(isDarken(this@ModelViewActivity)){
+                        following.imageTintList = ColorStateList.valueOf(Color.parseColor("#FFFFFF"))
+                    } else {
+                        following.imageTintList = ColorStateList.valueOf(Color.parseColor("#000000"))
+                    }
+
+                    modelInfo!!.is_collection = null
+                } else {
+                    following.setImageResource(R.drawable.like_fill)
+                    following.imageTintList = ColorStateList.valueOf(Color.parseColor("#FDCDC5"))
+
+                    modelInfo!!.is_collection = true
+                }
+            }
+
+            fun unLog(){
+                following.clearAnimation()
+                following.setImageResource(R.drawable.like)
+                val intent = Intent(this@ModelViewActivity, LoginActivity::class.java)
+                startActivity(intent)
+            }
+
+            setModelFollowing(this@ModelViewActivity,
+                modelInfo!!, { collectionCallback() }, { unLog() })
+        }
+
+        if(modelInfo!!.is_collection != null){
+            following.setImageResource(R.drawable.like_fill)
+            following.imageTintList = ColorStateList.valueOf(Color.parseColor("#FDCDC5"))
+        }
     }
 
     private fun requireAlbumContent(id: Int, create: Boolean = false){
@@ -187,6 +247,38 @@ class ModelViewActivity : AppCompatActivity() {
                 linearLayout.addView(chip)
             }
         }
+    }
+
+    private fun requireMedia(modelId: Int){
+        val call = ApiNetService.GetMedia(model_id = modelId.toString(), number = 9999)
+
+        call.enqueue(object : Callback<MediaResponse> {
+            override fun onResponse(call: Call<MediaResponse>, response: Response<MediaResponse>) {
+                if (response.isSuccessful) {
+                    val responseBody = response.body()
+                    if (responseBody != null && responseBody.result) {
+                        val medias = responseBody.data
+                        if(medias.size > 0){
+                            val goToVideo = findViewById<FloatingActionButton>(R.id.go_to_video)
+                            goToVideo.visibility = View.VISIBLE
+                            goToVideo.setOnClickListener {
+                                val intent = Intent(this@ModelViewActivity, MediaViewActivity::class.java)
+                                intent.putExtra("model-id", modelId)
+                                startActivity(intent)
+                            }
+                        }
+                    }
+                } else {
+                    // 处理错误情况
+                    Toast.makeText(this@ModelViewActivity, "轮播图数据加载失败", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<MediaResponse>, t: Throwable) {
+                // 处理网络请求失败的情况
+                Toast.makeText(this@ModelViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun initAlbumList(){

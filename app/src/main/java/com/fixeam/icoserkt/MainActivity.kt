@@ -46,8 +46,8 @@ class MainActivity : AppCompatActivity() {
 
                     val icon = when(index){
                         0 -> { R.drawable.home_fill }
-                        1 -> { R.drawable.video_fill }
-                        2 -> { R.drawable.search }
+                        1 -> { R.drawable.like_fill }
+                        2 -> { R.drawable.video_fill }
                         3 -> { R.drawable.user_fill }
                         else -> { 0 }
                     }
@@ -63,8 +63,8 @@ class MainActivity : AppCompatActivity() {
 
                     val icon = when(index){
                         0 -> { R.drawable.home }
-                        1 -> { R.drawable.video }
-                        2 -> { R.drawable.search }
+                        1 -> { R.drawable.like }
+                        2 -> { R.drawable.video }
                         3 -> { R.drawable.user }
                         else -> { 0 }
                     }
@@ -116,16 +116,16 @@ class MainActivity : AppCompatActivity() {
                 homeFragment
             }
             1->{
+                if(collectionFragment == null){
+                    collectionFragment = CollectionFragment()
+                }
+                collectionFragment
+            }
+            2->{
                 if(smartVideoFragment == null){
                     smartVideoFragment = SmartVideoFragment()
                 }
                 smartVideoFragment
-            }
-            2->{
-                if(searchFragment == null){
-                    searchFragment = SearchFragment()
-                }
-                searchFragment
             }
             3->{
                 if(userFragment == null){

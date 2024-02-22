@@ -1,5 +1,9 @@
 package com.fixeam.icoserkt
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+
 // 字节转可视化大小
 fun bytesToReadableSize(size: Int): String {
     if (size <= 0) {
@@ -46,4 +50,47 @@ fun formatTime(milliseconds: Long): String {
     } else {
         String.format("%02d:%02d", minutes, remainingSeconds)
     }
+}
+
+var hotData: List<Albums> = listOf()
+var newsData: List<Albums> = listOf()
+
+// 计算时间差
+fun calculateTimeAgo(eventTime: String): String {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    val dateTime = LocalDateTime.parse(eventTime, formatter)
+    val now = LocalDateTime.now()
+
+    val seconds = ChronoUnit.SECONDS.between(dateTime, now)
+    if (seconds < 60) {
+        return "$seconds 秒前"
+    }
+
+    val minutes = ChronoUnit.MINUTES.between(dateTime, now)
+    if (minutes < 60) {
+        return "$minutes 分钟前"
+    }
+
+    val hours = ChronoUnit.HOURS.between(dateTime, now)
+    if (hours < 24) {
+        return "$hours 小时前"
+    }
+
+    val days = ChronoUnit.DAYS.between(dateTime, now)
+    if (days < 7) {
+        return "$days 天前"
+    }
+
+    val weeks = days / 7
+    if (weeks < 4) {
+        return "$weeks 周前"
+    }
+
+    val months = ChronoUnit.MONTHS.between(dateTime, now)
+    if (months < 12) {
+        return "${(months + 1)} 月前"
+    }
+
+    val years = ChronoUnit.YEARS.between(dateTime, now)
+    return "$years 年前"
 }

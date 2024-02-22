@@ -43,8 +43,8 @@ class AlbumViewActivity : AppCompatActivity() {
         // 设置加载动画
         val imageView = findViewById<ImageView>(R.id.image_loading)
         val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
-        imageView?.startAnimation(animation)
-        imageView?.visibility = View.VISIBLE
+        imageView.startAnimation(animation)
+        imageView.visibility = View.VISIBLE
 
         // 设置导航栏
         val toolbar: Toolbar = findViewById(R.id.toolbar)

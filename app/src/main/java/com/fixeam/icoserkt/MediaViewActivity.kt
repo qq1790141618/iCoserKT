@@ -59,9 +59,9 @@ class MediaViewActivity : AppCompatActivity() {
         requireMedia(modelId, albumId, id)
 
         // 设置按钮
-        val changeVideo = findViewById<MaterialButton>(R.id.change_video)
-        changeVideo.setOnClickListener {
-            selectVideo()
+        val changeRatio = findViewById<MaterialButton>(R.id.change_ratio)
+        changeRatio.setOnClickListener {
+            selectRatio()
         }
     }
 
@@ -78,10 +78,6 @@ class MediaViewActivity : AppCompatActivity() {
             call = ApiNetService.GetMedia(model_id = modelId.toString(), number = 9999)
         }
 
-        val request = call.request()
-        val url = request.url().toString()
-        Log.d("Player Index", "$url")
-
         call.enqueue(object : Callback<MediaResponse> {
             override fun onResponse(call: Call<MediaResponse>, response: Response<MediaResponse>) {
                 if (response.isSuccessful) {
@@ -90,6 +86,13 @@ class MediaViewActivity : AppCompatActivity() {
                         val medias = responseBody.data
                         mediaList = medias
                         initPlayer()
+
+                        val changeVideo = findViewById<MaterialButton>(R.id.change_video)
+                        changeVideo.text = "切换视频 (${medias.size})"
+                        changeVideo.visibility = View.VISIBLE
+                        changeVideo.setOnClickListener {
+                            selectVideo()
+                        }
                     }
                 } else {
                     // 处理错误情况
@@ -127,7 +130,11 @@ class MediaViewActivity : AppCompatActivity() {
         // 设置播放资源
         val bestMediaIndex = getBestMedia(media.format, ratio)
         val mediaItem = MediaItem.fromUri(media.format[bestMediaIndex].url)
+
         playRatio = media.format[bestMediaIndex].resolution_ratio.replace("p", "").toInt()
+        val changeRatio = findViewById<MaterialButton>(R.id.change_ratio)
+        changeRatio.text = media.format[bestMediaIndex].resolution_ratio
+
         player.setMediaItem(mediaItem)
         player.prepare()
 
@@ -181,6 +188,50 @@ class MediaViewActivity : AppCompatActivity() {
             duration.text = formatTime((media.duration * 1000).toLong())
 
             linearLayout.addView(mediaListItemView)
+        }
+
+        val close = dialogView.findViewById<MaterialButton>(R.id.close)
+        close.setOnClickListener {
+            alertDialog.cancel()
+        }
+
+        alertDialog.show()
+    }
+
+    private fun selectRatio(){
+        if(mediaList.size == 0){
+            return
+        }
+
+        val builder = AlertDialog.Builder(this)
+        val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+        val dialogView: View = inflater.inflate(R.layout.media_list, null)
+
+        builder.setView(dialogView)
+        val alertDialog = builder.create()
+        val linearLayout = dialogView.findViewById<LinearLayout>(R.id.content)
+
+        val format = mediaList[playIndex].format
+
+        for (formatItem in format){
+            val formatItemView = MaterialButton(this)
+
+            val layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            val marginInPx = 35
+            layoutParams.setMargins(marginInPx, 0, marginInPx, 0)
+            formatItemView.layoutParams = layoutParams
+
+            formatItemView.text = formatItem.resolution_ratio
+            formatItemView.setOnClickListener {
+                playRatio = formatItem.resolution_ratio.replace("p", "").toInt()
+                initPlayer(playIndex, playRatio)
+                alertDialog.cancel()
+            }
+
+            linearLayout.addView(formatItemView)
         }
 
         val close = dialogView.findViewById<MaterialButton>(R.id.close)

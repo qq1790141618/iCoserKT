@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -22,10 +23,15 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
 import com.google.android.exoplayer2.DefaultRenderersFactory
 import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -45,6 +51,8 @@ class SmartVideoFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        createPlayer()
         requestMediaData(createViewPager = true)
     }
 
@@ -92,12 +100,13 @@ class SmartVideoFragment : Fragment() {
         viewPager?.getChildAt(0)?.overScrollMode = View.OVER_SCROLL_NEVER
         val adapter = MyPagerAdapter()
         viewPager?.adapter = adapter
-        viewPager?.setCurrentItem(playIndex, false)
-        viewPager?.offscreenPageLimit = 2
+
+        viewPager?.offscreenPageLimit = 1
         viewPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 val adapter = viewPager.adapter
-                if (adapter != null) {
+
+                if (adapter != null && playIndex != position) {
                     // 暂停之前页面的视频播放
                     val lastViewHolder = (viewPager.getChildAt(0) as RecyclerView).findViewHolderForAdapterPosition(playIndex)
                     if (lastViewHolder is MyViewHolder) {
@@ -121,11 +130,13 @@ class SmartVideoFragment : Fragment() {
                 }
             }
         })
+
+        viewPager?.setCurrentItem(playIndex, false)
     }
 
     private var lastIsPlaying = false
 
-    override fun onPause() {
+    private fun leaveFragment(){
         val viewPager: ViewPager2? = view?.findViewById(R.id.view_pager)
         val lastViewHolder = (viewPager?.getChildAt(0) as RecyclerView).findViewHolderForAdapterPosition(playIndex)
         if (lastViewHolder is MyViewHolder) {
@@ -136,11 +147,9 @@ class SmartVideoFragment : Fragment() {
                 player.pause()
             }
         }
-
-        super.onPause()
     }
 
-    override fun onResume() {
+    private fun enterFragment(){
         if(lastIsPlaying){
             val viewPager: ViewPager2? = view?.findViewById(R.id.view_pager)
             val lastViewHolder = (viewPager?.getChildAt(0) as RecyclerView).findViewHolderForAdapterPosition(playIndex)
@@ -153,7 +162,29 @@ class SmartVideoFragment : Fragment() {
                 }
             }
         }
+    }
 
+    override fun onStop() {
+        leaveFragment()
+        super.onStop()
+    }
+
+    override fun onPause() {
+        leaveFragment()
+        super.onPause()
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        if (hidden) {
+            leaveFragment()
+        } else {
+            enterFragment()
+        }
+        super.onHiddenChanged(hidden)
+    }
+
+    override fun onResume() {
+        enterFragment()
         super.onResume()
     }
 
@@ -174,6 +205,20 @@ class SmartVideoFragment : Fragment() {
         }
     }
 
+    private var playerList: MutableList<SimpleExoPlayer> = mutableListOf()
+
+    private fun createPlayer(){
+        // 启用软解码
+        val renderersFactory = DefaultRenderersFactory(requireContext())
+        renderersFactory.setEnableDecoderFallback(true)
+        // 创建播放器实例
+        playerList.clear()
+        for(index in 0..2){
+            val player = SimpleExoPlayer.Builder(requireContext(), renderersFactory).build()
+            playerList.add(player)
+        }
+    }
+
     inner class MyPagerAdapter : RecyclerView.Adapter<MyViewHolder>() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -188,15 +233,24 @@ class SmartVideoFragment : Fragment() {
         override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
             val media = mediaList[position]
 
+            // 创建背景图
             val blurBackground = holder.itemView.findViewById<ImageView>(R.id.blur_background)
             Glide.with(requireContext())
                 .load("${media.cover}/short1200px")
                 .apply(RequestOptions.bitmapTransform(GlideBlurTransformation(requireContext())))
                 .into(blurBackground)
 
+            // 获取播放器实例
             val videoView = holder.itemView.findViewById<PlayerView>(R.id.video_view)
             videoView.useController = false
 
+            // 获取播放器资源定位
+            var player = playerList[playIndex % 3]
+
+            // 释放播放器资源
+            player.release()
+
+            // 获取存储共享器
             val sharedPreferences = requireContext().getSharedPreferences("video_progress", Context.MODE_PRIVATE)
             val editor = sharedPreferences.edit()
 
@@ -205,12 +259,15 @@ class SmartVideoFragment : Fragment() {
             renderersFactory.setEnableDecoderFallback(true)
 
             // 创建播放器实例
-            val player = SimpleExoPlayer.Builder(requireContext(), renderersFactory).build()
+            player = SimpleExoPlayer.Builder(requireContext(), renderersFactory).build()
+
+            // 获取最佳视频分辨率并设置到资源
             val bestMediaIndex = getBestMedia(media.format, 720)
             val mediaItem = MediaItem.fromUri(media.format[bestMediaIndex].url)
             player.setMediaItem(mediaItem)
             player.prepare()
             videoView.player = player
+
             // 从本地存储中读取上次播放的位置
             val lastPlayedPosition = sharedPreferences.getInt("last_played_position_${media.id}", 0)
             player.seekTo(lastPlayedPosition.toLong())
@@ -353,6 +410,8 @@ class SmartVideoFragment : Fragment() {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     if (isPlaying) {
                         playButton.visibility = View.GONE
+                        loading.clearAnimation()
+                        loading.visibility = View.GONE
 
                         runnable = object : Runnable {
                             override fun run() {
@@ -411,12 +470,11 @@ class SmartVideoFragment : Fragment() {
         }
 
         override fun onViewRecycled(holder: MyViewHolder) {
-            super.onViewRecycled(holder)
-
             // 释放ExoPlayer资源
             val videoView = holder.itemView.findViewById<PlayerView>(R.id.video_view)
             videoView.player?.release()
-            videoView.player = null
+
+            super.onViewRecycled(holder)
         }
     }
 

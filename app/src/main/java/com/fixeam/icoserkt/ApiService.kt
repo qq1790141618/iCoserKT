@@ -31,7 +31,7 @@ interface ApiService {
     @GET("carousel")
     fun GetCarousel(): Call<ResponseBody>
     @GET("album")
-    fun GetAlbum(@Query("condition") condition: String?, @Query("access_token") access_token: String = "", @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<ResponseBody>
+    fun GetAlbum(@Query("condition") condition: String = "", @Query("access_token") access_token: String = "", @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<ResponseBody>
     @GET("album?random=true")
     fun GetRecAlbum(@Query("number") number: Int?, @Query("access_token") access_token: String = ""): Call<ResponseBody>
     @GET("album/hot")
@@ -49,7 +49,7 @@ interface ApiService {
     @GET("login/user/inform")
     fun GetUserInform(@Query("access_token") access_token: String?): Call<UserInformResponse>
     @GET("collection/set")
-    fun SetCollectionItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String, @Query("fold") fold: String): Call<ActionResponse>
+    fun SetCollectionItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String, @Query("fold") fold: String = ""): Call<ActionResponse>
     @GET("collection/set?isNuCollect=true")
     fun RemoveCollectionItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String): Call<ActionResponse>
     @GET("forbidden/set")
@@ -67,4 +67,10 @@ interface ApiService {
     fun GetUserCollection(@Query("access_token") access_token: String)
     @GET("media")
     fun GetMedia(@Query("access_token") access_token: String = "", @Query("number") number: Int = 20, @Query("model-id") model_id: String = "", @Query("album-id") album_id: String = "", @Query("id") id: String = ""): Call<MediaResponse>
+
+    @GET("album/search")
+    fun SearchAlbum(@Query("access_token") access_token: String = "", @Query("keyword") keyword: String = ""): Call<SearchAlbumResponse>
+
+    @GET("model/search")
+    fun SearchModel(@Query("access_token") access_token: String = "", @Query("keywords") keywords: String = ""): Call<SearchModelResponse>
 }

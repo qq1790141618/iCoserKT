@@ -42,9 +42,9 @@ import java.io.OutputStream
 
 // 界面变量
 var homeFragment: HomeFragment? = null
+var collectionFragment: CollectionFragment? = null
 var smartVideoFragment: SmartVideoFragment? = null
-var searchFragment: SearchFragment? = null
-var userFragment:   UserFragment? = null
+var userFragment: UserFragment? = null
 var showFragment: Fragment? = null
 var overCard: ConstraintLayout? = null
 
@@ -293,12 +293,46 @@ fun isDarken(activity: Activity): Boolean{
     return currentTheme == Configuration.UI_MODE_NIGHT_YES
 }
 
-// 设置收藏
+// 设置写真集收藏
 fun setAlbumCollection(context: Context, album: Albums, fold: String, callback: () -> Unit, unlog: () -> Unit){
     if(userToken != null){
         var call = ApiNetService.SetCollectionItem(userToken!!, album.id, "album", fold)
         if(album.is_collection != null){
             call = ApiNetService.RemoveCollectionItem(userToken!!, album.id, "album")
+        }
+
+        call.enqueue(object : Callback<ActionResponse> {
+            override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
+                if (response.isSuccessful) {
+                    val responseBody = response.body()
+
+                    if(!responseBody?.result!!){
+                        Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
+                        return
+                    }
+
+                    callback()
+                    Toast.makeText(context, "操作成功", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<ActionResponse>, t: Throwable) {
+                // 处理请求失败的逻辑
+                Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+            }
+        })
+    } else {
+        unlog()
+    }
+}
+
+
+// 设置模特关注
+fun setModelFollowing(context: Context, model: Models, callback: () -> Unit, unlog: () -> Unit){
+    if(userToken != null){
+        var call = ApiNetService.SetCollectionItem(userToken!!, model.id, "model")
+        if(model.is_collection != null){
+            call = ApiNetService.RemoveCollectionItem(userToken!!, model.id, "model")
         }
 
         call.enqueue(object : Callback<ActionResponse> {

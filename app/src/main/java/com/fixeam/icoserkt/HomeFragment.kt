@@ -62,7 +62,6 @@ class HomeFragment : Fragment() {
         view.findViewById<TextView>(R.id.top_text).typeface = typeface
 
         // 加载瀑布流推荐
-        showAlbumLoading()
         requestLikesData(50)
         initLikeList()
 
@@ -71,13 +70,13 @@ class HomeFragment : Fragment() {
         toUpButton.setOnClickListener {
             view.findViewById<RecyclerView?>(R.id.like_list)?.smoothScrollToPosition(0)
         }
-    }
 
-    private fun showAlbumLoading(){
-        val imageView: ImageView? = view?.findViewById(R.id.like_loading)
-        val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
-        imageView?.startAnimation(animation)
-        imageView?.visibility = View.VISIBLE
+        // 创建搜索按钮点击
+        val homeSearchButton = view.findViewById<ImageView>(R.id.home_search_button)
+        homeSearchButton.setOnClickListener {
+            val intent = Intent(requireContext(), SearchActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun initLikeListHeight(){
@@ -173,6 +172,17 @@ class HomeFragment : Fragment() {
                 val albumId = carouselData[position].link.content.id
                 openAlbumView(albumId)
             }
+
+        val hotButton = rView.findViewById<MaterialButton>(R.id.hot)
+        hotButton.setOnClickListener { openRec(0) }
+        val newsButton = rView.findViewById<MaterialButton>(R.id.news)
+        newsButton.setOnClickListener { openRec(1) }
+    }
+
+    private fun openRec(type: Int){
+        val intent = Intent(requireContext(), RecommendActivity::class.java)
+        intent.putExtra("type", type)
+        startActivity(intent)
     }
 
     private var hotData: List<Albums> = listOf()
@@ -373,10 +383,6 @@ class HomeFragment : Fragment() {
 
                     albumList.addAll(albumsResponse.data)
 
-                    val imageView: ImageView? = view?.findViewById(R.id.like_loading)
-                    imageView?.clearAnimation()
-                    imageView?.visibility = View.GONE
-
                     albumIsLoading = false
 
                     initLikeListHeight()
@@ -479,7 +485,7 @@ class HomeFragment : Fragment() {
                     val currentTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
                     if(album.is_collection != null){
                         likeButton.setIconResource(R.drawable.like_fill)
-                        likeButton.iconTint = ColorStateList.valueOf(Color.RED)
+                        likeButton.iconTint = ColorStateList.valueOf(Color.parseColor("#FDCDC5"))
                     }
                     likeButton.setOnClickListener{
                         if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
@@ -504,7 +510,7 @@ class HomeFragment : Fragment() {
                                 album.is_collection = null
                             } else {
                                 likeButton.setIconResource(R.drawable.like_fill)
-                                likeButton.iconTint = ColorStateList.valueOf(Color.RED)
+                                likeButton.iconTint = ColorStateList.valueOf(Color.parseColor("#FDCDC5"))
                                 album.is_collection = "like"
                             }
                         }

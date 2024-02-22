@@ -8,10 +8,9 @@
         <item name="colorOnTertiary">@color/text_grey_night</item>
         <item name="android:fontFamily">@font/pingfang</item>
         <item name="cardBackgroundColor">@color/card_background_color_night</item>
+        <item name="colorOnSurfaceVariant">#40000000</item>
 
-        <item name="android:windowAnimationStyle">@null</item>
         <item name="android:windowDisablePreview">true</item>
-        <item name="android:windowBackground">@android:color/white</item>
     </style>
 
     <!-- 设置Toolbar标题字体的颜色大小 -->

@@ -30,6 +30,49 @@
             android:src="@drawable/image_holder"/>
 
         <LinearLayout
+            android:id="@+id/more"
+            android:layout_width="130dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingVertical="3dp"
+            android:background="?attr/colorOnSurfaceVariant"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/time_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginLeft="6dp"
+                android:layout_marginRight="3dp"
+                android:src="@drawable/new_"
+                app:tint="#23C343"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/view_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginLeft="6dp"
+                android:layout_marginRight="3dp"
+                android:src="@drawable/hot"
+                app:tint="#F76560"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/other_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:text="Other inform"
+                android:visibility="gone"
+                android:textColor="?attr/colorOnBackground"/>
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
             app:layout_constraintLeft_toRightOf="@+id/poster"

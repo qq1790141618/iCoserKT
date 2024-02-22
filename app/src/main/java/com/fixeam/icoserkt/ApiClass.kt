@@ -51,7 +51,8 @@ data class Albums(
     var download: AlbumDownload?,
     var create_time: String,
     var media: MutableList<Media>,
-    var is_collection: String?
+    var is_collection: String?,
+    var count: Int?
 )
 data class AlbumDownload(
     var url: String,
@@ -100,7 +101,8 @@ data class Models(
     var total: String,
     var latest_create_time: String,
     var status: String,
-    var album: MutableList<Albums>
+    var album: MutableList<Albums>,
+    var is_collection: Boolean?
 )
 data class Media(
     var id: Int,
@@ -153,4 +155,16 @@ data class Content(
     val name: String,
     val model_id: Int,
     val model: String
+)
+
+data class SearchAlbumResponse(
+    val result: Boolean,
+    val data: List<Albums>,
+    val keywords: List<String>
+)
+
+data class SearchModelResponse(
+    val result: Boolean,
+    val data: List<Models>,
+    val keywords: List<String>
 )

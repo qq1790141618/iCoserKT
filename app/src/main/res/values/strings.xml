@@ -4,9 +4,12 @@
     <string name="smart_video">小视频</string>
     <string name="search">搜索</string>
     <string name="user">用户</string>
+    <string name="following">关注</string>
+    <string name="followed">已关注</string>
     <string name="new_">最新发布</string>
     <string name="hot">最热推荐</string>
     <string name="view_album_video">查看写真集视频</string>
+    <string name="view_model_video">查看模特视频</string>
     <string name="login">登录</string>
     <string name="un_log_user">未登录用户</string>
     <string name="go_login">去登录</string>
@@ -34,6 +37,12 @@
     <string name="download">下载</string>
     <string name="change_media">切换视频</string>
     <string name="change_ratio">切换清晰度</string>
-    <string name="app_launch">应用程序正在启动中</string>
+    <string name="app_launch">应用正在启动中</string>
     <string name="app_display_name">iCoser 写真分享</string>
+    <string name="latest_create_time">最近更新时间</string>
+    <string name="albums_number">写真集数量</string>
+    <string name="hot_view">热门浏览</string>
+    <string name="search_history">搜索历史</string>
+    <string name="search_no_result">搜索结果为空~</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
