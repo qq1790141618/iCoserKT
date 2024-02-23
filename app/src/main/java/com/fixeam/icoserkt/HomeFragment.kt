@@ -171,6 +171,7 @@ class HomeFragment : Fragment() {
             .setOnBannerListener { _, position ->
                 val albumId = carouselData[position].link.content.id
                 openAlbumView(albumId)
+                accessLog(requireContext(), albumId.toString(), "CLICK_CAROUSEL"){ }
             }
 
         val hotButton = rView.findViewById<MaterialButton>(R.id.hot)
@@ -466,6 +467,7 @@ class HomeFragment : Fragment() {
                     // 绑定瀑布流布局数据
                     val album = albumList[position - 1]
                     holder.itemView.setOnClickListener{
+                        accessLog(requireContext(), "${album.images}", "CLICK_RECOMMEND"){ }
                         openAlbumView(album.id)
                     }
 
@@ -706,8 +708,6 @@ class HomeFragment : Fragment() {
             startActivity(intent)
         }
     }
-
-
 }
 
 

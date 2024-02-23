@@ -50,9 +50,11 @@ data class Albums(
     var images: Any,
     var download: AlbumDownload?,
     var create_time: String,
-    var media: MutableList<Media>,
+    var media: MutableList<Media>?,
     var is_collection: String?,
-    var count: Int?
+    var count: Int?,
+    var type: String?,
+    var model_avatar_image: String?
 )
 data class AlbumDownload(
     var url: String,
@@ -167,4 +169,27 @@ data class SearchModelResponse(
     val result: Boolean,
     val data: List<Models>,
     val keywords: List<String>
+)
+
+data class AccessLogResponse(
+    val result: Boolean,
+    val history: HistoryItem,
+    val message: String?
+)
+
+data class HistoryItem(
+    val id: Int,
+    val stay: Int,
+    val device: String,
+    val application: String,
+    val type: String,
+    val content: String,
+    val error: String?,
+    val time: String,
+    val user_id: String,
+    val ip: String
+)
+
+data class UpdateAccessLog(
+    val result: Int
 )

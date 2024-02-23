@@ -93,6 +93,9 @@ class ModelViewActivity : AppCompatActivity() {
                     val responseBody = response.body()
                     if (responseBody != null && responseBody.result) {
                         modelInfo = responseBody.data[0]
+                        accessLog(this@ModelViewActivity, modelInfo!!.id.toString(), "VISIT_MODEL"){
+                            accessLogId = it
+                        }
 
                         requireAlbumContent(id, true)
                         requireMedia(id)
@@ -106,6 +109,18 @@ class ModelViewActivity : AppCompatActivity() {
                 Toast.makeText(this@ModelViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    private var accessLogId: Int = 0
+
+    override fun onPause() {
+        updateAccessLog(accessLogId)
+        super.onPause()
+    }
+
+    override fun onStop() {
+        updateAccessLog(accessLogId)
+        super.onStop()
     }
 
     private fun setFollowButton(){

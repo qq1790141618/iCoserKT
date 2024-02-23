@@ -1,5 +1,6 @@
 package com.fixeam.icoserkt
 
+import android.content.Context
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -93,4 +94,15 @@ fun calculateTimeAgo(eventTime: String): String {
 
     val years = ChronoUnit.YEARS.between(dateTime, now)
     return "$years 年前"
+}
+
+// 获取设备信息
+fun getSystemInfo(context: Context): String {
+    val osVersion = android.os.Build.VERSION.RELEASE
+    val deviceModel = android.os.Build.MODEL
+    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+    val softwareVersion = packageInfo.versionName
+    val systemVersion = android.os.Build.DISPLAY
+
+    return "Android $osVersion;$deviceModel Build/$systemVersion; Version $softwareVersion"
 }

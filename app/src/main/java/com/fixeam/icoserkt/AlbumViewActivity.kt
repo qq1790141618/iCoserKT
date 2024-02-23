@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.text.Editable
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -64,6 +66,18 @@ class AlbumViewActivity : AppCompatActivity() {
         requireAlbumContent(id)
     }
 
+    private var accessLogId: Int = 0
+
+    override fun onPause() {
+        updateAccessLog(accessLogId)
+        super.onPause()
+    }
+
+    override fun onStop() {
+        updateAccessLog(accessLogId)
+        super.onStop()
+    }
+
     private fun requireAlbumContent(id: Int){
         val currentTimestampSeconds = System.currentTimeMillis()
 
@@ -89,6 +103,9 @@ class AlbumViewActivity : AppCompatActivity() {
 
                     val album: Albums = albumsResponse.data[0]
                     albumImages = album.images as MutableList<String>
+                    accessLog(this@AlbumViewActivity, album.id.toString(), "VISIT_ALBUM"){
+                        accessLogId = it
+                    }
 
                     val imageView = findViewById<ImageView>(R.id.image_loading)
                     imageView.clearAnimation()
@@ -98,14 +115,12 @@ class AlbumViewActivity : AppCompatActivity() {
                     toolbar.title = album.name
                     toolbar.subtitle = album.model
 
-                    if(album.media != null){
-                        val goToVideo = findViewById<MaterialButton>(R.id.go_to_video)
-                        goToVideo.visibility = View.VISIBLE
-                        goToVideo.setOnClickListener {
-                            val intent = Intent(this@AlbumViewActivity, MediaViewActivity::class.java)
-                            intent.putExtra("album-id", album.id)
-                            startActivity(intent)
-                        }
+                    val goToVideo = findViewById<MaterialButton>(R.id.go_to_video)
+                    goToVideo.visibility = View.VISIBLE
+                    goToVideo.setOnClickListener {
+                        val intent = Intent(this@AlbumViewActivity, MediaViewActivity::class.java)
+                        intent.putExtra("album-id", album.id)
+                        startActivity(intent)
                     }
 
                     albumInfo = album

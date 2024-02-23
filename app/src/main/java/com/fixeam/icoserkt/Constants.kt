@@ -27,6 +27,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.cardview.widget.CardView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -113,6 +114,7 @@ fun shareTextContent(text: String, title: String = "来自iCoser的分享", cont
 }
 
 // 分享图片调用
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun shareImageContent(imageUrl: String, title: String = "来自iCoser的分享", context: Context) {
     val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
@@ -135,10 +137,15 @@ fun shareImageContent(imageUrl: String, title: String = "来自iCoser的分享",
                     context?.let { shareImageUri(downloadedUri, title, it) }
                 }
             }
+
+            // 将 setResultCode 和其它相关方法放在 onReceive 方法内部
+            resultCode = Activity.RESULT_OK
+            resultData = null
         }
     }
+
     val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-    context.registerReceiver(receiver, filter)
+    context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
 }
 
 // 分享图片
@@ -360,6 +367,35 @@ fun setModelFollowing(context: Context, model: Models, callback: () -> Unit, unl
     }
 }
 
+fun setModelFollowingById(context: Context, modelId: Int, callback: () -> Unit, unlog: () -> Unit){
+    if(userToken != null){
+        val call = ApiNetService.SetCollectionItem(userToken!!, modelId, "model")
+
+        call.enqueue(object : Callback<ActionResponse> {
+            override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
+                if (response.isSuccessful) {
+                    val responseBody = response.body()
+
+                    if(!responseBody?.result!!){
+                        Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
+                        return
+                    }
+
+                    callback()
+                    Toast.makeText(context, "操作成功", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<ActionResponse>, t: Throwable) {
+                // 处理请求失败的逻辑
+                Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+            }
+        })
+    } else {
+        unlog()
+    }
+}
+
 // 创建图片预览框
 fun createImageView(application: ConstraintLayout, activity: Activity): ConstraintLayout {
     val imagePreview: ConstraintLayout = activity.layoutInflater.inflate(R.layout.image_preview, application, false) as ConstraintLayout
@@ -488,3 +524,4 @@ fun imageViewInstantiate(url: String, context: Context, imagePreview: Constraint
         .into(imageViewPrev)
     imagePreview.visibility = View.VISIBLE
 }
+

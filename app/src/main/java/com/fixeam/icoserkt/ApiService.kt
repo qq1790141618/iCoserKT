@@ -1,8 +1,11 @@
 package com.fixeam.icoserkt
 
+import android.content.Context
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -73,4 +76,53 @@ interface ApiService {
 
     @GET("model/search")
     fun SearchModel(@Query("access_token") access_token: String = "", @Query("keywords") keywords: String = ""): Call<SearchModelResponse>
+
+    @GET("access/log")
+    fun AccessLog(@Query("type") type: String, @Query("content") content: String, @Query("device") device: String, @Query("application") application: String = "Android Kotlin", @Query("access_token") access_token: String = ""): Call<AccessLogResponse>
+
+    @GET("access/log?updateStay=true")
+    fun UpdateAccessLog(@Query("id") id: Int): Call<UpdateAccessLog>
+
+    @GET("access/log?updateStay=true")
+    fun UpdateAccessLogWithStay(@Query("id") id: Int, @Query("stay") stay: Int): Call<UpdateAccessLog>
+
+    @GET("follow")
+    fun GetFollow(@Query("access_token") access_token: String, @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<AlbumsResponse>
+}
+
+
+// 上传和更新访问记录
+fun accessLog(context: Context, content: String, type: String, callback: (id: Int) -> Unit){
+    var call = ApiNetService.AccessLog(type, content, getSystemInfo(context), "Android Kotlin")
+    if(userToken != null){
+        call = ApiNetService.AccessLog(type, content, getSystemInfo(context), "Android Kotlin", userToken!!)
+    }
+
+    call.enqueue(object : Callback<AccessLogResponse> {
+        override fun onResponse(call: Call<AccessLogResponse>, response: Response<AccessLogResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if(responseBody != null && responseBody.result){
+                    callback(responseBody.history.id)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<AccessLogResponse>, t: Throwable) { }
+    })
+}
+
+fun updateAccessLog(id: Int, stay: Int = -1){
+    if(id == 0){
+        return
+    }
+    var call = ApiNetService.UpdateAccessLog(id)
+    if(stay > 0){
+        call = ApiNetService.UpdateAccessLogWithStay(id, stay)
+    }
+
+    call.enqueue(object : Callback<UpdateAccessLog> {
+        override fun onResponse(call: Call<UpdateAccessLog>, response: Response<UpdateAccessLog>) { }
+        override fun onFailure(call: Call<UpdateAccessLog>, t: Throwable) { }
+    })
 }

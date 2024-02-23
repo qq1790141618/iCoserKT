@@ -22,6 +22,7 @@ import com.google.android.exoplayer2.DefaultRenderersFactory
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ui.PlayerView
+import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.google.android.material.button.MaterialButton
 import retrofit2.Call
 import retrofit2.Callback
@@ -113,6 +114,10 @@ class MediaViewActivity : AppCompatActivity() {
         }
         val media = mediaList[index]
         playIndex = index
+        var accessLogId = 0
+        accessLog(this@MediaViewActivity, media.id.toString(), "VISIT_MEDIA"){
+            accessLogId = it
+        }
 
         // 释放播放器资源
         if(player != null){
@@ -139,7 +144,7 @@ class MediaViewActivity : AppCompatActivity() {
         player.prepare()
 
         // 注册播放器
-        val videoView = findViewById<PlayerView>(R.id.video_view)
+        val videoView = findViewById<StyledPlayerView>(R.id.video_view)
         videoView.player = player
 
         // 更新标题栏

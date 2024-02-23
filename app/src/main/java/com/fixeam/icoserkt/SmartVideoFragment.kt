@@ -2,11 +2,12 @@ package com.fixeam.icoserkt
 
 import GlideBlurTransformation
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -23,15 +24,16 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
 import com.google.android.exoplayer2.DefaultRenderersFactory
 import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
+import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.ui.PlayerView
+import com.google.android.exoplayer2.upstream.DefaultDataSource
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource
+import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor
+import com.google.android.exoplayer2.upstream.cache.SimpleCache
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -205,7 +207,7 @@ class SmartVideoFragment : Fragment() {
         }
     }
 
-    private var playerList: MutableList<SimpleExoPlayer> = mutableListOf()
+    private var playerList: MutableList<SimpleExoPlayer?> = mutableListOf()
 
     private fun createPlayer(){
         // 启用软解码
@@ -214,7 +216,7 @@ class SmartVideoFragment : Fragment() {
         // 创建播放器实例
         playerList.clear()
         for(index in 0..2){
-            val player = SimpleExoPlayer.Builder(requireContext(), renderersFactory).build()
+            val player: SimpleExoPlayer? = null
             playerList.add(player)
         }
     }
@@ -230,8 +232,13 @@ class SmartVideoFragment : Fragment() {
             return mediaList.size
         }
 
-        override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
+        @SuppressLint("SetTextI18n", "ClickableViewAccessibility")
+        override fun onBindViewHolder(holder: MyViewHolder, @SuppressLint("RecyclerView") position: Int) {
             val media = mediaList[position]
+            var accessLogId = 0
+            accessLog(requireContext(), media.id.toString(), "VISIT_MEDIA"){
+                accessLogId = it
+            }
 
             // 创建背景图
             val blurBackground = holder.itemView.findViewById<ImageView>(R.id.blur_background)
@@ -240,25 +247,16 @@ class SmartVideoFragment : Fragment() {
                 .apply(RequestOptions.bitmapTransform(GlideBlurTransformation(requireContext())))
                 .into(blurBackground)
 
-            // 获取播放器实例
-            val videoView = holder.itemView.findViewById<PlayerView>(R.id.video_view)
-            videoView.useController = false
-
-            // 获取播放器资源定位
+            // 获取播放器资源定位 释放播放器资源
             var player = playerList[playIndex % 3]
+            if (player != null) {
+                player.release()
+                player = null
+            }
 
-            // 释放播放器资源
-            player.release()
-
-            // 获取存储共享器
-            val sharedPreferences = requireContext().getSharedPreferences("video_progress", Context.MODE_PRIVATE)
-            val editor = sharedPreferences.edit()
-
-            // 启用软解码
+            // 启用软解码创建播放器实例
             val renderersFactory = DefaultRenderersFactory(requireContext())
             renderersFactory.setEnableDecoderFallback(true)
-
-            // 创建播放器实例
             player = SimpleExoPlayer.Builder(requireContext(), renderersFactory).build()
 
             // 获取最佳视频分辨率并设置到资源
@@ -266,11 +264,11 @@ class SmartVideoFragment : Fragment() {
             val mediaItem = MediaItem.fromUri(media.format[bestMediaIndex].url)
             player.setMediaItem(mediaItem)
             player.prepare()
-            videoView.player = player
 
-            // 从本地存储中读取上次播放的位置
-            val lastPlayedPosition = sharedPreferences.getInt("last_played_position_${media.id}", 0)
-            player.seekTo(lastPlayedPosition.toLong())
+            // 获取播放器实例并注册
+            val videoView = holder.itemView.findViewById<PlayerView>(R.id.video_view)
+            videoView.useController = false
+            videoView.player = player
 
             // 点击暂停/播放
             videoView.setOnClickListener {
@@ -316,6 +314,7 @@ class SmartVideoFragment : Fragment() {
                 startActivity(intent)
             }
 
+            // 更新视频相关组件
             val playButton = holder.itemView.findViewById<ImageView>(R.id.play_button)
             playButton.visibility = View.GONE
             val loading = holder.itemView.findViewById<ImageView>(R.id.loading)
@@ -323,14 +322,45 @@ class SmartVideoFragment : Fragment() {
             val progressBarContainer: LinearLayout = holder.itemView.findViewById(R.id.progress_bar_containter)
             val progressText: TextView = holder.itemView.findViewById(R.id.progress_text)
 
+            // 更新播放进度函数
+            fun updateProgressDisplay(currentPosition: Long, updatePlayerPosition: Boolean = false){
+                // 获取视频总时长计算百分比
+                val duration = player.duration
+                val percent = currentPosition.toFloat() / duration.toFloat()
+
+                // 更新进度时间显示
+                progressText.text = "${formatTime(currentPosition.toLong())} / ${formatTime(duration)}"
+
+                // 更新进度条显示
+                val currentWidth = progressBar.layoutParams.width
+                val animator = ValueAnimator.ofInt(currentWidth, (getScreenWidth(requireContext()) * percent).toInt())
+                animator.addUpdateListener { animation ->
+                    val animatedValue = animation.animatedValue as Int
+                    progressBar.layoutParams.width = animatedValue
+                    progressBar.requestLayout()
+                }
+                animator.duration = 100
+                animator.start()
+
+                // 如果需要则更新视频播放进度
+                if(updatePlayerPosition){
+                    player.seekTo(currentPosition)
+                }
+            }
+
+            // 获取存储共享器 从本地存储中读取上次播放的位置
+            val sharedPreferences = requireContext().getSharedPreferences("video_progress", Context.MODE_PRIVATE)
+            val editor = sharedPreferences.edit()
+            val lastPlayedPosition = sharedPreferences.getInt("last_played_position_${media.id}", 0)
+            updateProgressDisplay(lastPlayedPosition.toLong(), true)
+
             // 进度条触摸
             progressBarContainer.setOnTouchListener(object : View.OnTouchListener {
-                private var startX = 0f // 记录触摸事件开始时的x坐标
 
                 override fun onTouch(v: View?, event: MotionEvent?): Boolean {
                     when (event?.action) {
                         MotionEvent.ACTION_DOWN -> {
-                            // 用户开始触摸屏幕
+                            // 用户开始触摸屏幕增加进度条高度
                             val currentHeight = progressBar.layoutParams.height
                             val animator = ValueAnimator.ofInt(currentHeight, (resources.displayMetrics.density * 8).toInt())
                             animator.addUpdateListener { animation ->
@@ -338,34 +368,21 @@ class SmartVideoFragment : Fragment() {
                                 progressBar.layoutParams.height = animatedValue
                                 progressBar.requestLayout()
                             }
-                            animator.duration = 100 // 设置动画持续时间，单位为毫秒
+                            animator.duration = 100
                             animator.start()
 
-                            startX = event.x
-                            return true // 返回true表示该事件已被处理
+                            return true
                         }
                         MotionEvent.ACTION_MOVE -> {
-                            // 用户正在滑动屏幕
-                            val diffX = event.x - startX
-                            // 在这里处理滑动事件，比如更新进度条的进度
-                            val duration = player.duration
-
+                            // 更新进度条的进度
                             val percent = event.x / getScreenWidth(requireContext())
-                            progressBar.layoutParams = progressBar.layoutParams.apply {
-                                width = (getScreenWidth(requireContext()) * percent).toInt()
-                            }
+                            val currentPosition = (player.duration * percent).toLong()
+                            updateProgressDisplay(currentPosition, true)
 
-                            val currentPosition = duration * percent
-                            player.seekTo(currentPosition.toLong())
-
-                            progressText.text = "${formatTime(currentPosition.toLong())} / ${formatTime(duration)}"
-
-                            // 更新 startX 值，以便下次重新计算偏移量
-                            startX = event.x
-                            return true // 返回true表示该事件已被处理
+                            return true
                         }
                         MotionEvent.ACTION_UP -> {
-                            // 用户结束触摸屏幕
+                            // 用户结束触摸屏幕还原进度条高度
                             val currentHeight = progressBar.layoutParams.height
                             val animator = ValueAnimator.ofInt(currentHeight, (resources.displayMetrics.density * 3).toInt())
                             animator.addUpdateListener { animation ->
@@ -373,13 +390,13 @@ class SmartVideoFragment : Fragment() {
                                 progressBar.layoutParams.height = animatedValue
                                 progressBar.requestLayout()
                             }
-                            animator.duration = 100 // 设置动画持续时间，单位为毫秒
+                            animator.duration = 100
                             animator.start()
 
-                            return true // 返回true表示该事件已被处理
+                            return true
                         }
                     }
-                    return false // 返回false表示该事件未被处理
+                    return false
                 }
             })
 
@@ -415,28 +432,16 @@ class SmartVideoFragment : Fragment() {
 
                         runnable = object : Runnable {
                             override fun run() {
+                                // 更新进度条
                                 val currentPosition = player.currentPosition
-                                val duration = player.duration
-                                val percent = currentPosition.toFloat() / duration.toFloat()
+                                updateProgressDisplay(currentPosition)
 
                                 // 记录播放位置
                                 editor.putInt("last_played_position_${media.id}",
                                     currentPosition.toInt()
                                 )
                                 editor.apply()
-
-                                // 更新进度条
-                                val currentWidth = progressBar.layoutParams.width
-                                val animator = ValueAnimator.ofInt(currentWidth, (getScreenWidth(requireContext()) * percent).toInt())
-                                animator.addUpdateListener { animation ->
-                                    val animatedValue = animation.animatedValue as Int
-                                    progressBar.layoutParams.width = animatedValue
-                                    progressBar.requestLayout()
-                                }
-                                animator.duration = 100 // 设置动画持续时间，单位为毫秒
-                                animator.start()
-
-                                progressText.text = "${formatTime(currentPosition)} / ${formatTime(duration)}"
+                                updateAccessLog(accessLogId, (currentPosition / 1000).toInt())
 
                                 handler.postDelayed(this, 500) // 延迟1秒钟
                             }
@@ -466,13 +471,13 @@ class SmartVideoFragment : Fragment() {
                     super.onIsLoadingChanged(isLoading)
                 }
             })
-
         }
 
         override fun onViewRecycled(holder: MyViewHolder) {
             // 释放ExoPlayer资源
             val videoView = holder.itemView.findViewById<PlayerView>(R.id.video_view)
             videoView.player?.release()
+            videoView.player = null
 
             super.onViewRecycled(holder)
         }
