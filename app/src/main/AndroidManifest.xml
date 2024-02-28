@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:allowBackup="true"
@@ -23,25 +24,43 @@
         android:theme="@style/Theme.ICoserKT"
         tools:targetApi="31">
         <activity
-            android:name=".SearchActivity"
+            android:name=".ui.setting_page.SetDefaultResolutionRatioActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ICoserKT" />
+        <activity
+            android:name=".ui.setting_page.SettingActivity"
             android:exported="false" />
         <activity
-            android:name=".RecommendActivity"
+            android:name=".ui.about_page.AboutActivity"
             android:exported="false" />
         <activity
-            android:name=".MediaViewActivity"
+            android:name=".ui.update_dialog.UpdateActivity"
+            android:exported="false"
+            android:theme="@style/UpdateTransparent" />
+        <activity
+            android:name=".ui.image_preview.ImagePreviewActivity"
+            android:exported="false"
+            android:theme="@style/UpdateTransparent" />
+        <activity
+            android:name=".ui.search_page.SearchActivity"
             android:exported="false" />
         <activity
-            android:name=".ModelViewActivity"
+            android:name=".ui.recommend_page.RecommendActivity"
             android:exported="false" />
         <activity
-            android:name=".LoginActivity"
+            android:name=".ui.media_page.MediaViewActivity"
             android:exported="false" />
         <activity
-            android:name=".AlbumViewActivity"
+            android:name=".ui.model_page.ModelViewActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.login_page.LoginActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.album_page.AlbumViewActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.main.activity.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -49,6 +68,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.fixeam.icoserkt.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

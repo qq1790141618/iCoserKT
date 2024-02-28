@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">iCoser Test</string>
     <string name="home">首页</string>
     <string name="smart_video">小视频</string>
@@ -34,6 +34,7 @@
     <string name="collection">收藏</string>
     <string name="uncollection">取消收藏</string>
     <string name="close">关闭</string>
+    <string name="confirm">确认</string>
     <string name="download">下载</string>
     <string name="change_media">切换视频</string>
     <string name="change_ratio">切换清晰度</string>
@@ -46,6 +47,34 @@
     <string name="search_no_result">搜索结果为空~</string>
     <string name="from_collection">来自已经收藏的项目</string>
     <string name="from_follow">来自您的关注</string>
+    <string name="from_push">推荐内容</string>
     <string name="model_name">模特名称</string>
     <string name="publish_content">动态内容</string>
+    <string name="has_update">当前软件版本存在更新, 是否立即下载并安装更新? </string>
+    <string name="downloading_update">正在下载更新: </string>
+    <string name="version_change">版本变化: </string>
+    <string name="app_version">当前版本</string>
+    <string name="update">软件更新</string>
+    <string name="update_right_now">立即更新</string>
+    <string name="do_not_alert_this_version">不再提示此版本</string>
+    <string name="install_update">安装更新</string>
+    <string name="user_inform">个人资料</string>
+    <string name="safe_center">安全中心</string>
+    <string name="my_collection">我的收藏</string>
+    <string name="my_following">我的关注</string>
+    <string name="my_history">历史记录</string>
+    <string name="setting">设置</string>
+    <string name="about">关于iCoser</string>
+    <string name="collection_fold_select">选择收藏夹</string>
+    <string name="official_website">官网</string>
+    <string name="fixeam_official_website">Fixeam业务官网</string>
+    <string name="copyright" tools:ignore="TypographyDashes">Copyright ⓒ 2020-2024 Fixeam. All Right Reserved</string>
+    <string name="email_admin">站长邮箱：1790141618@qq.com</string>
+    <string name="beian" tools:ignore="TypographyDashes">湘ICP备2020023534号-1</string>
+    <string name="default_display">小视频播放清晰度</string>
+    <string name="ratio_2160p">2160p UHD 4K</string>
+    <string name="ratio_1080p">1080p FHD</string>
+    <string name="ratio_1440p">1440p QHD 2K</string>
+    <string name="ratio_720p">720p HD</string>
+    <string name="ratio_540p">540p</string>
 </resources>

@@ -1,23 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="130dp"
-    app:cardCornerRadius="10dp"
     android:layout_marginHorizontal="12dp"
     android:layout_marginTop="12dp"
-    android:id="@+id/album_item" >
+    android:background="@drawable/rounded_square"
+    android:id="@+id/album_item">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+    <androidx.cardview.widget.CardView
+        android:id="@+id/poster_card"
+        android:layout_width="142dp"
+        android:layout_height="match_parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_margin="0.8dp"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="0dp">
 
         <ImageView
             android:id="@+id/poster_background"
             android:layout_width="130dp"
             android:layout_height="match_parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
             android:src="@drawable/image_holder"
             android:scaleType="centerCrop" />
 
@@ -25,16 +31,13 @@
             android:id="@+id/poster"
             android:layout_width="130dp"
             android:layout_height="match_parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
             android:src="@drawable/image_holder"/>
 
         <LinearLayout
             android:id="@+id/more"
             android:layout_width="130dp"
-            android:layout_height="wrap_content"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_height="24dp"
+            android:layout_marginTop="106dp"
             android:orientation="horizontal"
             android:gravity="center"
             android:paddingVertical="3dp"
@@ -72,45 +75,49 @@
 
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            app:layout_constraintLeft_toRightOf="@+id/poster"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:padding="12dp"
-            android:orientation="vertical">
+    </androidx.cardview.widget.CardView>
 
-            <include layout="@layout/tag" />
+
+
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        app:layout_constraintLeft_toRightOf="@+id/poster_card"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:paddingRight="12dp"
+        android:paddingVertical="12dp"
+        android:orientation="vertical">
+
+        <include layout="@layout/tag" />
+
+        <TextView
+            android:id="@+id/name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="模特名 写真集名 写真集名 写真集名 写真集名"
+            android:layout_marginVertical="10dp"
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <LinearLayout
+            android:id="@+id/image_preview"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="模特名 写真集名 写真集名 写真集名 写真集名"
-                android:layout_marginVertical="10dp"
-                android:textSize="13sp"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <LinearLayout
-                android:id="@+id/image_preview"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:text="..."
-                    android:layout_marginTop="30dp"
-                    android:textSize="15sp" />
-
-            </LinearLayout>
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="..."
+                android:layout_marginTop="30dp"
+                android:textSize="15sp" />
 
         </LinearLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

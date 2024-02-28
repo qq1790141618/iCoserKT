@@ -10,4 +10,5 @@
     <color name="text_grey">#E6E6E6</color>
     <color name="text_grey_night">#202020</color>
     <color name="danger">#D54941</color>
+    <color name="transparent">#00000000</color>
 </resources>

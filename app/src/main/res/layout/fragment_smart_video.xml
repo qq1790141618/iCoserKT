@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SmartVideoFragment"
+    tools:context=".ui.main.fragment.SmartVideoFragment"
     android:background="?attr/colorOnBackground" >
 
     <androidx.viewpager2.widget.ViewPager2
