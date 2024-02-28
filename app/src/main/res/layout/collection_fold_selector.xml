@@ -16,19 +16,38 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="150dp"
         android:layout_marginVertical="12dp"
         tools:ignore="UselessLeaf"
-        android:background="@drawable/rounded_square">
+        android:background="@drawable/rounded_square"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false">
 
         <RadioGroup
             android:id="@+id/radio_group"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:paddingBottom="10dp">
 
         </RadioGroup>
 
     </ScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/create"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:layout_marginBottom="5dp"
+        android:text="@string/create_collection_fold"
+        android:textSize="12sp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:cornerRadius="9dp"
+        tools:ignore="InefficientWeight"
+        android:textColor="?attr/colorPrimary"
+        android:backgroundTint="?attr/cardBackgroundColor"
+        app:strokeColor="?attr/colorOnTertiary"
+        app:strokeWidth="0.8dp"/>
 
     <com.google.android.material.button.MaterialButtonToggleGroup
         android:layout_width="match_parent"

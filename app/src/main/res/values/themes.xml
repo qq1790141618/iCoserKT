@@ -3,6 +3,7 @@
     <style name="Base.Theme.ICoserKT" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:windowBackground">#F3F3F3</item>
         <item name="colorOnBackground">@color/background_color</item>
         <item name="colorPrimary">@color/text_color</item>>
         <item name="colorOnTertiary">@color/text_grey</item>

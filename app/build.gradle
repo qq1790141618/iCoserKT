@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace 'com.fixeam.icoserkt'
+    namespace 'com.fixeam.icoser'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.fixeam.icoserkt"
+        applicationId "com.fixeam.icoser"
         minSdk 28
         targetSdk 34
-        versionCode 200004
-        versionName "2.0.3"
+        versionCode 200000
+        versionName "2.0.0"
         versionNameSuffix(" dev")
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

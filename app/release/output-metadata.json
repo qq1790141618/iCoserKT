@@ -4,15 +4,15 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.fixeam.icoserkt",
+  "applicationId": "com.fixeam.icoser",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 200003,
-      "versionName": "2.0.3 dev",
+      "versionCode": 200000,
+      "versionName": "2.0.-1 realease",
       "outputFile": "app-release.apk"
     }
   ],

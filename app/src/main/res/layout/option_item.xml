@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -14,22 +15,26 @@
         android:layout_height="48dp"
         android:padding="16dp"
         app:tint="?attr/colorPrimary"
-        android:src="@drawable/back"/>
+        android:src="@drawable/back"
+        tools:ignore="ContentDescription" />
+
+    <ImageView
+        android:id="@+id/left_image"
+        android:layout_width="52dp"
+        android:layout_height="48dp"
+        tools:ignore="ContentDescription"
+        android:scaleType="centerCrop"
+        android:layout_marginEnd="10dp"
+        android:visibility="gone"/>
 
     <TextView
         android:id="@+id/text"
-        android:layout_width="wrap_content"
+        android:layout_width="150dp"
         android:layout_height="wrap_content"
         android:textSize="13sp"
         android:paddingHorizontal="2dp"
-        android:text="@string/app_name"/>
-
-    <TextView
-        android:id="@+id/tag_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="13sp"
-        android:layout_marginHorizontal="3dp" />
+        android:text="@string/app_name"
+        android:ellipsize="end"/>
 
     <Space
         android:layout_width="0dp"
@@ -41,7 +46,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="13sp"
-        android:paddingHorizontal="2dp" />
+        android:paddingHorizontal="2dp"/>
 
     <ImageView
         android:id="@+id/right_icon"
@@ -49,6 +54,20 @@
         android:layout_height="48dp"
         android:padding="16dp"
         app:tint="#a9aeb8"
-        android:src="@drawable/right"/>
+        android:src="@drawable/right"
+        android:importantForAccessibility="no" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/remove"
+        android:layout_width="60dp"
+        android:layout_height="match_parent"
+        android:backgroundTint="@color/danger"
+        android:textColor="@color/white"
+        app:cornerRadius="0dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:icon="@drawable/delete"
+        app:iconSize="15dp"
+        android:visibility="gone"/>
 
 </LinearLayout>

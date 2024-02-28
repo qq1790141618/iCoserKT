@@ -307,9 +307,8 @@
                       <PersistentState>
                         <option name="values">
                           <map>
-                            <entry key="assetSourceType" value="FILE" />
-                            <entry key="outputName" value="warn" />
-                            <entry key="sourceFile" value="D:\Users\Downloads\warn.svg" />
+                            <entry key="outputName" value="android" />
+                            <entry key="sourceFile" value="D:\Users\Downloads\SDK会场.svg" />
                           </map>
                         </option>
                       </PersistentState>

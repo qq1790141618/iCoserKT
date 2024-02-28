@@ -1,10 +1,11 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">iCoser Test</string>
+    <string name="app_name">iCoser</string>
     <string name="home">首页</string>
     <string name="smart_video">小视频</string>
     <string name="search">搜索</string>
     <string name="user">用户</string>
     <string name="following">关注</string>
+    <string name="unfollow">取消关注</string>
     <string name="followed">已关注</string>
     <string name="new_">最新发布</string>
     <string name="hot">最热推荐</string>
@@ -34,6 +35,7 @@
     <string name="collection">收藏</string>
     <string name="uncollection">取消收藏</string>
     <string name="close">关闭</string>
+    <string name="create_collection_fold">创建收藏夹</string>
     <string name="confirm">确认</string>
     <string name="download">下载</string>
     <string name="change_media">切换视频</string>
@@ -53,7 +55,9 @@
     <string name="has_update">当前软件版本存在更新, 是否立即下载并安装更新? </string>
     <string name="downloading_update">正在下载更新: </string>
     <string name="version_change">版本变化: </string>
-    <string name="app_version">当前版本</string>
+    <string name="app_version">当前软件版本</string>
+    <string name="running_platform">软件运行平台</string>
+    <string name="sdk_version">Android SDK 版本</string>
     <string name="update">软件更新</string>
     <string name="update_right_now">立即更新</string>
     <string name="do_not_alert_this_version">不再提示此版本</string>
@@ -77,4 +81,11 @@
     <string name="ratio_1440p">1440p QHD 2K</string>
     <string name="ratio_720p">720p HD</string>
     <string name="ratio_540p">540p</string>
+    <string name="preferences">偏好设置</string>
+    <string name="caching">缓存设置</string>
+    <string name="color_theme">颜色主题</string>
+    <string name="cache_size">缓存大小</string>
+    <string name="cache_clear">清除当前缓存</string>
+    <string name="empty">暂无相关内容~</string>
+    <string name="remove">移除</string>
 </resources>
