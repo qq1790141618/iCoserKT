@@ -21,12 +21,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.media_page.MediaViewActivity
-import com.fixeam.icoser.ui.model_page.ModelViewActivity
 import com.fixeam.icoser.R
 import com.fixeam.icoser.model.bytesToReadableSize
 import com.fixeam.icoser.model.getScreenWidth
+import com.fixeam.icoser.model.saveImageToGallery
+import com.fixeam.icoser.model.setStatusBar
+import com.fixeam.icoser.model.shareImageContent
+import com.fixeam.icoser.model.shareTextContent
 import com.fixeam.icoser.network.ActionResponse
 import com.fixeam.icoser.network.Albums
 import com.fixeam.icoser.network.AlbumsResponse
@@ -35,15 +36,13 @@ import com.fixeam.icoser.network.FileInfo
 import com.fixeam.icoser.network.FileMeta
 import com.fixeam.icoser.network.UrlRequestBody
 import com.fixeam.icoser.network.accessLog
-import com.fixeam.icoser.network.updateAccessLog
-import com.fixeam.icoser.model.saveImageToGallery
-import com.fixeam.icoser.network.setAlbumCollection
-import com.fixeam.icoser.model.setStatusBar
-import com.fixeam.icoser.model.shareImageContent
-import com.fixeam.icoser.model.shareTextContent
 import com.fixeam.icoser.network.openCollectionSelector
+import com.fixeam.icoser.network.setAlbumCollection
+import com.fixeam.icoser.network.updateAccessLog
 import com.fixeam.icoser.network.userToken
-import com.fixeam.icoser.ui.forbidden_page.ForbbidenActivity
+import com.fixeam.icoser.ui.login_page.LoginActivity
+import com.fixeam.icoser.ui.media_page.MediaViewActivity
+import com.fixeam.icoser.ui.model_page.ModelViewActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
@@ -140,13 +139,16 @@ class AlbumViewActivity : AppCompatActivity() {
                     toolbar.title = album.name
                     toolbar.subtitle = album.model
 
-                    val goToVideo = findViewById<MaterialButton>(R.id.go_to_video)
-                    goToVideo.visibility = View.VISIBLE
-                    goToVideo.setOnClickListener {
-                        val intent = Intent(this@AlbumViewActivity, MediaViewActivity::class.java)
-                        intent.putExtra("album-id", album.id)
-                        startActivity(intent)
+                    if(album.media != null && album.media!!.size > 0){
+                        val goToVideo = findViewById<MaterialButton>(R.id.go_to_video)
+                        goToVideo.visibility = View.VISIBLE
+                        goToVideo.setOnClickListener {
+                            val intent = Intent(this@AlbumViewActivity, MediaViewActivity::class.java)
+                            intent.putExtra("album-id", album.id)
+                            startActivity(intent)
+                        }
                     }
+
 
                     albumInfo = album
                     initImageList()

@@ -11,9 +11,9 @@ android {
         applicationId "com.fixeam.icoser"
         minSdk 28
         targetSdk 34
-        versionCode 200000
-        versionName "2.0.0"
-        versionNameSuffix(" dev")
+        versionCode 200020
+        versionName "2.0.2"
+        versionNameSuffix(" release")
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -68,12 +68,13 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
-
-    // Glide库
-    implementation 'com.github.bumptech.glide:glide:4.11.0'
     androidTestImplementation platform('androidx.compose:compose-bom:2023.08.00')
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
+
+    // Glide库
+    apply plugin: 'kotlin-kapt'
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    kapt 'com.github.bumptech.glide:compiler:4.16.0'
     implementation 'jp.wasabeef:glide-transformations:4.1.0'
 
     // youth轮播组件库

@@ -73,33 +73,32 @@ interface ApiService {
     fun GetUserCollectionFold(@Query("access_token") access_token: String): Call<CollectionFoldResponse>
     @GET("collection/fold/set")
     fun SetUserCollectionFold(@Query("access_token") access_token: String, @Query("name") name: String): Call<ActionResponse>
+    @GET("collection/fold/set?isDelete=true")
+    fun RemoveCollectionFold(@Query("access_token") access_token: String, @Query("id") id: Int): Call<ActionResponse>
     @GET("collection/get")
     fun GetUserCollection(@Query("access_token") access_token: String): Call<CollectionResponse>
     @GET("collection/get?type=model")
     fun GetUserFollow(@Query("access_token") access_token: String): Call<FollowResponse>
     @GET("access/history")
-    fun GetUserHistory(@Query("access_token") access_token: String): Call<HistoryResponse>
+    fun GetUserHistory(@Query("access_token") access_token: String, @Query("start") start: Int = 0, @Query("number") number: Int = 50): Call<HistoryResponse>
+    @GET("access/history/clear")
+    fun ClearUserHistory(@Query("access_token") access_token: String): Call<ActionResponse>
+    @GET("access/history/clear")
+    fun ClearUserHistoryById(@Query("access_token") access_token: String, @Query("id") start: Int): Call<ActionResponse>
     @GET("media")
     fun GetMedia(@Query("access_token") access_token: String = "", @Query("number") number: Int = 20, @Query("model-id") model_id: String = "", @Query("album-id") album_id: String = "", @Query("id") id: String = ""): Call<MediaResponse>
-
     @GET("album/search")
     fun SearchAlbum(@Query("access_token") access_token: String = "", @Query("keyword") keyword: String = ""): Call<SearchAlbumResponse>
-
     @GET("model/search")
     fun SearchModel(@Query("access_token") access_token: String = "", @Query("keywords") keywords: String = ""): Call<SearchModelResponse>
-
     @GET("access/log")
     fun AccessLog(@Query("type") type: String, @Query("content") content: String, @Query("device") device: String, @Query("application") application: String = "Android Kotlin", @Query("access_token") access_token: String = ""): Call<AccessLogResponse>
-
     @GET("access/log?updateStay=true")
     fun UpdateAccessLog(@Query("id") id: Int): Call<UpdateAccessLog>
-
     @GET("access/log?updateStay=true")
     fun UpdateAccessLogWithStay(@Query("id") id: Int, @Query("stay") stay: Int): Call<UpdateAccessLog>
-
     @GET("follow")
     fun GetFollow(@Query("access_token") access_token: String, @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<AlbumsResponse>
-
     @GET("app/version/latest?platform=android")
     fun GetLatestVersion(@Query("version_type") type: String): Call<PackageInfo>
 }

@@ -1,6 +1,5 @@
 package com.fixeam.icoser.ui.search_page
 
-import com.fixeam.icoser.painter.GlideBlurTransformation
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -42,6 +41,7 @@ import com.fixeam.icoser.network.SearchAlbumResponse
 import com.fixeam.icoser.network.SearchModelResponse
 import com.fixeam.icoser.network.setModelFollowing
 import com.fixeam.icoser.network.userToken
+import com.fixeam.icoser.painter.GlideBlurTransformation
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
 import com.fixeam.icoser.ui.model_page.ModelViewActivity

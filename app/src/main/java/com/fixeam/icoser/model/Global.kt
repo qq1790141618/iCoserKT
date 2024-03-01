@@ -5,6 +5,10 @@ import android.content.res.ColorStateList
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.bumptech.glide.GlideBuilder
+import com.bumptech.glide.annotation.GlideModule
+import com.bumptech.glide.load.engine.cache.InternalCacheDiskCacheFactory
+import com.bumptech.glide.module.AppGlideModule
 import com.fixeam.icoser.network.Albums
 import com.fixeam.icoser.network.ApiNetService
 import com.fixeam.icoser.network.MediaFormatItem
@@ -167,4 +171,16 @@ data class Option(
     var showRemoveButton: Boolean = false,
     var onRemove: () -> Unit = {},
 )
+
+@GlideModule
+class MyAppGlideModule : AppGlideModule() {
+    override fun applyOptions(context: Context, builder: GlideBuilder) {
+        val sharedPreferences = context.getSharedPreferences("glide_module", Context.MODE_PRIVATE)
+        val cacheSize = sharedPreferences.getInt("disk_cache_size_gb", 10)
+        val diskCacheSizeBytes = 1024L * 1024 * 1024 * cacheSize
+        builder.setDiskCache(InternalCacheDiskCacheFactory(context, diskCacheSizeBytes))
+    }
+}
+
+
 

@@ -54,7 +54,9 @@ data class Albums(
     var is_collection: String?,
     var count: Int?,
     var type: String?,
-    var model_avatar_image: String?
+    var model_avatar_image: String?,
+    var isForbidden: Boolean = false,
+    var isNew: Boolean = false
 )
 data class AlbumDownload(
     var url: String,
@@ -217,7 +219,7 @@ data class HistoryResponse(
 data class History(
     val id: Int,
     val type: String,
-    val content: Any,
+    val content: Map<String, Any>,
     val time: String,
     val stay: Int
 )

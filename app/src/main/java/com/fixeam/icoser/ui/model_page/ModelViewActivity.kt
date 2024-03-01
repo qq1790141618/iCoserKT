@@ -1,6 +1,6 @@
 package com.fixeam.icoser.ui.model_page
 
-import com.fixeam.icoser.painter.GlideBlurTransformation
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -38,6 +38,7 @@ import com.fixeam.icoser.network.accessLog
 import com.fixeam.icoser.network.setModelFollowing
 import com.fixeam.icoser.network.updateAccessLog
 import com.fixeam.icoser.network.userToken
+import com.fixeam.icoser.painter.GlideBlurTransformation
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
 import com.fixeam.icoser.ui.media_page.MediaViewActivity
@@ -350,6 +351,7 @@ class ModelViewActivity : AppCompatActivity() {
         override fun getItemCount(): Int {
             return albumList.size
         }
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: viewHolder, position: Int) {
             // 修改holder
             val album = albumList[position]
@@ -383,6 +385,7 @@ class ModelViewActivity : AppCompatActivity() {
 
             // 添加图片
             val imagePreview = holder.itemView.findViewById<LinearLayout>(R.id.image_preview)
+            imagePreview.removeAllViews()
             for ((index, image) in (album.images as MutableList<String>).withIndex()){
                 if(index >= 4){
                     break

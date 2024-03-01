@@ -1,31 +1,21 @@
 package com.fixeam.icoser.ui.forbidden_page
 
-import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
-import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.core.view.setMargins
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
 import com.fixeam.icoser.model.Option
 import com.fixeam.icoser.model.initOptionItem
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
-import com.fixeam.icoser.network.Albums
-import com.fixeam.icoser.network.Models
 import com.fixeam.icoser.network.getUserForbidden
 import com.fixeam.icoser.network.removeForbidden
 import com.fixeam.icoser.network.userForbidden
@@ -33,10 +23,6 @@ import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
 import com.fixeam.icoser.ui.model_page.ModelViewActivity
-import com.google.android.material.button.MaterialButton
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import java.lang.reflect.Type
 
 class ForbbidenActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

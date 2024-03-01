@@ -90,14 +90,36 @@
         android:paddingVertical="12dp"
         android:orientation="vertical">
 
-        <include layout="@layout/tag" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <include layout="@layout/tag" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+
+            <ImageView
+                android:id="@+id/close"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginBottom="5dp"
+                android:src="@drawable/close"
+                app:tint="@color/danger"
+                android:visibility="gone"/>
+
+        </LinearLayout>
 
         <TextView
             android:id="@+id/name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="模特名 写真集名 写真集名 写真集名 写真集名"
-            android:layout_marginVertical="10dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="10dp"
             android:textSize="13sp"
             android:maxLines="1"
             android:ellipsize="end" />

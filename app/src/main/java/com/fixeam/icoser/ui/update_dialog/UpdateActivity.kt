@@ -3,6 +3,7 @@ package com.fixeam.icoser.ui.update_dialog
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
@@ -59,6 +60,12 @@ class UpdateActivity : AppCompatActivity() {
         updateButton.setOnClickListener {
             updateDownload()
         }
+        val viewUpdateLogButton = findViewById<TextView>(R.id.view_update_log)
+        viewUpdateLogButton.setOnClickListener {
+            val url = "https://update.fixeam.com/android?ver=${newVersion?.version_id}"
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            startActivity(intent)
+        }
     }
 
     private fun doNotAlertVersion() {
@@ -102,6 +109,8 @@ class UpdateActivity : AppCompatActivity() {
         // 更新界面显示
         val buttons = findViewById<MaterialButtonToggleGroup>(R.id.buttons)
         buttons.visibility = View.GONE
+        val viewUpdateLogButton = findViewById<TextView>(R.id.view_update_log)
+        viewUpdateLogButton.visibility = View.GONE
         val versionChange = findViewById<TextView>(R.id.version_change)
         versionChange.visibility = View.GONE
         val progress = findViewById<LinearLayout>(R.id.progress)

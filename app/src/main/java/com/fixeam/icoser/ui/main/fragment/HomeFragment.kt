@@ -5,7 +5,6 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -26,13 +25,10 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.model_page.ModelViewActivity
 import com.fixeam.icoser.R
 import com.fixeam.icoser.model.checkForUpdate
-import com.fixeam.icoser.ui.recommend_page.RecommendActivity
-import com.fixeam.icoser.ui.search_page.SearchActivity
 import com.fixeam.icoser.model.closeOverCard
+import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.openOverCard
 import com.fixeam.icoser.model.overCard
 import com.fixeam.icoser.model.shareTextContent
@@ -49,6 +45,10 @@ import com.fixeam.icoser.network.setAlbumCollection
 import com.fixeam.icoser.network.setForbidden
 import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
+import com.fixeam.icoser.ui.login_page.LoginActivity
+import com.fixeam.icoser.ui.model_page.ModelViewActivity
+import com.fixeam.icoser.ui.recommend_page.RecommendActivity
+import com.fixeam.icoser.ui.search_page.SearchActivity
 import com.fixeam.icoser.ui.update_dialog.UpdateActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -516,6 +516,7 @@ class HomeFragment : Fragment() {
             return albumList.size + 1
         }
 
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: LikeViewHolder, position: Int) {
             when (holder.itemViewType) {
                 // 修改holder
@@ -533,13 +534,21 @@ class HomeFragment : Fragment() {
                 viewTypeItem -> {
                     // 绑定瀑布流布局数据
                     val album = albumList[position - 1]
-                    holder.itemView.setOnClickListener{
-                        accessLog(requireContext(), "${album.images}", "CLICK_RECOMMEND"){ }
-                        openAlbumView(album.id)
+
+                    // 显示已屏蔽遮罩层
+                    val blockOverlay = holder.itemView.findViewById<LinearLayout>(R.id.block_overlay)
+                    if(album.isForbidden){
+                        blockOverlay.visibility = View.VISIBLE
+                        holder.itemView.setOnClickListener(null)
+                    } else {
+                        blockOverlay.visibility = View.GONE
+                        holder.itemView.setOnClickListener{
+                            accessLog(requireContext(), "${album.images}", "CLICK_RECOMMEND"){ }
+                            openAlbumView(album.id)
+                        }
                     }
 
                     val imageView = holder.itemView.findViewById<ImageView>(R.id.image_view)
-
                     Glide.with(requireContext())
                         .load("${album.images}/short1200px")
                         .placeholder(R.drawable.image_holder)
@@ -551,13 +560,19 @@ class HomeFragment : Fragment() {
 
                     // 喜欢按钮操作
                     val likeButton = holder.itemView.findViewById<MaterialButton>(R.id.like_button)
-                    val currentTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
                     if(album.is_collection != null){
                         likeButton.setIconResource(R.drawable.like_fill)
                         likeButton.iconTint = ColorStateList.valueOf(Color.parseColor("#FDCDC5"))
+                    } else {
+                        likeButton.setIconResource(R.drawable.like)
+                        if (isDarken(requireActivity())) {
+                            likeButton.iconTint = ColorStateList.valueOf(Color.WHITE)
+                        } else {
+                            likeButton.iconTint = ColorStateList.valueOf(Color.BLACK)
+                        }
                     }
                     likeButton.setOnClickListener{
-                        if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
+                        if (isDarken(requireActivity())) {
                             likeButton.iconTint = ColorStateList.valueOf(Color.WHITE)
                         } else {
                             likeButton.iconTint = ColorStateList.valueOf(Color.BLACK)
@@ -573,11 +588,6 @@ class HomeFragment : Fragment() {
                             likeButton.clearAnimation()
                             if(album.is_collection != null){
                                 likeButton.setIconResource(R.drawable.like)
-                                if (currentTheme == Configuration.UI_MODE_NIGHT_YES) {
-                                    likeButton.iconTint = ColorStateList.valueOf(Color.WHITE)
-                                } else {
-                                    likeButton.iconTint = ColorStateList.valueOf(Color.BLACK)
-                                }
                                 album.is_collection = null
                             } else {
                                 likeButton.setIconResource(R.drawable.like_fill)
@@ -603,7 +613,7 @@ class HomeFragment : Fragment() {
                     }
                     moreButton.setOnClickListener{
                         fun createForbiddenOverlay(){
-                            val blockOverlay = holder.itemView.findViewById<LinearLayout>(R.id.block_overlay)
+                            album.isForbidden = true
                             blockOverlay.visibility = View.VISIBLE
                             holder.itemView.setOnClickListener(null)
                         }

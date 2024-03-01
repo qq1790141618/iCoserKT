@@ -9,8 +9,8 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Toast
 import com.fixeam.icoser.R
-import com.fixeam.icoser.model.calculateTimeAgo
 import com.fixeam.icoser.model.removeSharedPreferencesKey
+import com.fixeam.icoser.model.sendAlbumNotification
 import com.fixeam.icoser.model.userFragment
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -22,11 +22,12 @@ import retrofit2.Response
 // 用户变量
 var userToken: String? = null
 var userInform: UserInform? = null
-var userCollection: MutableList<Collection> = mutableListOf()
-var userFollow: List<Follow> = mutableListOf()
+var userCollection: List<Collection> = listOf()
+var userFollow: List<Follow> = listOf()
 var userCollectionFold: MutableList<CollectionFold> = mutableListOf()
-var userForbidden: List<Forbidden> = mutableListOf()
+var userForbidden: List<Forbidden> = listOf()
 var userHistory: HistoryResponse? = null
+var userHistoryList: MutableList<History> = mutableListOf()
 var userInformFailTime = 0
 
 // 获取用户信息
@@ -46,6 +47,14 @@ fun verifyTokenAndGetUserInform(access_token: String, context: Context){
                         userInform = responseBody.inform
                         userToken = access_token
                         userFragment?.initUserCard(responseBody.inform)
+
+                        requestFollowData(context, true){
+                            for (album in followAlbumList){
+                                if(album.type == "follow" && album.isNew){
+                                    sendAlbumNotification(context, album)
+                                }
+                            }
+                        }
                         getUserCollectionFold(context){
                             getUserCollection(context) {}
                         }
@@ -73,7 +82,6 @@ fun getUserCollection(context: Context, callback: () -> Unit){
         return
     }
 
-    userCollection.clear()
     val call = ApiNetService.GetUserCollection(userToken!!)
 
     call.enqueue(object : Callback<CollectionResponse> {
@@ -83,7 +91,7 @@ fun getUserCollection(context: Context, callback: () -> Unit){
 
                 if(responseBody != null && responseBody.result){
                     val collections = responseBody.data
-                    userCollection.addAll(collections)
+                    userCollection = collections
                     userFragment?.setCollectionNumber(collections.size)
                     initCollectionOfFold(collections)
                 }
@@ -197,8 +205,34 @@ fun setUserCollectionFold(context: Context, name: String, callback: () -> Unit){
     })
 }
 
+
+// 移除用户收藏夹
+fun removeUserCollectionFold(context: Context, id: Int, callback: () -> Unit){
+    if(userToken == null){
+        return
+    }
+
+    val call = ApiNetService.RemoveCollectionFold(userToken!!, id)
+    call.enqueue(object : Callback<ActionResponse> {
+        override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+
+                if(responseBody != null && responseBody.result){
+                    callback()
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<ActionResponse>, t: Throwable) {
+            // 处理请求失败的逻辑
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+
 // 设置写真集收藏
-fun setAlbumCollection(context: Context, album: Albums, fold: String, callback: () -> Unit, unLog: () -> Unit){
+fun setAlbumCollection(context: Context, album: Albums, fold: String = "", callback: () -> Unit, unLog: () -> Unit){
     if(userToken != null){
         var call = ApiNetService.SetCollectionItem(userToken!!, album.id, "album", fold)
         if(album.is_collection != null){
@@ -470,12 +504,15 @@ fun initCollectionSelectorRadioGroup(context: Context, radioGroup: RadioGroup){
 }
 
 // 获取用户历史记录
-fun getUserHistory(context: Context, callback: () -> Unit){
+fun getUserHistory(context: Context, isRefresh: Boolean = true, number: Int = 50, callback: () -> Unit){
     if(userToken == null){
         return
     }
 
-    val call = ApiNetService.GetUserHistory(userToken!!)
+    var call = ApiNetService.GetUserHistory(userToken!!)
+    if(!isRefresh){
+        call = ApiNetService.GetUserHistory(userToken!!, userHistoryList.size, number)
+    }
 
     call.enqueue(object : Callback<HistoryResponse> {
         override fun onResponse(call: Call<HistoryResponse>, response: Response<HistoryResponse>) {
@@ -484,6 +521,11 @@ fun getUserHistory(context: Context, callback: () -> Unit){
 
                 if(responseBody != null && responseBody.result){
                     userHistory = responseBody
+                    if(isRefresh){
+                        userHistoryList.clear()
+                    }
+                    userHistoryList.addAll(responseBody.history)
+
                     var number = 0
                     for (timeRange in responseBody.time_range){
                         number += timeRange.count
@@ -496,6 +538,39 @@ fun getUserHistory(context: Context, callback: () -> Unit){
         }
 
         override fun onFailure(call: Call<HistoryResponse>, t: Throwable) {
+            // 处理请求失败的逻辑
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+
+// 清除用户历史记录
+fun clearUserHistory(context: Context, id: Int = -1, callback: (Boolean) -> Unit){
+    if(userToken == null){
+        callback(false)
+        return
+    }
+
+    var call = ApiNetService.ClearUserHistory(userToken!!)
+    if(id > 0){
+        call = ApiNetService.ClearUserHistoryById(userToken!!, id)
+    }
+
+    call.enqueue(object : Callback<ActionResponse> {
+        override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+
+                if(responseBody != null && responseBody.result){
+                    callback(true)
+                    Toast.makeText(context, "清除成功", Toast.LENGTH_SHORT).show()
+                }
+
+                callback(false)
+            }
+        }
+
+        override fun onFailure(call: Call<ActionResponse>, t: Throwable) {
             // 处理请求失败的逻辑
             Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
         }
@@ -554,6 +629,57 @@ fun getUserForbidden(context: Context, callback: () -> Unit){
         }
 
         override fun onFailure(call: Call<ForbiddenResponse>, t: Throwable) {
+            // 处理请求失败的逻辑
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+
+// 获取关注内容更新
+var followAlbumLoading: Boolean = false
+var followIsFinished: Boolean = false
+val followAlbumList: MutableList<Albums> = mutableListOf()
+fun requestFollowData(context: Context, isRefresh: Boolean = false, callback: () -> Unit) {
+    if(userToken == null){
+        return
+    }
+
+    followAlbumLoading = true
+    var start = followAlbumList.size
+    if(isRefresh) {
+        start = 0
+    }
+    val call = ApiNetService.GetFollow(userToken!!, start, 20)
+
+    call.enqueue(object : Callback<AlbumsResponse> {
+        override fun onResponse(call: Call<AlbumsResponse>, response: Response<AlbumsResponse>) {
+            if (response.isSuccessful) {
+                if(isRefresh){
+                    followAlbumList.clear()
+                }
+
+                val responseBody = response.body()
+                responseBody?.let {
+                    for ((index, item) in it.data.withIndex()){
+                        if(index > 1 && item.type == it.data[index - 1].type && item.model_id == it.data[index - 1].model_id && item.type != "follow"){
+                            continue
+                        }
+                        if(index > 1 && item.id == it.data[index - 1].id){
+                            continue
+                        }
+                        followAlbumList.add(item)
+                    }
+                    if(it.data.size < 20){
+                        followIsFinished = true
+                    }
+                }
+
+                callback()
+                followAlbumLoading = false
+            }
+        }
+
+        override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {
             // 处理请求失败的逻辑
             Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
         }

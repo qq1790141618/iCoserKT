@@ -48,11 +48,19 @@
                 android:text="@string/version_change"
                 android:textSize="12sp" />
 
+            <TextView
+                android:id="@+id/view_update_log"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/view_update_log"
+                android:textAlignment="center"
+                android:textSize="12sp"
+                android:padding="8dp"/>
+
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/buttons"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
                 android:orientation="vertical">
 
                 <com.google.android.material.button.MaterialButton
@@ -63,6 +71,7 @@
                     android:insetBottom="0.8dp"
                     app:cornerRadius="9dp"
                     android:textSize="12sp"
+                    android:textColor="@color/white"
                     android:paddingVertical="0dp"
                     android:text="@string/update_right_now"/>
 
@@ -75,6 +84,7 @@
                     app:cornerRadius="9dp"
                     android:backgroundTint="@color/danger"
                     android:textSize="12sp"
+                    android:textColor="@color/white"
                     android:paddingVertical="0dp"
                     android:text="@string/do_not_alert_this_version"/>
 
@@ -125,6 +135,7 @@
                 android:textSize="12sp"
                 android:paddingVertical="0dp"
                 android:text="@string/install_update"
+                android:textColor="@color/white"
                 android:visibility="gone"/>
 
             <ImageView

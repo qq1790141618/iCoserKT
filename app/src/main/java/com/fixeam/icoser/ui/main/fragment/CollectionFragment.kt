@@ -23,32 +23,26 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.fixeam.icoser.R
+import com.fixeam.icoser.model.calculateTimeAgo
+import com.fixeam.icoser.model.getScreenWidth
+import com.fixeam.icoser.network.accessLog
+import com.fixeam.icoser.network.followAlbumList
+import com.fixeam.icoser.network.requestFollowData
+import com.fixeam.icoser.network.setForbidden
+import com.fixeam.icoser.network.setModelFollowingById
+import com.fixeam.icoser.network.userToken
+import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.image_preview.ImagePreviewActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
 import com.fixeam.icoser.ui.media_page.MediaViewActivity
 import com.fixeam.icoser.ui.model_page.ModelViewActivity
-import com.fixeam.icoser.R
-import com.fixeam.icoser.model.calculateTimeAgo
-import com.fixeam.icoser.model.getScreenWidth
-import com.fixeam.icoser.network.Albums
-import com.fixeam.icoser.network.AlbumsResponse
-import com.fixeam.icoser.network.ApiNetService
-import com.fixeam.icoser.network.setForbidden
-import com.fixeam.icoser.network.setModelFollowingById
-import com.fixeam.icoser.ui.album_page.AlbumViewActivity
-import com.fixeam.icoser.network.userToken
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.button.MaterialButton
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 class CollectionFragment : Fragment() {
     private var adapter: MyListAdapter? = null
-    private val albumList: MutableList<Albums> = mutableListOf()
-    private var isFinished: Boolean = false
-    private var albumLoading: Boolean = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -70,14 +64,14 @@ class CollectionFragment : Fragment() {
             imageView.startAnimation(animation)
             imageView.visibility = View.VISIBLE
 
-            requestFollowData {
+            requestFollowData(requireContext()) {
                 imageView.clearAnimation()
                 imageView.visibility = View.GONE
 
                 val refreshLayout = view.findViewById<SmartRefreshLayout>(R.id.refreshLayout)
                 refreshLayout.visibility = View.VISIBLE
                 refreshLayout.setOnRefreshListener {
-                    requestFollowData(true){
+                    requestFollowData(requireContext(), true){
                         val followList = view.findViewById<RecyclerView>(R.id.follow_list)
                         val adapter = followList.adapter
                         adapter?.notifyDataSetChanged()
@@ -87,8 +81,8 @@ class CollectionFragment : Fragment() {
                     }
                 }
                 refreshLayout.setOnLoadMoreListener {
-                    val index = albumList.size
-                    requestFollowData {
+                    val index = followAlbumList.size
+                    requestFollowData(requireContext()) {
                         adapter?.notifyItemInserted(index)
                         refreshLayout.finishLoadMore()
                     }
@@ -99,68 +93,42 @@ class CollectionFragment : Fragment() {
         }
     }
 
-    private fun requestFollowData(isRefresh: Boolean = false, callback: () -> Unit) {
-        albumLoading = true
-        var start = albumList.size
-        if(isRefresh) {
-            start = 0
-        }
-        val call = ApiNetService.GetFollow(userToken!!, start, 20)
-
-        call.enqueue(object : Callback<AlbumsResponse> {
-            override fun onResponse(call: Call<AlbumsResponse>, response: Response<AlbumsResponse>) {
-                if (response.isSuccessful) {
-                    if(isRefresh){
-                        albumList.clear()
-                    }
-
-                    val responseBody = response.body()
-                    responseBody?.let {
-                        for ((index, item) in it.data.withIndex()){
-                            if(index > 1 && item.type == it.data[index - 1].type && item.model_id == it.data[index - 1].model_id && item.type != "follow"){
-                                continue
-                            }
-                            if(index > 1 && item.id == it.data[index - 1].id){
-                                continue
-                            }
-                            albumList.add(item)
-                        }
-                        if(it.data.size < 20){
-                            isFinished = true
-                        }
-                    }
-
-                    callback()
-                    albumLoading = false
-                }
-            }
-
-            override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(requireContext(), "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
     private fun initFollowList() {
         val followList = view?.findViewById<RecyclerView>(R.id.follow_list)
         if (followList != null) {
             followList.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
             adapter = MyListAdapter()
             followList.adapter = adapter
+
+            followList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    super.onScrolled(recyclerView, dx, dy)
+
+                    val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                    val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+                    val lastVisibleItemPosition = layoutManager.findLastVisibleItemPosition()
+
+                    for (index in firstVisibleItemPosition..lastVisibleItemPosition){
+                        if(followAlbumList[index].isNew){
+                            followAlbumList[index].isNew = false
+                            accessLog(requireContext(), followAlbumList[index].id.toString(), "VISIT_ALBUM"){ }
+                        }
+                    }
+                }
+            })
         }
     }
 
     private fun setForbiddenIcon(icon: ImageView, position: Int){
         icon.setOnClickListener {
-            albumList.removeAt(position)
+            followAlbumList.removeAt(position)
             val followList = view?.findViewById<RecyclerView>(R.id.follow_list)
             val adapter = followList?.adapter
             adapter?.notifyItemRemoved(position)
 
             setForbidden(
                 requireContext(),
-                albumList[position].id,
+                followAlbumList[position].id,
                 "album",
                 {
                     // 已经执行完移除操作
@@ -178,12 +146,12 @@ class CollectionFragment : Fragment() {
             return MyViewHolder(itemView)
         }
         override fun getItemCount(): Int {
-            return albumList.size
+            return followAlbumList.size
         }
         @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
             // 修改holder
-            val album = albumList[position]
+            val album = followAlbumList[position]
             holder.itemView.setOnClickListener {
                 val intent = Intent(requireContext(), AlbumViewActivity::class.java)
                 intent.putExtra("id", album.id)

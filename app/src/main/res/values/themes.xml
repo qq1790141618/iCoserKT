@@ -11,6 +11,8 @@
         <item name="cardBackgroundColor">@color/card_background_color</item>
         <item name="colorOnSurfaceVariant">#40000000</item>
         <item name="colorContainer">#F3F3F3</item>
+        <item name="colorOnPrimaryContainer">#F2F3FF</item>
+        <item name="colorOnPrimary">#D9E1FF</item>
 
         <item name="android:windowDisablePreview">true</item>
     </style>

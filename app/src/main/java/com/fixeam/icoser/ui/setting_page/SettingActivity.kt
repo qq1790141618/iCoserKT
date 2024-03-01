@@ -7,11 +7,9 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
-import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -51,6 +49,7 @@ class SettingActivity : AppCompatActivity() {
 
     private var bestResolutionRatio = 720
     private var colorMode = 0
+    private var allowedNotification = 1
 
     @SuppressLint("CommitPrefEdits")
     private fun initOptions() {
@@ -85,6 +84,21 @@ class SettingActivity : AppCompatActivity() {
             this,
             isDarken(this)
         )
+        initOptionItem(
+            Option(
+                iconId = R.drawable.notice,
+                iconColor = ColorStateList.valueOf(Color.parseColor("#a9aeb8")),
+                textId = R.string.notification_push,
+                clearMargin = true,
+                onClick = {
+                    val intent = Intent(this, SetNotificationActivity::class.java)
+                    startActivity(intent)
+                }
+            ),
+            aOptionsContainer,
+            this,
+            isDarken(this)
+        )
 
         val bOptionsContainer = findViewById<LinearLayout>(R.id.b_option)
         initOptionItem(
@@ -98,6 +112,83 @@ class SettingActivity : AppCompatActivity() {
             this,
             isDarken(this)
         )
+
+        // Glide缓存大小
+        val sharedPreferences = getSharedPreferences("glide_module", Context.MODE_PRIVATE)
+        val cacheSize = sharedPreferences.getInt("disk_cache_size_gb", 10)
+        initOptionItem(
+            Option(
+                iconId = R.drawable.outline_tune,
+                iconColor = ColorStateList.valueOf(Color.parseColor("#a9aeb8")),
+                textId = R.string.set_max_cache_size,
+                contentText = "$cacheSize GB",
+                showHrefIcon = false
+            ),
+            bOptionsContainer,
+            this,
+            isDarken(this)
+        )
+
+        // 添加滑动步进器
+        val layout = LinearLayout(this)
+        layout.orientation = LinearLayout.VERTICAL
+        val seekBar = SeekBar(this)
+        seekBar.progress = cacheSize
+        seekBar.max = 10
+        seekBar.min = 1
+
+        if(isDarken(this)){
+            layout.setBackgroundColor(Color.BLACK)
+        } else {
+            layout.setBackgroundColor(Color.WHITE)
+        }
+
+        val layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        layoutParams.setMargins(25, 5 ,25, 5)
+        seekBar.layoutParams = layoutParams
+
+        val textView = TextView(this)
+        val layoutParams1 = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        layoutParams1.setMargins(60, 0 ,60, 15)
+        textView.setTextColor(Color.RED)
+        textView.text = "清除缓存后重启应用生效"
+        textView.textSize = 12F
+        textView.visibility = View.GONE
+        textView.layoutParams = layoutParams1
+
+        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            @SuppressLint("SetTextI18n")
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                val contentText = bOptionsContainer.getChildAt(1).findViewById<TextView>(R.id.content_text)
+                contentText.text = "$progress GB"
+                sharedPreferences.edit().putInt("disk_cache_size_gb", progress).apply()
+
+                if(progress != cacheSize){
+                    textView.visibility = View.VISIBLE
+                } else {
+                    textView.visibility = View.GONE
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                // 开始滑动滑块时触发
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                // 停止滑动滑块时触发
+            }
+        })
+
+        layout.addView(seekBar)
+        layout.addView(textView)
+        bOptionsContainer.addView(layout)
+
         initOptionItem(
             Option(
                 iconId = R.drawable.clear,
@@ -125,6 +216,7 @@ class SettingActivity : AppCompatActivity() {
 
         setColorTheme()
         setBestResolutionRatio()
+        setNotificationAllowed()
         setCacheSize()
     }
 
@@ -132,6 +224,7 @@ class SettingActivity : AppCompatActivity() {
         super.onResume()
 
         setColorTheme()
+        setNotificationAllowed()
         setBestResolutionRatio()
         setCacheSize()
     }
@@ -160,6 +253,21 @@ class SettingActivity : AppCompatActivity() {
             1 -> "亮色模式"
             2 -> "暗色模式"
             else -> "跟随系统"
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun setNotificationAllowed(){
+        val sharedPreferences = getSharedPreferences("notification", Context.MODE_PRIVATE)
+        allowedNotification = sharedPreferences.getInt("allow", 1)
+
+        val aOptionsContainer = findViewById<LinearLayout>(R.id.a_option)
+        val colorModeItem = aOptionsContainer.getChildAt(2)
+        val contentText = colorModeItem.findViewById<TextView>(R.id.content_text)
+        contentText.text = when(allowedNotification){
+            0 -> "关闭推送"
+            1 -> "允许推送"
+            else -> "允许推送"
         }
     }
 

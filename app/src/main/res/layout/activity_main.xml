@@ -6,18 +6,19 @@
     android:layout_height="match_parent"
     tools:context=".ui.main.activity.MainActivity"
     android:orientation="vertical"
-    android:background="?attr/cardBackgroundColor"
     android:id="@+id/application"
     android:hardwareAccelerated="true" >
 
-    <include layout="@layout/launch_image" />
+    <include layout="@layout/launch_image" android:visibility="gone" />
 
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/tab_bar_card"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/tab_bar_card" />
+        app:layout_constraintVertical_bias="0.0"
+        tools:layout_editor_absoluteX="52dp" />
 
     <androidx.cardview.widget.CardView
         android:id="@+id/tab_bar_card"
@@ -43,6 +44,8 @@
                 android:backgroundTint="?attr/cardBackgroundColor"
                 android:textColor="?attr/colorPrimary"
                 android:maxLines="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 app:icon="@drawable/home"
                 app:iconGravity="textTop"
                 app:iconTint="@color/black"
@@ -58,6 +61,8 @@
                 android:backgroundTint="?attr/cardBackgroundColor"
                 android:textColor="?attr/colorPrimary"
                 android:maxLines="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 app:icon="@drawable/like"
                 app:iconGravity="textTop"
                 app:iconTint="@color/black"
@@ -72,6 +77,8 @@
                 android:backgroundTint="?attr/cardBackgroundColor"
                 android:textColor="?attr/colorPrimary"
                 android:maxLines="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 app:icon="@drawable/video"
                 app:iconGravity="textTop"
                 app:iconTint="@color/black"
@@ -86,6 +93,8 @@
                 android:backgroundTint="?attr/cardBackgroundColor"
                 android:textColor="?attr/colorPrimary"
                 android:maxLines="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 app:icon="@drawable/user"
                 app:iconGravity="textTop"
                 app:iconTint="@color/black"

@@ -1,6 +1,5 @@
 package com.fixeam.icoser.ui.recommend_page
 
-import com.fixeam.icoser.painter.GlideBlurTransformation
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
@@ -30,6 +29,7 @@ import com.fixeam.icoser.model.newsData
 import com.fixeam.icoser.model.setStatusBar
 import com.fixeam.icoser.network.AlbumsResponse
 import com.fixeam.icoser.network.ApiNetService
+import com.fixeam.icoser.painter.GlideBlurTransformation
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.google.gson.Gson
 import okhttp3.ResponseBody

@@ -5,16 +5,15 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -33,8 +32,10 @@ import com.fixeam.icoser.network.userHistory
 import com.fixeam.icoser.network.userInform
 import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.ui.about_page.AboutActivity
+import com.fixeam.icoser.ui.collection_page.CollectionViewActivity
 import com.fixeam.icoser.ui.follow_page.FollowActivity
 import com.fixeam.icoser.ui.forbidden_page.ForbbidenActivity
+import com.fixeam.icoser.ui.history_page.HistoryActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
 import com.fixeam.icoser.ui.main.activity.mainImagePreview
 import com.fixeam.icoser.ui.setting_page.SettingActivity
@@ -148,7 +149,8 @@ class UserFragment : Fragment() {
                     iconColor = ColorStateList.valueOf(Color.parseColor("#FADC6D")),
                     textId = R.string.my_collection,
                     onClick = {
-
+                        val intent = Intent(requireContext(), CollectionViewActivity::class.java)
+                        startActivity(intent)
                     }
                 ),
                 it,
@@ -162,7 +164,8 @@ class UserFragment : Fragment() {
                     textId = R.string.my_history,
                     clearMargin = true,
                     onClick = {
-
+                        val intent = Intent(requireContext(), HistoryActivity::class.java)
+                        startActivity(intent)
                     }
                 ),
                 it,
@@ -178,7 +181,13 @@ class UserFragment : Fragment() {
                     iconColor = ColorStateList.valueOf(Color.parseColor("#a9aeb8")),
                     textId = R.string.user_inform,
                     onClick = {
-
+                        if(userToken == null){
+                            val intent = Intent(requireContext(), LoginActivity::class.java)
+                            startActivity(intent)
+                        }
+                        val url = "https://app.fixeam.com/user-center?access_token=$userToken"
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
                     }
                 ),
                 it,
@@ -191,7 +200,13 @@ class UserFragment : Fragment() {
                     iconColor = ColorStateList.valueOf(Color.parseColor("#4CD263")),
                     textId = R.string.safe_center,
                     onClick = {
-
+                        if(userToken == null){
+                            val intent = Intent(requireContext(), LoginActivity::class.java)
+                            startActivity(intent)
+                        }
+                        val url = "https://app.fixeam.com/account-center?access_token=$userToken"
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
                     }
                 ),
                 it,

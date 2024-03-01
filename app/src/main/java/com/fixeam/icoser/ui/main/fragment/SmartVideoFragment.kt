@@ -1,6 +1,5 @@
 package com.fixeam.icoser.ui.main.fragment
 
-import com.fixeam.icoser.painter.GlideBlurTransformation
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
@@ -32,6 +31,7 @@ import com.fixeam.icoser.network.MediaResponse
 import com.fixeam.icoser.network.accessLog
 import com.fixeam.icoser.network.updateAccessLog
 import com.fixeam.icoser.network.userToken
+import com.fixeam.icoser.painter.GlideBlurTransformation
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.model_page.ModelViewActivity
 import com.google.android.exoplayer2.DefaultRenderersFactory

@@ -8,22 +8,18 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import com.fixeam.icoser.model.Option
 import com.fixeam.icoser.R
-import com.fixeam.icoser.ui.update_dialog.UpdateActivity
+import com.fixeam.icoser.model.Option
 import com.fixeam.icoser.model.checkForUpdate
 import com.fixeam.icoser.model.initOptionItem
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
+import com.fixeam.icoser.ui.update_dialog.UpdateActivity
 
 class AboutActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
