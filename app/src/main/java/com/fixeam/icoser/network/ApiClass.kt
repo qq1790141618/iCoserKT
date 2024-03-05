@@ -20,12 +20,12 @@ data class UserInform(
     val username: String,
     val phone: String,
     val mail: String,
-    val header: String,
-    val nickname: String,
+    var header: String,
+    var nickname: String,
     val register: String,
     val comment_disabled: Int,
-    val location: String,
-    val birthday: String
+    var location: String,
+    var birthday: String
 )
 data class SendVerifyCodeResponse(
     val result: Boolean,
@@ -283,4 +283,10 @@ data class Forbidden(
     val res_id: String,
     val time: String,
     val user_id: String
+)
+
+data class FileUploadResponse(
+    val result: Boolean,
+    val name: String,
+    val url: String
 )

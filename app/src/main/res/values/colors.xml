@@ -11,4 +11,5 @@
     <color name="text_grey_night">#202020</color>
     <color name="danger">#D54941</color>
     <color name="transparent">#00000000</color>
+    <color name="day_night_grey">#a9aeb8</color>
 </resources>

@@ -24,8 +24,6 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.RequestOptions
 import com.fixeam.icoser.R
-import com.fixeam.icoser.model.createImageView
-import com.fixeam.icoser.model.imageViewInstantiate
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
 import com.fixeam.icoser.network.Albums
@@ -40,6 +38,7 @@ import com.fixeam.icoser.network.updateAccessLog
 import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.painter.GlideBlurTransformation
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
+import com.fixeam.icoser.ui.image_preview.ImagePreviewActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
 import com.fixeam.icoser.ui.media_page.MediaViewActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -89,9 +88,6 @@ class ModelViewActivity : AppCompatActivity() {
         val id = intent.getIntExtra("id", -1)
         doNotSetToken = intent.getBooleanExtra("doNotSetToken", false)
         requireModelContent(id)
-
-        val application = findViewById<ConstraintLayout>(R.id.application)
-        imagePreview = createImageView(application, this)
     }
 
     private fun requireModelContent(id: Int){
@@ -261,12 +257,13 @@ class ModelViewActivity : AppCompatActivity() {
                 .transform(RoundedCorners(250))
                 .into(avatar)
             avatar?.setOnClickListener {
-                imagePreview?.let { it1 ->
-                    imageViewInstantiate(
-                        modelInfo?.avatar_image!!, this,
-                        it1
-                    )
-                }
+                val header: ArrayList<String> = arrayListOf(modelInfo?.avatar_image!!)
+                ImagePreviewActivity.start(
+                    this,
+                    0,
+                    header,
+                    avatar
+                )
             }
         }
 

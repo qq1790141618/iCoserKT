@@ -1,21 +1,15 @@
 package com.fixeam.icoser.model
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.ArgbEvaluator
-import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DownloadManager
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.BroadcastReceiver
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -25,28 +19,30 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.DisplayMetrics
+import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.appcompat.widget.AppCompatImageView
-import androidx.cardview.widget.CardView
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.fixeam.icoser.ui.main.fragment.HomeFragment
 import com.fixeam.icoser.R
+import com.fixeam.icoser.ui.main.fragment.CollectionFragment
+import com.fixeam.icoser.ui.main.fragment.HomeFragment
 import com.fixeam.icoser.ui.main.fragment.SmartVideoFragment
 import com.fixeam.icoser.ui.main.fragment.UserFragment
-import com.fixeam.icoser.ui.main.fragment.CollectionFragment
 import com.google.android.material.button.MaterialButton
 import java.io.OutputStream
 
@@ -56,7 +52,6 @@ var collectionFragment: CollectionFragment? = null
 var smartVideoFragment: SmartVideoFragment? = null
 var userFragment: UserFragment? = null
 var showFragment: Fragment? = null
-var overCard: ConstraintLayout? = null
 var hasNotificationProgression: Boolean = true
 
 // 移除共享变量
@@ -65,53 +60,6 @@ fun removeSharedPreferencesKey(key: String, context: Context){
     val editor = sharedPreferences.edit()
     editor.remove(key)
     editor.apply()
-}
-
-// 关闭MainActivity遮罩层卡片
-fun closeOverCard(){
-    val card = overCard!!.findViewById<CardView>(R.id.overlay_card)
-
-    val slideAnimation = ObjectAnimator.ofFloat(card, "translationY", 0f, overCard!!.height.toFloat())
-    slideAnimation.duration = 500
-    slideAnimation.start()
-
-    val startColor = Color.parseColor("#AE000000")
-    val endColor = Color.parseColor("#00000000")
-
-    val colorAnimation = ValueAnimator.ofObject(ArgbEvaluator(), startColor, endColor)
-    colorAnimation.duration = 500
-    colorAnimation.addUpdateListener { animator ->
-        val color = animator.animatedValue as Int
-        overCard?.setBackgroundColor(color)
-    }
-
-    colorAnimation.addListener(object : AnimatorListenerAdapter() {
-        override fun onAnimationEnd(animation: Animator) {
-            overCard?.visibility = View.GONE
-        }
-    })
-
-    colorAnimation.start()
-}
-
-// 展示MainActivity遮罩层卡片
-fun openOverCard(){
-    val card = overCard!!.findViewById<CardView>(R.id.overlay_card)
-    val slideAnimation = ObjectAnimator.ofFloat(card, "translationY", overCard!!.height.toFloat(), 0f)
-    slideAnimation.duration = 500
-    slideAnimation.start()
-
-    val startColor = Color.parseColor("#AE000000")
-    val endColor = Color.parseColor("#00000000")
-
-    val colorAnimation = ValueAnimator.ofObject(ArgbEvaluator(), endColor, startColor)
-    colorAnimation.duration = 500
-    colorAnimation.addUpdateListener { animator ->
-        val color = animator.animatedValue as Int
-        overCard?.setBackgroundColor(color)
-    }
-
-    colorAnimation.start()
 }
 
 // 分享文字
@@ -327,135 +275,6 @@ fun isDarken(activity: Activity): Boolean{
     return currentTheme == Configuration.UI_MODE_NIGHT_YES
 }
 
-// 创建图片预览框
-fun createImageView(application: ConstraintLayout, activity: Activity): ConstraintLayout {
-    val imagePreview: ConstraintLayout = activity.layoutInflater.inflate(R.layout.image_preview, application, false) as ConstraintLayout
-    val imageViewPrev = imagePreview.findViewById<AppCompatImageView>(R.id.image_view_prev)
-
-    imagePreview.setOnClickListener {
-        imagePreview.visibility = View.GONE
-
-        imageViewPrev?.rotation = 0f
-        imageViewPrev?.scaleX = 1f
-        imageViewPrev?.scaleY = 1f
-    }
-
-    val downloadButton = imagePreview.findViewById<MaterialButton>(R.id.download)
-    downloadButton?.setOnClickListener {
-        imageViewPrev?.let { it1 -> saveImageToGallery(activity, it1) }
-    }
-
-    val scaleUpButton = imagePreview.findViewById<MaterialButton>(R.id.scale_up)
-    scaleUpButton?.setOnClickListener {
-        val currentScale = imageViewPrev?.scaleX ?: 1f
-        val newScale = currentScale + 0.4f
-
-        val clampedScale = newScale.coerceIn(0.21f, 2.99f)
-        if (clampedScale < currentScale) {
-            Toast.makeText(activity, "已经达到最大缩放比例", Toast.LENGTH_SHORT).show()
-            return@setOnClickListener
-        }
-
-        val animator = ValueAnimator.ofFloat(currentScale, clampedScale)
-        animator.addUpdateListener { animation ->
-            val value = animation.animatedValue as Float
-            imageViewPrev?.scaleX = value
-            imageViewPrev?.scaleY = value
-        }
-        animator.start()
-    }
-
-    val scaleDownButton = imagePreview.findViewById<MaterialButton>(R.id.scale_down)
-    scaleDownButton?.setOnClickListener {
-        scaleDownButton.isEnabled = false
-        val currentScale = imageViewPrev?.scaleX ?: 1f
-        val newScale = currentScale - 0.4f
-
-        val clampedScale = newScale.coerceIn(0.21f, 2.99f)
-        if (clampedScale > currentScale) {
-            Toast.makeText(activity, "已经达到最小缩放比例", Toast.LENGTH_SHORT).show()
-            return@setOnClickListener
-        }
-
-        val animator = ValueAnimator.ofFloat(currentScale, clampedScale)
-        animator.addUpdateListener { animation ->
-            val value = animation.animatedValue as Float
-            imageViewPrev?.scaleX = value
-            imageViewPrev?.scaleY = value
-        }
-        animator.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                // 在动画完成时重新启用按钮
-                scaleDownButton.isEnabled = true
-            }
-        })
-        animator.start()
-    }
-
-    val scaleResetButton = imagePreview.findViewById<MaterialButton>(R.id.scale_reset)
-    scaleResetButton?.setOnClickListener {
-        scaleResetButton.isEnabled = false
-        val currentScale = imageViewPrev?.scaleX ?: 1f
-        val newScale = 1f
-
-        val animator = ValueAnimator.ofFloat(currentScale, newScale)
-        animator.addUpdateListener { animation ->
-            val value = animation.animatedValue as Float
-            imageViewPrev?.scaleX = value
-            imageViewPrev?.scaleY = value
-        }
-        animator.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                // 在动画完成时重新启用按钮
-                scaleResetButton.isEnabled = true
-            }
-        })
-        animator.start()
-    }
-
-    val rotateLeftButton = imagePreview.findViewById<MaterialButton>(R.id.rotate_left)
-    rotateLeftButton?.setOnClickListener {
-        // 禁用按钮
-        rotateLeftButton.isEnabled = false
-
-        // 向左旋转 imageViewPrev 90 度
-        val currentRotation = imageViewPrev?.rotation ?: 0f
-        val newRotation = currentRotation - 90f
-
-        val animator = ObjectAnimator.ofFloat(imageViewPrev, "rotation", currentRotation, newRotation)
-        animator.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                // 在动画完成时重新启用按钮
-                rotateLeftButton.isEnabled = true
-            }
-        })
-        animator.start()
-    }
-
-    imagePreview.visibility = View.GONE
-
-
-    val layoutParams = ConstraintLayout.LayoutParams(
-        ConstraintLayout.LayoutParams.MATCH_PARENT,
-        ConstraintLayout.LayoutParams.MATCH_PARENT
-    )
-    layoutParams.topToBottom = R.id.tab_bar_card
-    imagePreview.layoutParams = layoutParams
-
-    application.addView(imagePreview)
-    return imagePreview
-}
-
-// 打开图片预览框
-fun imageViewInstantiate(url: String, context: Context, imagePreview: ConstraintLayout){
-    val imageViewPrev = imagePreview.findViewById<AppCompatImageView>(R.id.image_view_prev)
-    Glide.with(context)
-        .load(url)
-        .diskCacheStrategy(DiskCacheStrategy.ALL)
-        .into(imageViewPrev)
-    imagePreview.visibility = View.VISIBLE
-}
-
 // 添加列表项
 fun initOptionItem(option: Option, root: ViewGroup, activity: Activity, isDark: Boolean){
     val optionItem = activity.layoutInflater.inflate(R.layout.option_item, root, false)
@@ -524,6 +343,15 @@ fun initOptionItem(option: Option, root: ViewGroup, activity: Activity, isDark: 
         }
     }
 
+    setOptionItemPress(optionItem, isDark){
+        option.onClick()
+        option.onClickWithContext(it)
+    }
+    root.addView(optionItem)
+}
+
+// 设置列表项按下效果
+fun setOptionItemPress(view: View, isDark: Boolean, onClick: (View) -> Unit){
     var pressDownColor = Color.parseColor("#F6F6F6")
     var pressUpColor = Color.parseColor("#FFFFFF")
     if(isDark){
@@ -532,22 +360,21 @@ fun initOptionItem(option: Option, root: ViewGroup, activity: Activity, isDark: 
     }
     var downTime: Long = 0
 
-    optionItem.setOnTouchListener(object : View.OnTouchListener {
+    view.setOnTouchListener(object : View.OnTouchListener {
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouch(view: View, event: MotionEvent): Boolean {
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    optionItem.setBackgroundColor(pressDownColor)
+                    view.setBackgroundColor(pressDownColor)
                     downTime = System.currentTimeMillis()
                     return true
                 }
                 MotionEvent.ACTION_UP -> {
-                    optionItem.setBackgroundColor(pressUpColor)
+                    view.setBackgroundColor(pressUpColor)
                     val upTime = System.currentTimeMillis()
                     val duration = upTime - downTime
                     if(duration < 300){
-                        option.onClick()
-                        option.onClickWithContext(optionItem)
+                        onClick(view)
                     }
                     return true  // 返回true表示消费了该事件
                 }
@@ -555,6 +382,239 @@ fun initOptionItem(option: Option, root: ViewGroup, activity: Activity, isDark: 
             return false
         }
     })
-
-    root.addView(optionItem)
 }
+
+// 复制到剪贴板
+fun copyToClipboard(context: Context, text: String, callback: () -> Unit) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clip = ClipData.newPlainText("label", text)
+    clipboard.setPrimaryClip(clip)
+}
+
+// 全局窗口亮度调整
+fun changeBackgroundDim(isDim: Boolean, activity: Activity) {
+    val window = activity.window
+    val layoutParams = window.attributes
+    layoutParams.alpha = if (isDim) 0.5f else 1.0f
+    window.attributes = layoutParams
+}
+
+data class CascaderItem(
+    val name: String,
+    val value: String,
+    val children: List<CascaderItem>?
+)
+val cascaderListData: MutableList<List<CascaderItem>> = mutableListOf()
+// 创建级联选择器
+@SuppressLint("InflateParams", "NotifyDataSetChanged")
+fun createCascader(root: ViewGroup, activity: Activity, list: List<CascaderItem>, defaultValue: String? = null, title: String? = null, selectedCall: (String?) -> Unit){
+    changeBackgroundDim(true, activity)
+    val contentView = activity.layoutInflater.inflate(R.layout.cascader_view, null)
+    val popupWindow = PopupWindow(
+        contentView,
+        LinearLayout.LayoutParams.MATCH_PARENT,
+        LinearLayout.LayoutParams.WRAP_CONTENT,
+        true
+    )
+    popupWindow.animationStyle = R.style.PopupAnimation
+    popupWindow.showAtLocation(
+        root,
+        Gravity.BOTTOM,
+        0,
+        0
+    )
+    popupWindow.setOnDismissListener {
+        changeBackgroundDim(false, activity)
+    }
+    val closeButton = contentView.findViewById<MaterialButton>(R.id.close)
+    closeButton?.setOnClickListener {
+        selectedCall(null)
+        popupWindow.dismiss()
+    }
+
+    if(title != null){
+        val titleTextView = contentView.findViewById<TextView>(R.id.title)
+        titleTextView.text = title
+    }
+
+    // 初始化一级选择列表
+    cascaderListData.clear()
+    cascaderListData.add(list)
+
+    // 初始化文本内容
+    val textLayout = contentView.findViewById<LinearLayout>(R.id.text_layout)
+    textLayout.getChildAt(0).visibility = View.VISIBLE
+    val selectionIndex: MutableList<Int> = mutableListOf(0)
+
+    // 列表adapter
+    val dataViewPage = contentView.findViewById<ViewPager2>(R.id.data_view_page)
+    class ViewHolder(view: View) : RecyclerView.ViewHolder(view)
+    class CascaderItemListAdapter(private val viewPagerPosition: Int): RecyclerView.Adapter<ViewHolder>() {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val itemView = LayoutInflater.from(activity).inflate(R.layout.option_item, parent, false)
+            return ViewHolder(itemView)
+        }
+        override fun getItemCount(): Int {
+            return cascaderListData[viewPagerPosition].size
+        }
+        @SuppressLint("SetTextI18n")
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            // 修改holder
+            val item = cascaderListData[viewPagerPosition][position]
+            holder.itemView.findViewById<ImageView>(R.id.right_icon).visibility = View.INVISIBLE
+            val leftIcon = holder.itemView.findViewById<ImageView>(R.id.left_icon)
+            val textViewLevel = textLayout.getChildAt(viewPagerPosition) as TextView
+            leftIcon.setImageResource(R.drawable.check)
+            if(position == selectionIndex[viewPagerPosition]){
+                leftIcon.visibility = View.VISIBLE
+                textViewLevel.visibility = View.VISIBLE
+                textViewLevel.text = cascaderListData[viewPagerPosition][position].name
+                textViewLevel.setOnClickListener {
+                    setCascaderActiveIndexStyle(contentView, activity, viewPagerPosition)
+                    dataViewPage.setCurrentItem(viewPagerPosition, true)
+                }
+            } else {
+                leftIcon.visibility = View.INVISIBLE
+            }
+            val textView = holder.itemView.findViewById<TextView>(R.id.text)
+            textView.text = item.name
+
+            holder.itemView.setOnClickListener {
+                selectionIndex[viewPagerPosition] = position
+                textViewLevel.text = cascaderListData[viewPagerPosition][position].name
+
+                if(item.children != null){
+                    if(viewPagerPosition != cascaderListData.size - 1){
+                        val tempList: MutableList<List<CascaderItem>> = mutableListOf()
+                        for (s in 0..viewPagerPosition){
+                            tempList.add(cascaderListData[s])
+                        }
+                        cascaderListData.clear()
+                        cascaderListData.addAll(tempList)
+                    }
+                    selectionIndex.add(0)
+                    cascaderListData.add(item.children)
+                    dataViewPage.adapter?.notifyDataSetChanged()
+                    dataViewPage.setCurrentItem(viewPagerPosition + 1, true)
+                    setCascaderActiveIndexStyle(contentView, activity, viewPagerPosition + 1)
+
+                    for(r in viewPagerPosition + 1..<textLayout.childCount){
+                        textLayout.getChildAt(r).visibility = View.GONE
+                        textLayout.getChildAt(r).setOnClickListener {  }
+                    }
+                } else {
+                    selectedCall(cascaderListData[viewPagerPosition][position].value)
+                    popupWindow.dismiss()
+                }
+            }
+        }
+    }
+    class ViewPagerViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+    class ViewPagerAdapter : RecyclerView.Adapter<ViewPagerViewHolder>() {
+
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewPagerViewHolder {
+                val view = RecyclerView(activity)
+                view.layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                view.overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                return ViewPagerViewHolder(view)
+            }
+
+            override fun getItemCount(): Int {
+                return cascaderListData.size
+            }
+
+            override fun onBindViewHolder(holder: ViewPagerViewHolder, position: Int) {
+                val item = holder.itemView as RecyclerView
+                item.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.VERTICAL, false)
+                val adapter = CascaderItemListAdapter(position)
+                item.adapter = adapter
+                item.scrollToPosition(selectionIndex[position])
+            }
+        }
+
+    // 初始化ViewPager
+    val adapter = ViewPagerAdapter()
+    dataViewPage.adapter = adapter
+    dataViewPage.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+        override fun onPageSelected(position: Int) {
+            setCascaderActiveIndexStyle(contentView, activity, position)
+        }
+    })
+
+    // 初始化已选择项目
+    if(defaultValue != null){
+        selectionIndex.clear()
+        selectionIndex.addAll(calculateCascaderIndex(list, defaultValue))
+
+        var lastGroup: CascaderItem = list[selectionIndex[0]]
+        setCascaderActiveIndexStyle(contentView, activity, selectionIndex.size - 1)
+
+        for (index in selectionIndex.indices){
+            dataViewPage.setCurrentItem(index, true)
+            val itemText = textLayout.getChildAt(index) as TextView
+            itemText.visibility = View.VISIBLE
+            itemText.text = lastGroup.name
+            itemText.setOnClickListener {
+                dataViewPage.setCurrentItem(index, true)
+                setCascaderActiveIndexStyle(contentView, activity, index)
+            }
+
+            if (lastGroup.children != null) {
+                cascaderListData.add(lastGroup.children!!)
+                dataViewPage.adapter?.notifyDataSetChanged()
+
+                lastGroup = lastGroup.children!![selectionIndex[index + 1]]
+            } else {
+                break
+            }
+        }
+    }
+}
+
+fun setCascaderActiveIndexStyle(cascaderView: View, activity: Activity, activeIndex: Int){
+    val textLayout = cascaderView.findViewById<LinearLayout>(R.id.text_layout)
+    setCascaderBlock(
+        cascaderView,
+        activeIndex,
+        (activity.resources.displayMetrics.density * 72).toInt()
+    )
+    for (index in 0..<textLayout.childCount){
+        val itemText = textLayout.getChildAt(index) as TextView
+        if(activeIndex == index){
+            itemText.setTextColor(Color.parseColor("#618dff"))
+        } else {
+            if(isDarken(activity)){
+                itemText.setTextColor(Color.WHITE)
+            } else {
+                itemText.setTextColor(Color.BLACK)
+            }
+        }
+    }
+}
+
+fun setCascaderBlock(cascaderView: View, index: Int, itemWidth: Int){
+    val block = cascaderView.findViewById<LinearLayout>(R.id.level_block)
+    val moveDistance = itemWidth * index
+    block.animate().translationX(moveDistance.toFloat()).setDuration(300).start()
+}
+
+fun calculateCascaderIndex(items: List<CascaderItem>, value: String): List<Int>{
+    val resultList: MutableList<Int> = mutableListOf()
+    for ((index, item) in items.withIndex()){
+        if(item.value == value){
+            resultList.add(index)
+        }
+        if(item.children != null){
+            val f = calculateCascaderIndex(item.children, value)
+            if(f.isNotEmpty()){
+                resultList.add(index)
+                resultList.addAll(f)
+            }
+        }
+    }
+    return resultList
+}
+

@@ -6,6 +6,7 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -37,6 +38,7 @@ import com.fixeam.icoser.ui.image_preview.ImagePreviewActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
 import com.fixeam.icoser.ui.media_page.MediaViewActivity
 import com.fixeam.icoser.ui.model_page.ModelViewActivity
+import com.fixeam.icoser.ui.search_page.SearchActivity
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.button.MaterialButton
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
@@ -54,6 +56,17 @@ class CollectionFragment : Fragment() {
     @SuppressLint("NotifyDataSetChanged")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // 设置标题字体
+        val title = view.findViewById<TextView>(R.id.top_text)
+        title.typeface = Typeface.createFromAsset(requireContext().assets, "font/JosefinSans-Regular-7.ttf")
+
+        // 创建搜索按钮点击
+        val homeSearchButton = view.findViewById<ImageView>(R.id.home_search_button)
+        homeSearchButton.setOnClickListener {
+            val intent = Intent(requireContext(), SearchActivity::class.java)
+            startActivity(intent)
+        }
 
         if(userToken == null){
             val intent = Intent(requireContext(), LoginActivity::class.java)
@@ -237,7 +250,7 @@ class CollectionFragment : Fragment() {
             publishTime.text = "发布于 ${calculateTimeAgo(album.create_time)}"
 
             // 计算动态内容宽度(3像素的容差)
-            val contentWidth = getScreenWidth(requireContext()) - resources.displayMetrics.density * 54 - 3
+            val contentWidth = getScreenWidth(requireContext()) - resources.displayMetrics.density * 60 - 3
             val contentGap = resources.displayMetrics.density * 10
             var contentItemWidth = ((contentWidth - contentGap * 2) / 3).toInt()
             var contentItemHeight = ((contentWidth - contentGap * 2) / 3).toInt()

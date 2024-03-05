@@ -34,9 +34,10 @@
     <string name="share">分享</string>
     <string name="collection">收藏</string>
     <string name="uncollection">取消收藏</string>
-    <string name="close">关闭</string>
     <string name="create_collection_fold">创建收藏夹</string>
+    <string name="close">关闭</string>
     <string name="confirm">确认</string>
+    <string name="cancel">取消</string>
     <string name="download">下载</string>
     <string name="change_media">切换视频</string>
     <string name="change_ratio">切换清晰度</string>
@@ -71,12 +72,12 @@
     <string name="setting">设置</string>
     <string name="about">关于iCoser</string>
     <string name="collection_fold_select">选择收藏夹</string>
-    <string name="official_website">官网</string>
+    <string name="official_website">网页端</string>
     <string name="fixeam_official_website">Fixeam业务官网</string>
     <string name="copyright" tools:ignore="TypographyDashes">Copyright ⓒ 2020-2024 Fixeam. All Right Reserved</string>
     <string name="email_admin">站长邮箱：1790141618@qq.com</string>
     <string name="beian" tools:ignore="TypographyDashes">湘ICP备2020023534号-1</string>
-    <string name="default_display">小视频播放清晰度</string>
+    <string name="default_display">小视频清晰度</string>
     <string name="ratio_2160p">2160p UHD 4K</string>
     <string name="ratio_1080p">1080p FHD</string>
     <string name="ratio_1440p">1440p QHD 2K</string>
@@ -86,7 +87,7 @@
     <string name="caching">缓存设置</string>
     <string name="color_theme">颜色主题</string>
     <string name="cache_size">已缓存大小</string>
-    <string name="set_max_cache_size">设置最大缓存大小</string>
+    <string name="set_max_cache_size">最大允许的缓存</string>
     <string name="cache_clear">清除当前缓存</string>
     <string name="empty">暂无相关内容~</string>
     <string name="remove">移除</string>
@@ -96,4 +97,17 @@
     <string name="notification_push">消息推送</string>
     <string name="permission_required">App需要通知权限才能向您发送您关注的最新动态</string>
     <string name="ok">OK</string>
+    <string name="user_avatar">用户头像</string>
+    <string name="user_nickname">用户昵称</string>
+    <string name="username">用户名</string>
+    <string name="user_identity">用户身份</string>
+    <string name="user_phone">手机号</string>
+    <string name="user_mail">邮箱</string>
+    <string name="user_location">地区</string>
+    <string name="user_birthday">用户生日</string>
+    <string name="first_level">第一级</string>
+    <string name="second_level">第二级</string>
+    <string name="third_level">第三级</string>
+    <string name="fourth_level">第四级</string>
+    <string name="cascader_title">请选择</string>
 </resources>

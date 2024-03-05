@@ -1,7 +1,11 @@
 package com.fixeam.icoser.network
 
 import android.content.Context
+import android.widget.Toast
 import com.fixeam.icoser.model.getSystemInfo
+import com.fixeam.icoser.model.newsData
+import com.google.gson.Gson
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Call
@@ -12,7 +16,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Headers
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Query
 import retrofit2.http.Url
 import java.util.concurrent.TimeUnit
@@ -101,6 +107,14 @@ interface ApiService {
     fun GetFollow(@Query("access_token") access_token: String, @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<AlbumsResponse>
     @GET("app/version/latest?platform=android")
     fun GetLatestVersion(@Query("version_type") type: String): Call<PackageInfo>
+    @Multipart
+    @POST("file/upload")
+    fun uploadFile(
+        @Query("access_token") accessToken: String,
+        @Part file: MultipartBody.Part
+    ): Call<FileUploadResponse>
+    @GET("login/user/change/inform")
+    fun setUserInform(@Query("access_token") accessToken: String, @Query("inform") inform: String): Call<ActionResponse>
 }
 
 
@@ -138,5 +152,27 @@ fun updateAccessLog(id: Int, stay: Int = -1){
     call.enqueue(object : Callback<UpdateAccessLog> {
         override fun onResponse(call: Call<UpdateAccessLog>, response: Response<UpdateAccessLog>) { }
         override fun onFailure(call: Call<UpdateAccessLog>, t: Throwable) { }
+    })
+}
+
+// 获取最新的写真集
+fun requestNewData(context: Context, callback: () -> Unit) {
+    val call = ApiNetService.GetAlbum(number = 30)
+    call.enqueue(object : Callback<ResponseBody> {
+        override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()?.string()
+                val albumsResponse = Gson().fromJson(responseBody, AlbumsResponse::class.java)
+                if (albumsResponse.result) {
+                    newsData = albumsResponse.data.take(30)
+                    callback()
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+            // 处理请求失败的逻辑
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
     })
 }

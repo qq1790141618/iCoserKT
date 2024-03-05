@@ -1,71 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="7dp"
     android:layout_marginTop="5dp"
     android:layout_marginBottom="15dp"
-    app:cardElevation="2dp"
-    app:cardCornerRadius="12dp">
+    android:background="@drawable/rounded_square" >
 
-    <LinearLayout
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="?attr/colorOnBackground"
-        android:orientation="vertical">
-
-        <com.youth.banner.Banner
-            android:id="@+id/banner"
-            android:layout_width="match_parent"
-            android:layout_height="100dp" />
+        android:layout_height="wrap_content"
+        app:cardElevation="0dp"
+        app:cardCornerRadius="10dp"
+        android:layout_margin="0.5dp">
 
         <LinearLayout
-            android:id="@+id/fast_host"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            app:singleSelection="true"
-            app:selectionRequired="true"
-            android:background="?attr/cardBackgroundColor" >
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/hot"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:paddingLeft="38dp"
-                android:paddingRight="38dp"
-                android:text="@string/hot"
-                android:textSize="12sp"
-                android:backgroundTint="?attr/cardBackgroundColor"
-                android:textColor="?attr/colorPrimary"
-                app:icon="@drawable/hot"
-                app:iconTint="#ed6452"
-                app:cornerRadius="0dp"
-                app:iconSize="26dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp" />
+            <com.youth.banner.Banner
+                android:id="@+id/banner"
+                android:layout_width="match_parent"
+                android:layout_height="100dp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/news"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:paddingLeft="38dp"
-                android:paddingRight="38dp"
-                android:text="@string/new_"
-                android:textSize="12sp"
-                android:backgroundTint="?attr/cardBackgroundColor"
-                android:textColor="?attr/colorPrimary"
-                app:icon="@drawable/new_"
-                app:iconTint="#3cd38e"
-                app:cornerRadius="0dp"
-                app:iconSize="26dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp" />
+            <LinearLayout
+                android:id="@+id/fast_host"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                app:singleSelection="true"
+                app:selectionRequired="true"
+                android:background="?attr/cardBackgroundColor" >
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/hot"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:paddingLeft="38dp"
+                    android:paddingRight="38dp"
+                    android:text="@string/hot"
+                    android:textSize="12sp"
+                    android:backgroundTint="?attr/cardBackgroundColor"
+                    android:textColor="?attr/colorPrimary"
+                    app:icon="@drawable/hot"
+                    app:iconTint="#ed6452"
+                    app:cornerRadius="0dp"
+                    app:iconSize="26dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/news"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:paddingLeft="38dp"
+                    android:paddingRight="38dp"
+                    android:text="@string/new_"
+                    android:textSize="12sp"
+                    android:backgroundTint="?attr/cardBackgroundColor"
+                    android:textColor="?attr/colorPrimary"
+                    app:icon="@drawable/new_"
+                    app:iconTint="#3cd38e"
+                    app:cornerRadius="0dp"
+                    app:iconSize="26dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-    </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-</androidx.cardview.widget.CardView>
+</LinearLayout>

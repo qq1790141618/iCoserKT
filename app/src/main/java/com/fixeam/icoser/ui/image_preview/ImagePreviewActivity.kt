@@ -83,7 +83,7 @@ class ImagePreviewActivity : AppCompatActivity(), AlphaCallback {
 
     companion object{
         // 启动方法，作为参考
-        fun start(activity: AppCompatActivity,index:Int,list: ArrayList<String>,view: View){
+        fun start(activity: AppCompatActivity, index:Int, list: ArrayList<String>, view: View){
             // 构建共享元素的集合，可以多个，但需要注意一一对应
             // 详情请看文档 https://developer.android.com/guide/navigation/navigation-animate-transitions?hl=zh-cn
             val mPair: Array<androidx.core.util.Pair<View, String>?> = arrayOfNulls(1)

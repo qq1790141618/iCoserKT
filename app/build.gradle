@@ -11,8 +11,8 @@ android {
         applicationId "com.fixeam.icoser"
         minSdk 28
         targetSdk 34
-        versionCode 200020
-        versionName "2.0.2"
+        versionCode 200050
+        versionName "2.0.5"
         versionNameSuffix(" release")
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -99,5 +99,12 @@ dependencies {
     // 下拉刷新库
     implementation  'io.github.scwang90:refresh-layout-kernel:2.1.0'
     implementation  'io.github.scwang90:refresh-header-material:2.1.0'
+    implementation  'io.github.scwang90:refresh-header-classics:2.1.0'
     implementation  'io.github.scwang90:refresh-footer-classics:2.1.0'
+
+    // 头像裁剪库
+    implementation 'com.github.yalantis:ucrop:2.2.8'
+
+    // 添加WorkManager依赖
+    implementation "androidx.work:work-runtime-ktx:2.9.0"
 }

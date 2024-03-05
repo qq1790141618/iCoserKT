@@ -69,8 +69,8 @@ class UpdateActivity : AppCompatActivity() {
     }
 
     private fun doNotAlertVersion() {
-        val sharedPreferences = getSharedPreferences("version", AppCompatActivity.MODE_PRIVATE)
-        newVersion?.let { sharedPreferences.edit().putInt("do_not_alert_version", it.version_id) }
+        val sharedPreferences = getSharedPreferences("version", MODE_PRIVATE)
+        newVersion?.let { sharedPreferences.edit().putInt("do_not_alert_version", it.version_id).apply() }
         onBackPressed()
     }
 
@@ -131,6 +131,8 @@ class UpdateActivity : AppCompatActivity() {
                 intent.data = uri
                 intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 startActivity(intent)
+
+                finish()
             }
         } }
     }

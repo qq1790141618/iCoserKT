@@ -2,7 +2,6 @@ package com.fixeam.icoser.network
 
 import android.app.AlertDialog
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.RadioButton
@@ -30,7 +29,11 @@ var userHistory: HistoryResponse? = null
 var userHistoryList: MutableList<History> = mutableListOf()
 var userInformFailTime = 0
 
-// 获取用户信息
+/**
+ * 获取用户信息
+ * @param access_token 用户访问令牌
+ * @param context 执行本次操作的上下文对象
+ */
 fun verifyTokenAndGetUserInform(access_token: String, context: Context){
     if(userInformFailTime >= 3){
         return
@@ -76,7 +79,11 @@ fun verifyTokenAndGetUserInform(access_token: String, context: Context){
     })
 }
 
-// 获取用户收藏
+/**
+ * 获取用户收藏
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在异步获取到信息后的回调函数
+ */
 fun getUserCollection(context: Context, callback: () -> Unit){
     if(userToken == null){
         return
@@ -107,6 +114,10 @@ fun getUserCollection(context: Context, callback: () -> Unit){
     })
 }
 
+/**
+ * 将收藏中的收藏夹补全到用户收藏夹
+ * @param collections 用户的收藏内容列表
+ */
 fun initCollectionOfFold(collections: List<Collection>){
     for (collect in collections){
         val fold = collect.fold
@@ -132,7 +143,11 @@ fun initCollectionOfFold(collections: List<Collection>){
     }
 }
 
-// 获取用户收藏夹
+/**
+ * 获取用户收藏夹
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在异步获取到信息后的回调函数
+ */
 fun getUserCollectionFold(context: Context, callback: () -> Unit){
     if(userToken == null){
         return
@@ -180,7 +195,12 @@ fun getUserCollectionFold(context: Context, callback: () -> Unit){
     })
 }
 
-// 设置用户收藏夹
+/**
+ * 设置/添加用户收藏夹
+ * @param name 收藏夹的名称
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在异步获取到信息后的回调函数
+ */
 fun setUserCollectionFold(context: Context, name: String, callback: () -> Unit){
     if(userToken == null){
         return
@@ -205,8 +225,12 @@ fun setUserCollectionFold(context: Context, name: String, callback: () -> Unit){
     })
 }
 
-
-// 移除用户收藏夹
+/**
+ * 移除用户收藏夹
+ * @param id 收藏夹ID
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在异步获取到信息后的回调函数
+ */
 fun removeUserCollectionFold(context: Context, id: Int, callback: () -> Unit){
     if(userToken == null){
         return
@@ -231,7 +255,13 @@ fun removeUserCollectionFold(context: Context, id: Int, callback: () -> Unit){
     })
 }
 
-// 设置写真集收藏
+/**
+ * 设置写真集收藏
+ * @param album 将要收藏/取消的写真集对象
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在异步获取到信息后的回调函数
+ * @param unLog 用户未登录异常的回调函数
+ */
 fun setAlbumCollection(context: Context, album: Albums, fold: String = "", callback: () -> Unit, unLog: () -> Unit){
     if(userToken != null){
         var call = ApiNetService.SetCollectionItem(userToken!!, album.id, "album", fold)
@@ -265,7 +295,13 @@ fun setAlbumCollection(context: Context, album: Albums, fold: String = "", callb
     }
 }
 
-// 设置模特关注
+/**
+ * 设置模特关注
+ * @param model 将要关注/取消的模特对象
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在异步获取到信息后的回调函数
+ * @param unLog 用户未登录异常的回调函数
+ */
 fun setModelFollowing(context: Context, model: Models, callback: () -> Unit, unLog: () -> Unit){
     if(userToken != null){
         var call = ApiNetService.SetCollectionItem(userToken!!, model.id, "model")
@@ -298,6 +334,14 @@ fun setModelFollowing(context: Context, model: Models, callback: () -> Unit, unL
         unLog()
     }
 }
+
+/**
+ * 使用模特ID设置模特关注
+ * @param modelId 将要关注/取消的模特ID
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在异步获取到信息后的回调函数
+ * @param unLog 用户未登录异常的回调函数
+ */
 fun setModelFollowingById(context: Context, modelId: Int, callback: () -> Unit, unLog: () -> Unit){
     if(userToken != null){
         val call = ApiNetService.SetCollectionItem(userToken!!, modelId, "model")
@@ -328,7 +372,14 @@ fun setModelFollowingById(context: Context, modelId: Int, callback: () -> Unit, 
     }
 }
 
-// 设置内容屏蔽
+/**
+ * 设置内容屏蔽
+ * @param id 将要屏蔽内容的ID
+ * @param type 将要屏蔽内容的类型，可选的值为"model"或"album"
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在异步获取到信息后的回调函数
+ * @param unLog 用户未登录异常的回调函数
+ */
 fun setForbidden(context: Context, id: Int, type: String, callback: () -> Unit, unLog: () -> Unit){
     if(userToken != null){
         val call = ApiNetService.SetForbiddenItem(userToken!!, id, type)
@@ -358,7 +409,12 @@ fun setForbidden(context: Context, id: Int, type: String, callback: () -> Unit, 
     }
 }
 
-// 移除内容屏蔽
+/**
+ * 移除对内容的屏蔽
+ * @param id 将要屏蔽内容的ID
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在异步获取到信息后的回调函数
+ */
 fun removeForbidden(context: Context, id: Int, callback: () -> Unit){
     if(userToken == null){
         return
@@ -386,8 +442,19 @@ fun removeForbidden(context: Context, id: Int, callback: () -> Unit){
     })
 }
 
-// 打开收藏夹选择器
-fun openCollectionSelector(context: Context, album: Albums, callback: (String) -> Unit, unLog: () -> Unit){
+/**
+ * 打开收藏夹选择器
+ *
+ * 本函数用于在用户界面中打开一个收藏夹选择器，允许用户从中选择一个收藏夹。
+ * 选择器的具体实现依赖于上下文对象`context`以及`album`参数。
+ *
+ * @param context 执行本次操作的上下文对象，通常指代当前活动或应用的环境。
+ * @param album 用于在选择器中展示的相册数据。
+ * @param callback 在异步获取到信息后的回调函数。此回调函数接受一个参数：
+ *        - name: 用户从选择器中选定的收藏夹名称。此名称用于后续的业务逻辑处理
+ * @param unLog 一个无参数的函数，用于执行未登录状态下的特定逻辑
+ */
+fun openCollectionSelector(context: Context, album: Albums, callback: (name: String) -> Unit, unLog: () -> Unit){
     if(userToken == null){
         unLog()
         return
@@ -475,6 +542,11 @@ fun openCollectionSelector(context: Context, album: Albums, callback: (String) -
     alertDialog.show()
 }
 
+/**
+ * 向收藏夹单选列表添加单选选项
+ * @param context 执行本次操作的上下文对象
+ * @param radioGroup 收藏夹单选列表
+ */
 fun initCollectionSelectorRadioGroup(context: Context, radioGroup: RadioGroup){
     radioGroup.removeAllViews()
 
@@ -503,7 +575,13 @@ fun initCollectionSelectorRadioGroup(context: Context, radioGroup: RadioGroup){
     radioGroup.check(radioGroup.getChildAt(userCollectionFold.size - 1).id)
 }
 
-// 获取用户历史记录
+/**
+ * 获取用户历史记录
+ * @param context 执行本次操作的上下文对象
+ * @param isRefresh 清空获取到的数据并重新获取
+ * @param number 本次获取历史数据的条目数量
+ * @param callback 在执行完本次获取请求后的回调函数
+ */
 fun getUserHistory(context: Context, isRefresh: Boolean = true, number: Int = 50, callback: () -> Unit){
     if(userToken == null){
         return
@@ -526,11 +604,11 @@ fun getUserHistory(context: Context, isRefresh: Boolean = true, number: Int = 50
                     }
                     userHistoryList.addAll(responseBody.history)
 
-                    var number = 0
+                    var total = 0
                     for (timeRange in responseBody.time_range){
-                        number += timeRange.count
+                        total += timeRange.count
                     }
-                    userFragment?.setHistoryNumber(number)
+                    userFragment?.setHistoryNumber(total)
                 }
 
                 callback()
@@ -544,7 +622,12 @@ fun getUserHistory(context: Context, isRefresh: Boolean = true, number: Int = 50
     })
 }
 
-// 清除用户历史记录
+/**
+ * 清除用户历史记录
+ * @param context 执行本次操作的上下文对象
+ * @param [id] 本次删除的历史记录ID（空 - 清空全部历史记录）
+ * @param callback 在执行完本次请求后的回调函数
+ */
 fun clearUserHistory(context: Context, id: Int = -1, callback: (Boolean) -> Unit){
     if(userToken == null){
         callback(false)
@@ -577,7 +660,11 @@ fun clearUserHistory(context: Context, id: Int = -1, callback: (Boolean) -> Unit
     })
 }
 
-// 获取用户关注
+/**
+ * 获取用户关注
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在执行完本次请求后的回调函数
+ */
 fun getUserFollow(context: Context, callback: () -> Unit){
     if(userToken == null){
         return
@@ -606,7 +693,11 @@ fun getUserFollow(context: Context, callback: () -> Unit){
     })
 }
 
-// 获取用户屏蔽
+/**
+ * 获取用户屏蔽内容
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在执行完本次请求后的回调函数
+ */
 fun getUserForbidden(context: Context, callback: () -> Unit){
     if(userToken == null){
         return
@@ -635,10 +726,16 @@ fun getUserForbidden(context: Context, callback: () -> Unit){
     })
 }
 
-// 获取关注内容更新
+// 关注内容更新获取相关参数
 var followAlbumLoading: Boolean = false
 var followIsFinished: Boolean = false
 val followAlbumList: MutableList<Albums> = mutableListOf()
+/**
+ * 获取关注内容更新
+ * @param context 执行本次操作的上下文对象
+ * @param callback 在执行完本次请求后的回调函数
+ * @param isRefresh 刷新并重新从最开始获取
+ */
 fun requestFollowData(context: Context, isRefresh: Boolean = false, callback: () -> Unit) {
     if(userToken == null){
         return
@@ -682,6 +779,39 @@ fun requestFollowData(context: Context, isRefresh: Boolean = false, callback: ()
         override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {
             // 处理请求失败的逻辑
             Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+
+/**
+ * 更新用户信息
+ * @param token 用户访问令牌
+ * @param inform 用户信息json对象
+ * @param onSuccess 操作成功回调
+ * @param onFail 操作失败回调
+ */
+fun setUserInform(token: String, inform: String, onSuccess: () -> Unit, onFail: () -> Unit){
+    if(userInformFailTime >= 3){
+        return
+    }
+
+    val call = ApiNetService.setUserInform(token, inform)
+
+    call.enqueue(object : Callback<ActionResponse> {
+        override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result) {
+                    onSuccess()
+                } else {
+                    onFail()
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<ActionResponse>, t: Throwable) {
+            // 处理请求失败的逻辑
+            onFail()
         }
     })
 }

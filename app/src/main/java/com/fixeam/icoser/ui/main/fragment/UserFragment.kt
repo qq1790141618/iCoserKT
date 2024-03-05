@@ -14,12 +14,12 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
 import com.fixeam.icoser.model.Option
-import com.fixeam.icoser.model.imageViewInstantiate
 import com.fixeam.icoser.model.initOptionItem
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.removeSharedPreferencesKey
@@ -36,9 +36,10 @@ import com.fixeam.icoser.ui.collection_page.CollectionViewActivity
 import com.fixeam.icoser.ui.follow_page.FollowActivity
 import com.fixeam.icoser.ui.forbidden_page.ForbbidenActivity
 import com.fixeam.icoser.ui.history_page.HistoryActivity
+import com.fixeam.icoser.ui.image_preview.ImagePreviewActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.main.activity.mainImagePreview
 import com.fixeam.icoser.ui.setting_page.SettingActivity
+import com.fixeam.icoser.ui.user_center.UserCenterActivity
 import com.google.android.material.button.MaterialButton
 
 class UserFragment : Fragment() {
@@ -91,11 +92,14 @@ class UserFragment : Fragment() {
                 .into(it)
         }
         avatar?.setOnClickListener {
-            mainImagePreview?.let { it1 ->
-                imageViewInstantiate(userInform.header, requireContext(),
-                    it1
-                )
-            }
+            val header: ArrayList<String> = arrayListOf(userInform.header)
+            val activity = requireActivity() as AppCompatActivity
+            ImagePreviewActivity.start(
+                activity,
+                0,
+                header,
+                avatar
+            )
         }
 
         val nickname = view?.findViewById<TextView>(R.id.nickname)
@@ -181,12 +185,7 @@ class UserFragment : Fragment() {
                     iconColor = ColorStateList.valueOf(Color.parseColor("#a9aeb8")),
                     textId = R.string.user_inform,
                     onClick = {
-                        if(userToken == null){
-                            val intent = Intent(requireContext(), LoginActivity::class.java)
-                            startActivity(intent)
-                        }
-                        val url = "https://app.fixeam.com/user-center?access_token=$userToken"
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        val intent = Intent(requireContext(), UserCenterActivity::class.java)
                         startActivity(intent)
                     }
                 ),
@@ -282,8 +281,11 @@ class UserFragment : Fragment() {
         if(number <= 0){
             return
         }
-        val aOptionsContainer = view?.findViewById<LinearLayout>(R.id.a_option)
-        val followItem = aOptionsContainer?.getChildAt(0) as LinearLayout
+        val aOptionsContainer = view?.findViewById<LinearLayout>(R.id.a_option) ?: return
+        if(aOptionsContainer.childCount < 1){
+            return
+        }
+        val followItem = aOptionsContainer.getChildAt(0) as LinearLayout
         val tagText = followItem.findViewById<TextView>(R.id.text)
         tagText.text = "${getString(R.string.my_following)} $number"
     }
@@ -293,8 +295,11 @@ class UserFragment : Fragment() {
         if(number <= 0){
             return
         }
-        val aOptionsContainer = view?.findViewById<LinearLayout>(R.id.a_option)
-        val collectionItem = aOptionsContainer?.getChildAt(1) as LinearLayout
+        val aOptionsContainer = view?.findViewById<LinearLayout>(R.id.a_option) ?: return
+        if(aOptionsContainer.childCount < 2){
+            return
+        }
+        val collectionItem = aOptionsContainer.getChildAt(1) as LinearLayout
         val tagText = collectionItem.findViewById<TextView>(R.id.text)
         tagText.text = "${getString(R.string.my_collection)} $number"
     }
@@ -304,8 +309,11 @@ class UserFragment : Fragment() {
         if(number <= 0){
             return
         }
-        val aOptionsContainer = view?.findViewById<LinearLayout>(R.id.a_option)
-        val historyItem = aOptionsContainer?.getChildAt(2) as LinearLayout
+        val aOptionsContainer = view?.findViewById<LinearLayout>(R.id.a_option) ?: return
+        if(aOptionsContainer.childCount < 3){
+            return
+        }
+        val historyItem = aOptionsContainer.getChildAt(2) as LinearLayout
         val tagText = historyItem.findViewById<TextView>(R.id.text)
         tagText.text = "${getString(R.string.my_history)} $number"
     }
@@ -315,8 +323,11 @@ class UserFragment : Fragment() {
         if(number <= 0){
             return
         }
-        val bOptionsContainer = view?.findViewById<LinearLayout>(R.id.b_option)
-        val forbiddenItem = bOptionsContainer?.getChildAt(2) as LinearLayout
+        val bOptionsContainer = view?.findViewById<LinearLayout>(R.id.b_option) ?: return
+        if(bOptionsContainer.childCount < 3){
+            return
+        }
+        val forbiddenItem = bOptionsContainer.getChildAt(2) as LinearLayout
         val tagText = forbiddenItem.findViewById<TextView>(R.id.text)
         tagText.text = "${getString(R.string.forbidden)} $number"
     }

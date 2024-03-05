@@ -11,12 +11,15 @@ import android.os.Bundle
 import android.os.Handler
 import android.util.DisplayMetrics
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.LinearLayout.LayoutParams
+import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
@@ -26,11 +29,9 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
+import com.fixeam.icoser.model.changeBackgroundDim
 import com.fixeam.icoser.model.checkForUpdate
-import com.fixeam.icoser.model.closeOverCard
 import com.fixeam.icoser.model.isDarken
-import com.fixeam.icoser.model.openOverCard
-import com.fixeam.icoser.model.overCard
 import com.fixeam.icoser.model.shareTextContent
 import com.fixeam.icoser.network.Albums
 import com.fixeam.icoser.network.AlbumsResponse
@@ -630,19 +631,30 @@ class HomeFragment : Fragment() {
 
     class LikeViewHolder(view: View) : RecyclerView.ViewHolder(view)
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint("SetTextI18n", "InflateParams")
     private fun initAlbumFlashPanel(album: Albums, forbiddenCallback: () -> Unit){
-        val falshPanel = layoutInflater.inflate(R.layout.album_flash_panel, overCard, false) as LinearLayout
-        val container = overCard?.findViewById<LinearLayout>(R.id.content_layout)
-        container?.removeAllViews()
-        if (falshPanel.parent != null) {  // 判断视图是否已有父视图
-            (falshPanel.parent as ViewGroup).removeView(falshPanel)  // 将视图从父视图中移除
+        changeBackgroundDim(true, requireActivity())
+        val flashPanel = layoutInflater.inflate(R.layout.album_flash_panel, null)
+        val popupWindow = PopupWindow(
+            flashPanel,
+            LayoutParams.MATCH_PARENT,
+            LayoutParams.WRAP_CONTENT,
+            true
+        )
+        popupWindow.animationStyle = R.style.PopupAnimation
+        popupWindow.showAtLocation(
+            view?.findViewById(R.id.home_fragment),
+            Gravity.BOTTOM,
+            0,
+            0
+        )
+        popupWindow.setOnDismissListener {
+            changeBackgroundDim(false, requireActivity())
         }
-        container?.addView(falshPanel)
 
         // 调整面板内容
-        overCard?.findViewById<TextView>(R.id.text_info)?.text = "${album.model} ${album.name}"
-        val posterImage = overCard?.findViewById<ImageView>(R.id.poster_info)
+        flashPanel.findViewById<TextView>(R.id.text_info)?.text = "${album.model} ${album.name}"
+        val posterImage = flashPanel.findViewById<ImageView>(R.id.poster_info)
         posterImage?.let { it1 ->
             Glide.with(requireContext())
                 .load("${album.poster}/short500px")
@@ -652,15 +664,15 @@ class HomeFragment : Fragment() {
         }
 
         // 调整按钮操作
-        val closeButton = overCard?.findViewById<MaterialButton>(R.id.close)
+        val closeButton = flashPanel.findViewById<MaterialButton>(R.id.close)
         closeButton?.setOnClickListener {
-            closeOverCard()
+            popupWindow.dismiss()
         }
-        val viewAlbums = overCard?.findViewById<MaterialButton>(R.id.view_album)
+        val viewAlbums = flashPanel.findViewById<MaterialButton>(R.id.view_album)
         viewAlbums?.setOnClickListener {
             openAlbumView(album.id)
         }
-        val collection = overCard?.findViewById<MaterialButton>(R.id.collection)
+        val collection = flashPanel.findViewById<MaterialButton>(R.id.collection)
         if(album.is_collection != null){
             collection?.setIconResource(R.drawable.favor_fill)
             collection?.text = "${getString(R.string.uncollection)}(${album.is_collection})"
@@ -698,14 +710,14 @@ class HomeFragment : Fragment() {
                 )
             }
         }
-        val share = overCard?.findViewById<MaterialButton>(R.id.share)
+        val share = flashPanel.findViewById<MaterialButton>(R.id.share)
         share?.setOnClickListener {
             shareTextContent(
                 context = requireContext(),
                 text = "来自iCoser的分享内容：模特 - ${album.model}, 写真集 - ${album.name}, 访问链接：https://app.fixeam.com/album?id=${album.id}"
             )
         }
-        val forbidden = overCard?.findViewById<MaterialButton>(R.id.forbidden)
+        val forbidden = flashPanel.findViewById<MaterialButton>(R.id.forbidden)
         forbidden?.setOnClickListener {
             val builder = AlertDialog.Builder(context)
             val inflater = requireContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -729,7 +741,7 @@ class HomeFragment : Fragment() {
                     alertDialog.cancel()
 
                     forbiddenCallback()
-                    closeOverCard()
+                    popupWindow.dismiss()
                 }
                 fun unLog(){
                     dialogForbiddenAlbums.icon = null
@@ -749,7 +761,7 @@ class HomeFragment : Fragment() {
                     alertDialog.cancel()
 
                     forbiddenCallback()
-                    closeOverCard()
+                    popupWindow.dismiss()
                 }
                 fun unLog(){
                     dialogForbiddenModel.icon = null
@@ -760,16 +772,10 @@ class HomeFragment : Fragment() {
                 setForbidden(requireContext(), album.model_id, "model", { callback() }, { unLog() })
             }
         }
-        val model = overCard?.findViewById<MaterialButton>(R.id.view_model)
+        val model = flashPanel.findViewById<MaterialButton>(R.id.view_model)
         model?.setOnClickListener {
             openModelView(album.model_id)
         }
-
-        // 显示面板
-        overCard!!.visibility = View.VISIBLE
-
-        // 执行面板动画
-        openOverCard()
     }
 }
 

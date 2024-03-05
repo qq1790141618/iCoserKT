@@ -5,7 +5,6 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,6 +25,7 @@ import com.fixeam.icoser.R
 import com.fixeam.icoser.model.setStatusBar
 import com.fixeam.icoser.network.clearUserHistory
 import com.fixeam.icoser.network.getUserHistory
+import com.fixeam.icoser.network.userForbidden
 import com.fixeam.icoser.network.userHistory
 import com.fixeam.icoser.network.userHistoryList
 import com.fixeam.icoser.network.userToken
@@ -71,6 +71,7 @@ class HistoryActivity : AppCompatActivity() {
             getUserHistory(this, false){
                 adapter.notifyDataSetChanged()
                 refreshLayout.finishRefresh()
+                initTimeRange()
                 Toast.makeText(this, "刷新成功", Toast.LENGTH_SHORT).show()
             }
         }
@@ -97,6 +98,7 @@ class HistoryActivity : AppCompatActivity() {
                     if(it){
                         getUserHistory(this, false){
                             adapter.notifyDataSetChanged()
+                            initTimeRange()
                         }
                     }
                 }
@@ -241,7 +243,11 @@ class HistoryActivity : AppCompatActivity() {
                     }
                 }
                 intent.putExtra("id", id)
-                intent.putExtra("doNotSetToken", true)
+                for (forbid in userForbidden){
+                    if(forbid.res_id.toInt() == id){
+                        intent.putExtra("doNotSetToken", true)
+                    }
+                }
                 startActivity(intent)
             }
 

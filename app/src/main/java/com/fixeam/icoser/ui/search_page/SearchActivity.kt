@@ -1,5 +1,6 @@
 package com.fixeam.icoser.ui.search_page
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -436,6 +437,7 @@ class SearchActivity : AppCompatActivity() {
                 else -> throw IllegalArgumentException("Invalid view type")
             }
         }
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
             when (holder.itemViewType) {
                 0 -> {
@@ -523,6 +525,7 @@ class SearchActivity : AppCompatActivity() {
 
                     // 添加图片
                     val imagePreview = holder.itemView.findViewById<LinearLayout>(R.id.image_preview)
+                    imagePreview.removeAllViews()
                     for ((index, image) in (album.images as MutableList<String>).withIndex()){
                         if(index >= 4){
                             break

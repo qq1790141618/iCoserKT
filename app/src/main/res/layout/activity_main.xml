@@ -9,7 +9,7 @@
     android:id="@+id/application"
     android:hardwareAccelerated="true" >
 
-    <include layout="@layout/launch_image" android:visibility="gone" />
+    <include layout="@layout/launch_image" android:visibility="visible" />
 
     <FrameLayout
         android:id="@+id/container"

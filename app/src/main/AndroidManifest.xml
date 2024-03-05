@@ -17,6 +17,11 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission
+        android:name="android.permission.START_FOREGROUND_SERVICES_FROM_BACKGROUND"
+        tools:ignore="ProtectedPermissions" />
 
     <application
         android:allowBackup="true"
@@ -29,6 +34,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ICoserKT"
         tools:targetApi="31">
+        <service
+            android:name=".network.PushService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+            android:permission="android.permission.BIND_SERVICE"
+            tools:ignore="ForegroundServicePermission"></service>
+
+        <activity
+            android:name=".ui.user_center.UserCenterActivity"
+            android:exported="false" />
         <activity
             android:name=".ui.setting_page.SetNotificationActivity"
             android:exported="false" />
@@ -91,7 +107,11 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- 文件存储配置 -->
+        </activity>
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" /> <!-- 文件存储配置 -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.fixeam.icoser.provider"

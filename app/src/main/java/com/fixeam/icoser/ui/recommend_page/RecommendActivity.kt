@@ -29,6 +29,7 @@ import com.fixeam.icoser.model.newsData
 import com.fixeam.icoser.model.setStatusBar
 import com.fixeam.icoser.network.AlbumsResponse
 import com.fixeam.icoser.network.ApiNetService
+import com.fixeam.icoser.network.requestNewData
 import com.fixeam.icoser.painter.GlideBlurTransformation
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.google.gson.Gson
@@ -161,6 +162,7 @@ class RecommendActivity : AppCompatActivity() {
 
             // 添加图片
             val imagePreview = holder.itemView.findViewById<LinearLayout>(R.id.image_preview)
+            imagePreview.removeAllViews()
             for ((index, image) in (album.images as MutableList<String>).withIndex()){
                 if(index >= 4){
                     break
@@ -331,7 +333,9 @@ class RecommendActivity : AppCompatActivity() {
 
     private fun requestHotData() {
         if(hotData.isNotEmpty()){
-            requestNewData()
+            requestNewData(this@RecommendActivity){
+                initPageData()
+            }
         }
 
         val call = ApiNetService.GetHot()
@@ -343,33 +347,9 @@ class RecommendActivity : AppCompatActivity() {
                     if (albumsResponse.result) {
                         hotData = albumsResponse.data.take(30)
 
-                        requestNewData()
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(this@RecommendActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    private fun requestNewData() {
-        if(newsData.isNotEmpty()){
-            initPageData()
-        }
-
-        val call = ApiNetService.GetAlbum(number = 30)
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()?.string()
-                    val albumsResponse = Gson().fromJson(responseBody, AlbumsResponse::class.java)
-                    if (albumsResponse.result) {
-                        newsData = albumsResponse.data.take(30)
-
-                        initPageData()
+                        requestNewData(this@RecommendActivity){
+                            initPageData()
+                        }
                     }
                 }
             }

@@ -3,38 +3,33 @@ package com.fixeam.icoser.ui.main.activity
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
-import android.view.ViewTreeObserver
 import android.view.animation.AnimationUtils
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivityMainBinding
-import com.fixeam.icoser.model.closeOverCard
 import com.fixeam.icoser.model.collectionFragment
-import com.fixeam.icoser.model.createImageView
 import com.fixeam.icoser.model.hasNotificationProgression
 import com.fixeam.icoser.model.homeFragment
 import com.fixeam.icoser.model.isDarken
-import com.fixeam.icoser.model.overCard
 import com.fixeam.icoser.model.setStatusBar
 import com.fixeam.icoser.model.showFragment
 import com.fixeam.icoser.model.smartVideoFragment
 import com.fixeam.icoser.model.userFragment
+import com.fixeam.icoser.network.PushService
 import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.network.verifyTokenAndGetUserInform
 import com.fixeam.icoser.ui.main.fragment.CollectionFragment
@@ -43,9 +38,6 @@ import com.fixeam.icoser.ui.main.fragment.SmartVideoFragment
 import com.fixeam.icoser.ui.main.fragment.UserFragment
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
-import com.google.android.material.snackbar.Snackbar
-
-var mainImagePreview: ConstraintLayout? = null
 
 class MainActivity : AppCompatActivity() {
     @SuppressLint("ResourceAsColor")
@@ -56,7 +48,6 @@ class MainActivity : AppCompatActivity() {
         val view = binding.root
         layout = binding.application
         setContentView(view)
-//        setContentView(R.layout.activity_main)
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
@@ -144,13 +135,13 @@ class MainActivity : AppCompatActivity() {
             checkForUser()
         }
 
-        val application = findViewById<ConstraintLayout>(R.id.application)
-        mainImagePreview = createImageView(application, this)
-        setOverlay()
-
+        // 打开启动图
         openLaunchLoading()
-        // 发送通知有更新
-        notifycationRequestPermission(view){ }
+        // 检测消息推送权限
+        notificationRequestPermission(view){
+            // 启动推送服务
+            startForegroundService(Intent(applicationContext, PushService::class.java))
+        }
     }
 
     private lateinit var layout: View
@@ -160,42 +151,25 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted: Boolean ->
-            if (isGranted) {
+            hasNotificationProgression = if (isGranted) {
                 val sharedPreferences = getSharedPreferences("notification", Context.MODE_PRIVATE)
                 val editor = sharedPreferences.edit()
                 editor.putInt("allow", 1).apply()
-                hasNotificationProgression = true
+                true
             } else {
                 val sharedPreferences = getSharedPreferences("notification", Context.MODE_PRIVATE)
                 val editor = sharedPreferences.edit()
                 editor.putInt("allow", 0).apply()
-                hasNotificationProgression = false
+                false
             }
         }
 
-    fun View.showSnackbar(
-        view: View,
-        msg: String,
-        length: Int,
-        actionMessage: CharSequence?,
-        action: (View) -> Unit
-    ) {
-        val snackbar = Snackbar.make(view, msg, length)
-        if (actionMessage != null) {
-            snackbar.setAction(actionMessage) {
-                action(this)
-            }.show()
-        } else {
-            snackbar.show()
-        }
-    }
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    fun notifycationRequestPermission(view: View, callback: () -> Unit) {
+    fun notificationRequestPermission(view: View, callback: () -> Unit) {
         when {
             ContextCompat.checkSelfPermission(
                 this,
-                Manifest.permission.POST_NOTIFICATIONS
+                Manifest.permission.POST_NOTIFICATIONS,
             ) == PackageManager.PERMISSION_GRANTED -> {
                 // 已授予权限
                 callback()
@@ -205,16 +179,9 @@ class MainActivity : AppCompatActivity() {
                 this,
                 Manifest.permission.POST_NOTIFICATIONS
             ) -> {
-                layout.showSnackbar(
-                    view,
-                    getString(R.string.permission_required),
-                    Snackbar.LENGTH_INDEFINITE,
-                    getString(R.string.ok)
-                ) {
-                    requestPermissionLauncher.launch(
-                        Manifest.permission.POST_NOTIFICATIONS
-                    )
-                }
+                requestPermissionLauncher.launch(
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
             }
 
             else -> {
@@ -281,34 +248,5 @@ class MainActivity : AppCompatActivity() {
             userToken = accessToken
             verifyTokenAndGetUserInform(accessToken, this)
         }
-    }
-
-    private fun setOverlay() {
-        val application = findViewById<ConstraintLayout>(R.id.application)
-        overCard = layoutInflater.inflate(R.layout.overlay_card, application, false) as ConstraintLayout
-        val card = overCard!!.findViewById<CardView>(R.id.overlay_card)
-
-        // 等待布局测量完成后再设置卡片的初始位置
-        overCard?.viewTreeObserver?.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                overCard?.setBackgroundColor(Color.parseColor("#00000000"))
-                overCard?.viewTreeObserver?.removeOnGlobalLayoutListener(this)
-                card.translationY = overCard!!.height.toFloat()
-            }
-        })
-
-        overCard!!.visibility = View.GONE
-
-        // 注册遮罩层关闭
-        overCard!!.setOnClickListener {
-            closeOverCard()
-        }
-        // 防止卡片点击事件冒泡
-        card.setOnClickListener {
-            false
-        }
-
-        // 添加面板到应用
-        application.addView(overCard)
     }
 }

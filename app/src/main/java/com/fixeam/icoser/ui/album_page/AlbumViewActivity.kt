@@ -121,7 +121,8 @@ class AlbumViewActivity : AppCompatActivity() {
                     val responseBody = response.body()?.string()
                     val albumsResponse = Gson().fromJson(responseBody, AlbumsResponse::class.java)
 
-                    if(!albumsResponse.result){
+                    if(!albumsResponse.result || albumsResponse.data.isEmpty()){
+                        Toast.makeText(this@AlbumViewActivity, "写真集获取失败", Toast.LENGTH_SHORT).show()
                         return
                     }
 
