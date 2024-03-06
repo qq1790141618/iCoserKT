@@ -10,8 +10,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
+import android.widget.AdapterView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -22,6 +24,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.fixeam.icoser.R
+import com.fixeam.icoser.model.CustomArrayAdapter
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
 import com.fixeam.icoser.network.Collection
@@ -35,7 +38,6 @@ import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.painter.GlideBlurTransformation
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.button.MaterialButton
 
 class CollectionViewActivity : AppCompatActivity() {
@@ -134,7 +136,7 @@ class CollectionViewActivity : AppCompatActivity() {
         val collectionFoldSelect = findViewById<TextView>(R.id.collection_fold_select)
         val collectionFoldSelectIcon = findViewById<ImageView>(R.id.collection_fold_select_icon)
         val overlay = findViewById<View>(R.id.overlay)
-        val foldContent = findViewById<FlexboxLayout>(R.id.fold_content)
+        val foldContent = findViewById<ListView>(R.id.fold_content)
 
         val openColor = Color.parseColor("#FF7D00")
         collectionFoldSelect.setTextColor(openColor)
@@ -143,30 +145,29 @@ class CollectionViewActivity : AppCompatActivity() {
 
         overlay.visibility = View.VISIBLE
         foldContent.visibility = View.VISIBLE
-        foldContent.removeAllViews()
+        overlay.setOnClickListener {
+            false
+        }
 
-        for ((index, foldItem) in userCollectionFold.withIndex()){
-            val tag = layoutInflater.inflate(R.layout.tag, foldContent, false) as CardView
-            val text = tag.findViewById<TextView>(R.id.text)
+        val allOfFold: MutableList<String> = mutableListOf()
+        for (foldItem in userCollectionFold){
             val keyword = when(foldItem.name){
                 "default" -> { "默认收藏夹" }
                 "like" -> { "我喜欢" }
                 else -> { foldItem.name }
             }
-            text.text = keyword
-            text.textSize = 12f
 
-            if(index != selectFoldIndex){
-                tag.setOnClickListener {
-                    initList(index)
-                    closeFoldSelect()
-                }
-            } else {
-                tag.setCardBackgroundColor(openColor)
-                text.setTextColor(Color.WHITE)
-            }
+            allOfFold.add(keyword)
+        }
 
-            foldContent.addView(tag)
+        val adapter = CustomArrayAdapter(this, android.R.layout.simple_list_item_1, allOfFold.map {
+            it }, 12f, 42, true)
+        foldContent.adapter = adapter
+        adapter.setNotifyOnChange(true)
+
+        foldContent.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
+            initList(position)
+            closeFoldSelect()
         }
 
         isOpenFoldSelect = true
@@ -176,7 +177,7 @@ class CollectionViewActivity : AppCompatActivity() {
         val collectionFoldSelect = findViewById<TextView>(R.id.collection_fold_select)
         val collectionFoldSelectIcon = findViewById<ImageView>(R.id.collection_fold_select_icon)
         val overlay = findViewById<View>(R.id.overlay)
-        val foldContent = findViewById<FlexboxLayout>(R.id.fold_content)
+        val foldContent = findViewById<ListView>(R.id.fold_content)
 
         var closeColor = Color.parseColor("#000000")
         if(isDarken(this)){

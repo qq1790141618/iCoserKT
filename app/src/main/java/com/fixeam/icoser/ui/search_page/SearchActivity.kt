@@ -9,14 +9,12 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Handler
 import android.text.Editable
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ListView
@@ -31,6 +29,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.fixeam.icoser.R
+import com.fixeam.icoser.model.CustomArrayAdapter
 import com.fixeam.icoser.model.calculateTimeAgo
 import com.fixeam.icoser.model.hotData
 import com.fixeam.icoser.model.setStatusBar
@@ -162,16 +161,6 @@ class SearchActivity : AppCompatActivity() {
             val intent = Intent(this@SearchActivity, AlbumViewActivity::class.java)
             intent.putExtra("id", hotViewList[position].id)
             startActivity(intent)
-        }
-    }
-
-    inner class CustomArrayAdapter(context: Context, resource: Int, objects: List<String>, private val textSize: Float, private val height: Int) : ArrayAdapter<String>(context, resource, objects) {
-
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            val view = super.getView(position, convertView, parent) as TextView
-            view.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSize)
-            view.layoutParams.height = (resources.displayMetrics.density * height).toInt()
-            return view
         }
     }
 

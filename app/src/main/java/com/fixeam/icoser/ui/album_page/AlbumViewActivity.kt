@@ -36,6 +36,7 @@ import com.fixeam.icoser.network.FileInfo
 import com.fixeam.icoser.network.FileMeta
 import com.fixeam.icoser.network.UrlRequestBody
 import com.fixeam.icoser.network.accessLog
+import com.fixeam.icoser.network.checkForUser
 import com.fixeam.icoser.network.openCollectionSelector
 import com.fixeam.icoser.network.setAlbumCollection
 import com.fixeam.icoser.network.updateAccessLog
@@ -64,6 +65,9 @@ class AlbumViewActivity : AppCompatActivity() {
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
+
+        // 检查网络状态和用户登录
+        checkForUser(this)
 
         // 设置加载动画
         val imageView = findViewById<ImageView>(R.id.image_loading)
@@ -411,7 +415,5 @@ class AlbumViewActivity : AppCompatActivity() {
         }
     }
 
-    class viewHolder(view: View) : RecyclerView.ViewHolder(view) {
-
-    }
+    class viewHolder(view: View) : RecyclerView.ViewHolder(view)
 }

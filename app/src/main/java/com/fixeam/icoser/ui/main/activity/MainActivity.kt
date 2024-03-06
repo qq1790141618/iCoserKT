@@ -7,9 +7,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
-import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.widget.ImageView
@@ -30,8 +30,7 @@ import com.fixeam.icoser.model.showFragment
 import com.fixeam.icoser.model.smartVideoFragment
 import com.fixeam.icoser.model.userFragment
 import com.fixeam.icoser.network.PushService
-import com.fixeam.icoser.network.userToken
-import com.fixeam.icoser.network.verifyTokenAndGetUserInform
+import com.fixeam.icoser.network.checkForUser
 import com.fixeam.icoser.ui.main.fragment.CollectionFragment
 import com.fixeam.icoser.ui.main.fragment.HomeFragment
 import com.fixeam.icoser.ui.main.fragment.SmartVideoFragment
@@ -51,7 +50,20 @@ class MainActivity : AppCompatActivity() {
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
+        // 设置页面切换
+        setTab()
+        // 检查网络状态和用户登录
+        checkForUser(this)
+        // 打开启动图
+        openLaunchLoading()
+        // 检测消息推送权限
+        notificationRequestPermission(view){
+            // 启动推送服务
+            startForegroundService(Intent(applicationContext, PushService::class.java))
+        }
+    }
 
+    private fun setTab(){
         val toggleButton = findViewById<MaterialButtonToggleGroup>(R.id.tab_bar)
         toggleButton.addOnButtonCheckedListener{group, checkedId, isChecked ->
             if(!isChecked){
@@ -116,32 +128,6 @@ class MainActivity : AppCompatActivity() {
             switchFragment(selectIndex)
         }
         toggleButton.check(R.id.home_button)
-
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val activeNetworkInfo = connectivityManager.activeNetworkInfo
-        val isConnected = activeNetworkInfo?.isConnectedOrConnecting == true
-
-        if(!isConnected){
-            Toast.makeText(this, "网络连接失败, 请检查您的网络和应用权限配置", Toast.LENGTH_SHORT).show()
-        } else {
-            val networkType = activeNetworkInfo?.type
-            if (networkType == ConnectivityManager.TYPE_WIFI) {
-                // 当前连接为 Wi-Fi
-//                Toast.makeText(this, "当前为WIFI环境，可放心浏览本APP", Toast.LENGTH_SHORT).show()
-            } else if (networkType == ConnectivityManager.TYPE_MOBILE) {
-                // 当前连接为移动网络
-//                Toast.makeText(this, "当前为流量环境，APP加载资源较多，请注意您的流量消耗", Toast.LENGTH_SHORT).show()
-            }
-            checkForUser()
-        }
-
-        // 打开启动图
-        openLaunchLoading()
-        // 检测消息推送权限
-        notificationRequestPermission(view){
-            // 启动推送服务
-            startForegroundService(Intent(applicationContext, PushService::class.java))
-        }
     }
 
     private lateinit var layout: View
@@ -241,12 +227,17 @@ class MainActivity : AppCompatActivity() {
         ft.commitAllowingStateLoss()
     }
 
-    private fun checkForUser() {
-        val sharedPreferences = getSharedPreferences("user", MODE_PRIVATE)
-        val accessToken = sharedPreferences.getString("access_token", null)
-        if(accessToken != null){
-            userToken = accessToken
-            verifyTokenAndGetUserInform(accessToken, this)
+    private var pressBack: Boolean = false
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if(!pressBack){
+            pressBack = true
+            Toast.makeText(this, "再按一次退出应用", Toast.LENGTH_SHORT).show()
+            Handler().postDelayed({
+                pressBack = false
+            }, 1500)
+        } else {
+            finish()
         }
     }
 }

@@ -266,6 +266,13 @@ class ModelViewActivity : AppCompatActivity() {
                 )
             }
         }
+        if(modelInfo?.background_image != null){
+            val backgroundView = findViewById<ImageView>(R.id.background_view)
+            Glide.with(this)
+                .load("${modelInfo?.background_image}/short1200px")
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(backgroundView)
+        }
 
         if(modelInfo?.tags != null){
             val gson = Gson()
@@ -291,7 +298,7 @@ class ModelViewActivity : AppCompatActivity() {
                     val responseBody = response.body()
                     if (responseBody != null && responseBody.result) {
                         val medias = responseBody.data
-                        if(medias.size > 0){
+                        if(medias.isNotEmpty()){
                             val goToVideo = findViewById<FloatingActionButton>(R.id.go_to_video)
                             goToVideo.visibility = View.VISIBLE
                             goToVideo.setOnClickListener {
@@ -317,11 +324,12 @@ class ModelViewActivity : AppCompatActivity() {
     private fun initAlbumList(){
         val albumListView: RecyclerView = findViewById(R.id.album_list)
         albumListView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-        albumListView.adapter = listAdapter()
+        albumListView.adapter = AlbumsAdapter()
 
         albumListView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
+                changeModelBoxHeight(recyclerView.computeVerticalScrollOffset())
 
                 val layoutManager = recyclerView.layoutManager as LinearLayoutManager
                 val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
@@ -334,22 +342,49 @@ class ModelViewActivity : AppCompatActivity() {
         })
     }
 
+    private fun changeModelBoxHeight(scrollOffset: Int){
+        val modelBox = findViewById<ConstraintLayout>(R.id.model_box)
+        val avatar = findViewById<ImageView>(R.id.avatar)
+        val avatarMin = resources.displayMetrics.density * 50
+        val avatarMax = resources.displayMetrics.density * 80
+        val tagBox = findViewById<LinearLayout>(R.id.tag_box)
+
+        if(scrollOffset in 101..999){
+            val offsetRatio = (scrollOffset.toFloat() - 100) / 900
+
+            avatar.layoutParams.height = ((1.0f - offsetRatio) * (avatarMax - avatarMin) + avatarMin).toInt()
+            avatar.layoutParams.width = avatar.layoutParams.height
+            avatar.requestLayout()
+
+            tagBox.alpha = 1.0f - offsetRatio
+            tagBox.requestLayout()
+
+            modelBox.layoutParams.height = (avatar.layoutParams.height + resources.displayMetrics.density * 40).toInt()
+            modelBox.requestLayout()
+        }
+        if(scrollOffset in 1000..1400){
+            tagBox.alpha = 0f
+            modelBox.layoutParams.height = (resources.displayMetrics.density * (90 - ((scrollOffset - 1000) / 13))).toInt()
+            modelBox.requestLayout()
+        }
+    }
+
     private fun updateAlbumList(loadedNumber: Int){
         val albumListView: RecyclerView? = findViewById(R.id.album_list)
         val adapter = albumListView?.adapter
         adapter?.notifyItemInserted(albumList.size - loadedNumber)
     }
 
-    inner class listAdapter : RecyclerView.Adapter<viewHolder>() {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): viewHolder {
+    inner class AlbumsAdapter : RecyclerView.Adapter<AlbumViewHolder>() {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlbumViewHolder {
             val itemView = LayoutInflater.from(this@ModelViewActivity).inflate(R.layout.album_item, parent, false)
-            return viewHolder(itemView)
+            return AlbumViewHolder(itemView)
         }
         override fun getItemCount(): Int {
             return albumList.size
         }
         @SuppressLint("SetTextI18n")
-        override fun onBindViewHolder(holder: viewHolder, position: Int) {
+        override fun onBindViewHolder(holder: AlbumViewHolder, position: Int) {
             // 修改holder
             val album = albumList[position]
             holder.itemView.setOnClickListener {
@@ -420,7 +455,5 @@ class ModelViewActivity : AppCompatActivity() {
         }
     }
 
-    class viewHolder(view: View) : RecyclerView.ViewHolder(view) {
-
-    }
+    class AlbumViewHolder(view: View) : RecyclerView.ViewHolder(view)
 }

@@ -19,12 +19,14 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.DisplayMetrics
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
@@ -616,5 +618,18 @@ fun calculateCascaderIndex(items: List<CascaderItem>, value: String): List<Int>{
         }
     }
     return resultList
+}
+
+// 列表视图
+class CustomArrayAdapter(context: Context, resource: Int, objects: List<String>, private val textSize: Float, private val height: Int, private val isCenter: Boolean = false) : ArrayAdapter<String>(context, resource, objects) {
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        val view = super.getView(position, convertView, parent) as TextView
+        view.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSize)
+        view.layoutParams.height = (context.resources.displayMetrics.density * height).toInt()
+        if(isCenter){
+            view.textAlignment = TextView.TEXT_ALIGNMENT_CENTER
+        }
+        return view
+    }
 }
 

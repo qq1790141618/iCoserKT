@@ -11,8 +11,8 @@ android {
         applicationId "com.fixeam.icoser"
         minSdk 28
         targetSdk 34
-        versionCode 200050
-        versionName "2.0.5"
+        versionCode 200060
+        versionName "2.0.6"
         versionNameSuffix(" release")
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

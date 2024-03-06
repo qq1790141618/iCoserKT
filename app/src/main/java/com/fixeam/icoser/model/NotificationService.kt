@@ -46,21 +46,21 @@ fun sendAlbumNotification(context: Context, album: Albums) {
                 val bigPictureStyle = NotificationCompat.BigPictureStyle()
                     .bigPicture(resource)
                     .setSummaryText("写真集详情")
-                createCustomNotification(context, title, message, pendingIntent, bigPictureStyle)
+                createCustomNotification(context, title, message, album.id, pendingIntent, bigPictureStyle)
             }
 
             override fun onLoadCleared(placeholder: Drawable?) {
                 // 图片加载失败
-                createCustomNotification(context, title, message, pendingIntent)
+                createCustomNotification(context, title, message, album.id, pendingIntent)
             }
         })
 }
 // 发送软件更新通知
-fun sendSoftwareUpdateNotification(context: Context, version: String) {
-    createCustomNotification(context, "当前软件存在更新", "软件版本 $version 已经发布, 点击立即更新")
+fun sendSoftwareUpdateNotification(context: Context, version: String, versionId: Int) {
+    createCustomNotification(context = context, title = "当前软件存在更新", message = "软件版本 $version 已经发布, 点击立即更新", notificationId = versionId)
 }
 // 发送自定义通知内容
-fun createCustomNotification(context: Context, title: String, message: String, pendingIntent: PendingIntent? = null, bigPictureStyle: NotificationCompat.BigPictureStyle? = null, sendRightNow: Boolean = true): Notification {
+fun createCustomNotification(context: Context, title: String, message: String, notificationId: Int? = null, pendingIntent: PendingIntent? = null, bigPictureStyle: NotificationCompat.BigPictureStyle? = null, sendRightNow: Boolean = true): Notification {
     val channelId = context.getString(R.string.default_notification_channel_id)
     val channelName = context.getString(R.string.default_notification_channel_name)
     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -83,12 +83,16 @@ fun createCustomNotification(context: Context, title: String, message: String, p
         notificationBuilder.setStyle(bigPictureStyle)
     }
     val notification = notificationBuilder.build()
+    val id = when(notificationId){
+        null -> System.currentTimeMillis().toInt()
+        else -> notificationId
+    }
 
     // 检测是否立即发送和用户是否允许推送
     val sharedPreferences = context.getSharedPreferences("notification", Context.MODE_PRIVATE)
     val allowedNotification = sharedPreferences.getInt("allow", 1)
     if(sendRightNow && allowedNotification != 0){
-        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
+        notificationManager.notify(id, notification)
     }
 
     return notification

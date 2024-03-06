@@ -2,11 +2,13 @@ package com.fixeam.icoser.network
 
 import android.app.AlertDialog
 import android.content.Context
+import android.net.ConnectivityManager
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import com.fixeam.icoser.R
 import com.fixeam.icoser.model.removeSharedPreferencesKey
 import com.fixeam.icoser.model.sendAlbumNotification
@@ -29,6 +31,35 @@ var userHistory: HistoryResponse? = null
 var userHistoryList: MutableList<History> = mutableListOf()
 var userInformFailTime = 0
 
+/**
+ * 检查网络状态和用户登录
+ */
+fun checkForUser(context: Context) {
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val activeNetworkInfo = connectivityManager.activeNetworkInfo
+    val isConnected = activeNetworkInfo?.isConnectedOrConnecting == true
+
+    if(!isConnected){
+        Toast.makeText(context, "网络连接失败, 请检查您的网络和应用权限配置", Toast.LENGTH_SHORT).show()
+        return
+    } else {
+        val networkType = activeNetworkInfo?.type
+        if (networkType == ConnectivityManager.TYPE_WIFI) {
+            // 当前连接为 Wi-Fi
+//                Toast.makeText(this, "当前为WIFI环境，可放心浏览本APP", Toast.LENGTH_SHORT).show()
+        } else if (networkType == ConnectivityManager.TYPE_MOBILE) {
+            // 当前连接为移动网络
+            Toast.makeText(context, "当前为流量环境，APP加载资源较多，请注意您的流量消耗", Toast.LENGTH_SHORT).show()
+        }
+
+        val sharedPreferences = context.getSharedPreferences("user", AppCompatActivity.MODE_PRIVATE)
+        val accessToken = sharedPreferences.getString("access_token", null)
+        if(accessToken != null){
+            userToken = accessToken
+            verifyTokenAndGetUserInform(accessToken, context)
+        }
+    }
+}
 /**
  * 获取用户信息
  * @param access_token 用户访问令牌
