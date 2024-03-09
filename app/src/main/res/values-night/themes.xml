@@ -3,16 +3,14 @@
     <style name="Base.Theme.ICoserKT" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
-        <item name="android:windowBackground">#0C0C0C</item>
+        <item name="android:windowBackground">#0D0C00</item>
         <item name="colorOnBackground">@color/text_color</item>
         <item name="colorPrimary">@color/background_color</item>
         <item name="colorOnTertiary">@color/text_grey_night</item>
         <item name="android:fontFamily">@font/pingfang</item>
         <item name="cardBackgroundColor">@color/card_background_color_night</item>
         <item name="colorOnSurfaceVariant">#3BFFFFFF</item>
-        <item name="colorContainer">#0C0C0C</item>
-        <item name="colorOnPrimaryContainer">#001a57</item>
-        <item name="colorOnPrimary">#002a7c</item>
+        <item name="colorContainer">#0D0C00</item>
 
         <item name="android:windowDisablePreview">true</item>
     </style>

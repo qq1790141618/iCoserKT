@@ -2,7 +2,6 @@ package com.fixeam.icoser.ui.collection_page
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -11,22 +10,20 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.widget.AdapterView
-import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.RequestOptions
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.ActivityCollectionViewBinding
 import com.fixeam.icoser.model.CustomArrayAdapter
+import com.fixeam.icoser.model.createAlbumCard
+import com.fixeam.icoser.model.createSimpleDialog
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
+import com.fixeam.icoser.model.startLoginActivity
 import com.fixeam.icoser.network.Collection
 import com.fixeam.icoser.network.getUserCollection
 import com.fixeam.icoser.network.getUserCollectionFold
@@ -35,12 +32,10 @@ import com.fixeam.icoser.network.setAlbumCollection
 import com.fixeam.icoser.network.userCollection
 import com.fixeam.icoser.network.userCollectionFold
 import com.fixeam.icoser.network.userToken
-import com.fixeam.icoser.painter.GlideBlurTransformation
-import com.fixeam.icoser.ui.album_page.AlbumViewActivity
-import com.fixeam.icoser.ui.login_page.LoginActivity
 import com.google.android.material.button.MaterialButton
 
 class CollectionViewActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityCollectionViewBinding
     private var isOpenFoldSelect: Boolean = false
     private var selectFoldIndex: Int = 0
     private var selectFoldName: String = ""
@@ -48,7 +43,8 @@ class CollectionViewActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_collection_view)
+        binding = ActivityCollectionViewBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
@@ -56,8 +52,7 @@ class CollectionViewActivity : AppCompatActivity() {
         // 获取登录状态
         if(userToken == null){
             onBackPressed()
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
+            startLoginActivity(this)
         }
 
         // 设置导航栏
@@ -67,9 +62,8 @@ class CollectionViewActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { onBackPressed() }
 
         // 创建内容列表
-        val list = findViewById<RecyclerView>(R.id.list)
-        list.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-        list.adapter = MyAdapter()
+        binding.list.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        binding.list.adapter = MyAdapter()
 
         // 安装页面
         initPage()
@@ -77,26 +71,23 @@ class CollectionViewActivity : AppCompatActivity() {
 
     private fun initPage(){
         // 设置加载动画
-        val imageView = findViewById<ImageView>(R.id.image_loading)
+        val imageView = binding.imageLoading
         val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
         imageView.startAnimation(animation)
         imageView.visibility = View.VISIBLE
 
         // 设置导航栏
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
-        toolbar.title = "加载中..."
+        binding.toolbar.title = "加载中..."
 
         // 再次获取用户收藏内容
         getUserCollectionFold(this){
             getUserCollection(this){
                 imageView.clearAnimation()
                 imageView.visibility = View.GONE
-                toolbar.title = getString(R.string.my_collection)
+                binding.toolbar.title = getString(R.string.my_collection)
 
-                val collectionFoldSelect = findViewById<TextView>(R.id.collection_fold_select)
-                collectionFoldSelect.text = "默认收藏夹"
-                val foldSelect = findViewById<LinearLayout>(R.id.select)
-                foldSelect.setOnClickListener {
+                binding.collectionFoldSelect.text = "默认收藏夹"
+                binding.select.setOnClickListener {
                     if(isOpenFoldSelect){
                         closeFoldSelect()
                     } else {
@@ -113,9 +104,8 @@ class CollectionViewActivity : AppCompatActivity() {
         val foldItem = userCollectionFold[index]
         selectFoldIndex = index
         selectFoldName = foldItem.name
-        
-        val collectionFoldSelect = findViewById<TextView>(R.id.collection_fold_select)
-        collectionFoldSelect.text = when(foldItem.name){
+
+        binding.collectionFoldSelect.text = when(foldItem.name){
             "default" -> { "默认收藏夹" }
             "like" -> { "我喜欢" }
             else -> { foldItem.name }
@@ -128,26 +118,19 @@ class CollectionViewActivity : AppCompatActivity() {
             }
         }
 
-        val list = findViewById<RecyclerView>(R.id.list)
-        list.adapter?.notifyDataSetChanged()
+        binding.list.adapter?.notifyDataSetChanged()
     }
 
     private fun openFoldSelect(){
-        val collectionFoldSelect = findViewById<TextView>(R.id.collection_fold_select)
-        val collectionFoldSelectIcon = findViewById<ImageView>(R.id.collection_fold_select_icon)
-        val overlay = findViewById<View>(R.id.overlay)
-        val foldContent = findViewById<ListView>(R.id.fold_content)
-
         val openColor = Color.parseColor("#FF7D00")
-        collectionFoldSelect.setTextColor(openColor)
-        collectionFoldSelectIcon.imageTintList = ColorStateList.valueOf(openColor)
-        collectionFoldSelectIcon.setImageResource(R.drawable.triangle_up_fill)
-
-        overlay.visibility = View.VISIBLE
-        foldContent.visibility = View.VISIBLE
-        overlay.setOnClickListener {
+        binding.collectionFoldSelect.setTextColor(openColor)
+        binding.collectionFoldSelectIcon.imageTintList = ColorStateList.valueOf(openColor)
+        binding.collectionFoldSelectIcon.setImageResource(R.drawable.triangle_up_fill)
+        binding.overlay.visibility = View.VISIBLE
+        binding.overlay.setOnClickListener {
             false
         }
+        binding.foldContent.visibility = View.VISIBLE
 
         val allOfFold: MutableList<String> = mutableListOf()
         for (foldItem in userCollectionFold){
@@ -162,34 +145,25 @@ class CollectionViewActivity : AppCompatActivity() {
 
         val adapter = CustomArrayAdapter(this, android.R.layout.simple_list_item_1, allOfFold.map {
             it }, 12f, 42, true)
-        foldContent.adapter = adapter
+        binding.foldContent.adapter = adapter
         adapter.setNotifyOnChange(true)
-
-        foldContent.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
+        binding.foldContent.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             initList(position)
             closeFoldSelect()
         }
-
         isOpenFoldSelect = true
     }
 
     private fun closeFoldSelect(){
-        val collectionFoldSelect = findViewById<TextView>(R.id.collection_fold_select)
-        val collectionFoldSelectIcon = findViewById<ImageView>(R.id.collection_fold_select_icon)
-        val overlay = findViewById<View>(R.id.overlay)
-        val foldContent = findViewById<ListView>(R.id.fold_content)
-
         var closeColor = Color.parseColor("#000000")
         if(isDarken(this)){
             closeColor = Color.parseColor("#FFFFFF")
         }
-        collectionFoldSelect.setTextColor(closeColor)
-        collectionFoldSelectIcon.imageTintList = ColorStateList.valueOf(closeColor)
-        collectionFoldSelectIcon.setImageResource(R.drawable.triangle_down_fill)
-
-        overlay.visibility = View.GONE
-        foldContent.visibility = View.GONE
-
+        binding.collectionFoldSelect.setTextColor(closeColor)
+        binding.collectionFoldSelectIcon.imageTintList = ColorStateList.valueOf(closeColor)
+        binding.collectionFoldSelectIcon.setImageResource(R.drawable.triangle_down_fill)
+        binding.overlay.visibility = View.GONE
+        binding.foldContent.visibility = View.GONE
         isOpenFoldSelect = false
     }
 
@@ -266,94 +240,19 @@ class CollectionViewActivity : AppCompatActivity() {
                 1 -> {
                     val collectionItem = selectFoldContent[position - 1]
                     val album = collectionItem.content
-                    holder.itemView.setOnClickListener {
-                        val intent = Intent(this@CollectionViewActivity, AlbumViewActivity::class.java)
-                        intent.putExtra("id", album.id)
-                        startActivity(intent)
-                    }
-
-                    // 设置删除事件
-                    val removeButton =  holder.itemView.findViewById<ImageView>(R.id.close)
-                    removeButton.visibility = View.VISIBLE
-                    removeButton.setOnClickListener {
-                        val builder = AlertDialog.Builder(this@CollectionViewActivity)
-                        builder.setMessage("确定移除此写真集的收藏吗? ")
-                        builder.setPositiveButton("确定") { _, _ ->
+                    createAlbumCard(this@CollectionViewActivity, album, holder.itemView, "normal", true){
+                        createSimpleDialog(this@CollectionViewActivity, "确定移除此写真集的收藏吗? ", true){
                             setAlbumCollection(
                                 this@CollectionViewActivity,
                                 album,
                                 callback = {
                                     selectFoldContent.removeAt(position - 1)
-                                    val list = findViewById<RecyclerView>(R.id.list)
-                                    list.adapter?.notifyItemRemoved(position)
+                                    binding.list.adapter?.notifyItemRemoved(position)
                                 },
                                 unLog = { }
                             )
                         }
-                        builder.setNegativeButton("取消") { _, _ -> }
-                        val alertDialog = builder.create()
-                        alertDialog.show()
                     }
-
-                    // 修改海报图
-                    val posterBackground = holder.itemView.findViewById<ImageView>(R.id.poster_background)
-                    Glide.with(this@CollectionViewActivity)
-                        .load("${album.poster}/short500px")
-                        .apply(RequestOptions.bitmapTransform(GlideBlurTransformation(this@CollectionViewActivity)))
-                        .diskCacheStrategy(DiskCacheStrategy.ALL)
-                        .into(posterBackground)
-                    val poster = holder.itemView.findViewById<ImageView>(R.id.poster)
-                    Glide.with(this@CollectionViewActivity)
-                        .load("${album.poster}/short1200px")
-                        .diskCacheStrategy(DiskCacheStrategy.ALL)
-                        .into(poster)
-
-                    // 修改图片数量
-                    val picNumber = holder.itemView.findViewById<TextView>(R.id.text)
-                    picNumber.text = "${(album.images as MutableList<String>).size}P"
-
-                    // 修改写真集名
-                    val name = holder.itemView.findViewById<TextView>(R.id.name)
-                    name.text = "${album.model_name} ${album.name}"
-
-                    // 添加图片
-                    val imagePreview = holder.itemView.findViewById<LinearLayout>(R.id.image_preview)
-                    imagePreview.removeAllViews()
-                    for ((index, image) in (album.images as MutableList<String>).withIndex()){
-                        if(index >= 4){
-                            break
-                        }
-
-                        val cardView = CardView(this@CollectionViewActivity)
-                        val layoutParams = ViewGroup.MarginLayoutParams(
-                            (resources.displayMetrics.density * 36).toInt(), // 设置宽度为屏幕宽度的四分之一
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        layoutParams.rightMargin = (resources.displayMetrics.density * 5).toInt() // 设置右边距
-                        cardView.layoutParams = layoutParams
-                        cardView.cardElevation = 0F
-                        cardView.radius = resources.displayMetrics.density * 3 // 设置圆角半径
-
-                        val imageView = ImageView(this@CollectionViewActivity)
-                        imageView.id = View.generateViewId()
-                        val imageLayoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        imageView.layoutParams = imageLayoutParams
-                        imageView.scaleType = ImageView.ScaleType.CENTER_CROP
-
-                        Glide.with(this@CollectionViewActivity)
-                            .load("${image}/yswidth300px")
-                            .diskCacheStrategy(DiskCacheStrategy.ALL)
-                            .into(imageView)
-
-                        cardView.addView(imageView)
-                        if(imagePreview.childCount < 5){
-                            imagePreview.addView(cardView, index)
-                        }
-                    }
-
                 }
                 2 -> {
                     val textView = holder.itemView as TextView

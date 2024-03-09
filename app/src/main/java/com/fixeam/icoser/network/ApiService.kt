@@ -1,13 +1,16 @@
 package com.fixeam.icoser.network
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.widget.Toast
+import com.fixeam.icoser.R
 import com.fixeam.icoser.model.getSystemInfo
+import com.fixeam.icoser.model.hotData
 import com.fixeam.icoser.model.newsData
+import com.fixeam.icoser.model.versionType
 import com.google.gson.Gson
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
-import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -30,7 +33,7 @@ val client: OkHttpClient = OkHttpClient.Builder()
     .writeTimeout(60, TimeUnit.SECONDS)
     .build()
 
-val retrofit = Retrofit.Builder()
+val retrofit: Retrofit = Retrofit.Builder()
     .client(client)
     .baseUrl(SERVE_HOST)
     .addConverterFactory(GsonConverterFactory.create())
@@ -39,74 +42,76 @@ val ApiNetService: ApiService = retrofit.create(ApiService::class.java)
 
 interface ApiService {
     @GET("carousel")
-    fun GetCarousel(): Call<ResponseBody>
+    fun getCarousel(): Call<CarouselResponse>
     @GET("album")
-    fun GetAlbum(@Query("condition") condition: String = "", @Query("access_token") access_token: String = "", @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<ResponseBody>
-    @GET("album?random=true")
-    fun GetRecAlbum(@Query("number") number: Int?, @Query("access_token") access_token: String = ""): Call<ResponseBody>
+    fun getAlbum(@Query("condition") condition: String = "", @Query("access_token") accessToken: String = "", @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<AlbumsResponse>
     @GET("album/hot")
-    fun GetHot(): Call<ResponseBody>
+    fun getHot(): Call<AlbumsResponse>
     @GET("model?withalbum=true")
-    fun GetRecModel(): Call<ResponseBody>
+    fun getRecModel(): Call<ModelsResponse>
+    @GET("album?random=true")
+    fun getRecAlbum(@Query("number") number: Int?, @Query("access_token") accessToken: String = ""): Call<AlbumsResponse>
+    @GET("search/hot")
+    fun getHotSearch(): Call<HotSearchKeywordResponse>
     @GET("model")
-    fun GetModel(@Query("condition") condition: String?, @Query("access_token") access_token: String = ""): Call<ModelsResponse>
+    fun getModel(@Query("condition") condition: String?, @Query("access_token") accessToken: String = ""): Call<ModelsResponse>
     @GET("login/send-code")
-    fun SendVerifyCode(@Query("target") target: String?): Call<SendVerifyCodeResponse>
+    fun sendVerifyCode(@Query("target") target: String?): Call<SendVerifyCodeResponse>
     @GET("login/bypass")
-    fun LoginByPass(@Query("username") username: String?, @Query("password") password: String?): Call<LoginResponse>
+    fun loginByPass(@Query("username") username: String?, @Query("password") password: String?): Call<LoginResponse>
     @GET("login/bycode")
-    fun LoginByCode(@Query("target") target: String?, @Query("verify-id") verifyId: String?, @Query("code") code: Int?): Call<LoginResponse>
+    fun loginByCode(@Query("target") target: String?, @Query("verify-id") verifyId: String?, @Query("code") code: Int?): Call<LoginResponse>
     @GET("login/user/inform")
-    fun GetUserInform(@Query("access_token") access_token: String?): Call<UserInformResponse>
+    fun getUserInform(@Query("access_token") accessToken: String?): Call<UserInformResponse>
     @GET("collection/set")
-    fun SetCollectionItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String, @Query("fold") fold: String = ""): Call<ActionResponse>
+    fun setCollectionItem(@Query("access_token") accessToken: String, @Query("id") id: Int, @Query("type") type: String, @Query("fold") fold: String = ""): Call<ActionResponse>
     @GET("collection/set?isNuCollect=true")
-    fun RemoveCollectionItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String): Call<ActionResponse>
+    fun removeCollectionItem(@Query("access_token") accessToken: String, @Query("id") id: Int, @Query("type") type: String): Call<ActionResponse>
     @GET("forbidden/set")
-    fun SetForbiddenItem(@Query("access_token") access_token: String, @Query("id") id: Int, @Query("type") type: String): Call<ActionResponse>
+    fun setForbiddenItem(@Query("access_token") accessToken: String, @Query("id") id: Int, @Query("type") type: String): Call<ActionResponse>
     @GET("forbidden/set?isNuForbidden=true")
-    fun RemoveForbiddenItem(@Query("access_token") access_token: String, @Query("id") id: Int): Call<ActionResponse>
+    fun removeForbiddenItem(@Query("access_token") accessToken: String, @Query("id") id: Int): Call<ActionResponse>
     @GET("forbidden/get")
-    fun GetUserForbidden(@Query("access_token") access_token: String): Call<ForbiddenResponse>
+    fun getUserForbidden(@Query("access_token") accessToken: String): Call<ForbiddenResponse>
     @Headers("Content-Type: application/json")
     @POST("file/infomation")
-    fun PostFileAndInformation(@Body requestBody: UrlRequestBody): Call<List<FileInfo>>
+    fun postFileAndInformation(@Body requestBody: UrlRequestBody): Call<List<FileInfo>>
     @GET
-    fun GetFileInfoByUrl(@Url url: String): Call<FileMeta>
+    fun getFileInfoByUrl(@Url url: String): Call<FileMeta>
     @GET("file/meta/update")
-    fun UpdateFileMeta(@Query("url") url: String, @Query("meta") meta: String): Call<ActionResponse>
+    fun updateFileMeta(@Query("url") url: String, @Query("meta") meta: String): Call<ActionResponse>
     @GET("collection/fold/get")
-    fun GetUserCollectionFold(@Query("access_token") access_token: String): Call<CollectionFoldResponse>
+    fun getUserCollectionFold(@Query("access_token") accessToken: String): Call<CollectionFoldResponse>
     @GET("collection/fold/set")
-    fun SetUserCollectionFold(@Query("access_token") access_token: String, @Query("name") name: String): Call<ActionResponse>
+    fun setUserCollectionFold(@Query("access_token") accessToken: String, @Query("name") name: String): Call<ActionResponse>
     @GET("collection/fold/set?isDelete=true")
-    fun RemoveCollectionFold(@Query("access_token") access_token: String, @Query("id") id: Int): Call<ActionResponse>
+    fun removeCollectionFold(@Query("access_token") accessToken: String, @Query("id") id: Int): Call<ActionResponse>
     @GET("collection/get")
-    fun GetUserCollection(@Query("access_token") access_token: String): Call<CollectionResponse>
+    fun getUserCollection(@Query("access_token") accessToken: String): Call<CollectionResponse>
     @GET("collection/get?type=model")
-    fun GetUserFollow(@Query("access_token") access_token: String): Call<FollowResponse>
+    fun getUserFollow(@Query("access_token") accessToken: String): Call<FollowResponse>
     @GET("access/history")
-    fun GetUserHistory(@Query("access_token") access_token: String, @Query("start") start: Int = 0, @Query("number") number: Int = 50): Call<HistoryResponse>
+    fun getUserHistory(@Query("access_token") accessToken: String, @Query("start") start: Int = 0, @Query("number") number: Int = 50): Call<HistoryResponse>
     @GET("access/history/clear")
-    fun ClearUserHistory(@Query("access_token") access_token: String): Call<ActionResponse>
+    fun clearUserHistory(@Query("access_token") accessToken: String): Call<ActionResponse>
     @GET("access/history/clear")
-    fun ClearUserHistoryById(@Query("access_token") access_token: String, @Query("id") start: Int): Call<ActionResponse>
+    fun clearUserHistoryById(@Query("access_token") accessToken: String, @Query("id") start: Int): Call<ActionResponse>
     @GET("media")
-    fun GetMedia(@Query("access_token") access_token: String = "", @Query("number") number: Int = 20, @Query("model-id") model_id: String = "", @Query("album-id") album_id: String = "", @Query("id") id: String = ""): Call<MediaResponse>
+    fun getMedia(@Query("access_token") accessToken: String = "", @Query("number") number: Int = 20, @Query("model-id") modelId: String = "", @Query("album-id") albumId: String = "", @Query("id") id: String = ""): Call<MediaResponse>
     @GET("album/search")
-    fun SearchAlbum(@Query("access_token") access_token: String = "", @Query("keyword") keyword: String = ""): Call<SearchAlbumResponse>
+    fun searchAlbum(@Query("access_token") accessToken: String = "", @Query("keyword") keyword: String = ""): Call<SearchAlbumResponse>
     @GET("model/search")
-    fun SearchModel(@Query("access_token") access_token: String = "", @Query("keywords") keywords: String = ""): Call<SearchModelResponse>
+    fun searchModel(@Query("access_token") accessToken: String = "", @Query("keywords") keywords: String = ""): Call<SearchModelResponse>
     @GET("access/log")
-    fun AccessLog(@Query("type") type: String, @Query("content") content: String, @Query("device") device: String, @Query("application") application: String = "Android Kotlin", @Query("access_token") access_token: String = ""): Call<AccessLogResponse>
+    fun accessLog(@Query("type") type: String, @Query("content") content: String, @Query("device") device: String, @Query("application") application: String = "Android Kotlin", @Query("access_token") accessToken: String = ""): Call<AccessLogResponse>
     @GET("access/log?updateStay=true")
-    fun UpdateAccessLog(@Query("id") id: Int): Call<UpdateAccessLog>
+    fun updateAccessLog(@Query("id") id: Int): Call<UpdateAccessLog>
     @GET("access/log?updateStay=true")
-    fun UpdateAccessLogWithStay(@Query("id") id: Int, @Query("stay") stay: Int): Call<UpdateAccessLog>
+    fun updateAccessLogWithStay(@Query("id") id: Int, @Query("stay") stay: Int): Call<UpdateAccessLog>
     @GET("follow")
-    fun GetFollow(@Query("access_token") access_token: String, @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<AlbumsResponse>
+    fun getFollow(@Query("access_token") accessToken: String, @Query("start") start: Int = 0, @Query("number") number: Int = 20): Call<AlbumsResponse>
     @GET("app/version/latest?platform=android")
-    fun GetLatestVersion(@Query("version_type") type: String): Call<PackageInfo>
+    fun getLatestVersion(@Query("version_type") type: String): Call<PackageInfo>
     @Multipart
     @POST("file/upload")
     fun uploadFile(
@@ -117,12 +122,14 @@ interface ApiService {
     fun setUserInform(@Query("access_token") accessToken: String, @Query("inform") inform: String): Call<ActionResponse>
 }
 
-
 // 上传和更新访问记录
 fun accessLog(context: Context, content: String, type: String, callback: (id: Int) -> Unit){
-    var call = ApiNetService.AccessLog(type, content, getSystemInfo(context), "Android Kotlin")
+    if(versionType != "release"){
+        return
+    }
+    var call = ApiNetService.accessLog(type, content, getSystemInfo(context), "Android Kotlin")
     if(userToken != null){
-        call = ApiNetService.AccessLog(type, content, getSystemInfo(context), "Android Kotlin", userToken!!)
+        call = ApiNetService.accessLog(type, content, getSystemInfo(context), "Android Kotlin", userToken!!)
     }
 
     call.enqueue(object : Callback<AccessLogResponse> {
@@ -139,14 +146,13 @@ fun accessLog(context: Context, content: String, type: String, callback: (id: In
         override fun onFailure(call: Call<AccessLogResponse>, t: Throwable) { }
     })
 }
-
 fun updateAccessLog(id: Int, stay: Int = -1){
     if(id == 0){
         return
     }
-    var call = ApiNetService.UpdateAccessLog(id)
+    var call = ApiNetService.updateAccessLog(id)
     if(stay > 0){
-        call = ApiNetService.UpdateAccessLogWithStay(id, stay)
+        call = ApiNetService.updateAccessLogWithStay(id, stay)
     }
 
     call.enqueue(object : Callback<UpdateAccessLog> {
@@ -154,24 +160,434 @@ fun updateAccessLog(id: Int, stay: Int = -1){
         override fun onFailure(call: Call<UpdateAccessLog>, t: Throwable) { }
     })
 }
-
 // 获取最新的写真集
-fun requestNewData(context: Context, callback: () -> Unit) {
-    val call = ApiNetService.GetAlbum(number = 30)
-    call.enqueue(object : Callback<ResponseBody> {
-        override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+fun requestNewData(context: Context, callback: (List<Albums>) -> Unit) {
+    val call = ApiNetService.getAlbum(number = 30)
+    call.enqueue(object : Callback<AlbumsResponse> {
+        override fun onResponse(call: Call<AlbumsResponse>, response: Response<AlbumsResponse>) {
             if (response.isSuccessful) {
-                val responseBody = response.body()?.string()
-                val albumsResponse = Gson().fromJson(responseBody, AlbumsResponse::class.java)
-                if (albumsResponse.result) {
-                    newsData = albumsResponse.data.take(30)
-                    callback()
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result) {
+                    newsData = responseBody.data.take(30)
+                    callback(newsData)
                 }
             }
         }
 
-        override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-            // 处理请求失败的逻辑
+        override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取热门的写真集
+fun requestHotData(context: Context, callback: (List<Albums>) -> Unit) {
+    val call = ApiNetService.getHot()
+    call.enqueue(object : Callback<AlbumsResponse> {
+        override fun onResponse(call: Call<AlbumsResponse>, response: Response<AlbumsResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result) {
+                    hotData = responseBody.data.take(30)
+                    callback(hotData)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取轮播图数据
+fun requestCarouselData(context: Context, callback: (List<Carousel>) -> Unit) {
+    val call = ApiNetService.getCarousel()
+    call.enqueue(object : Callback<CarouselResponse> {
+        override fun onResponse(call: Call<CarouselResponse>, response: Response<CarouselResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result) {
+                    val carouselData = responseBody.data
+                    callback(carouselData)
+                }
+            } else {
+                Toast.makeText(context, "轮播图数据加载失败", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        override fun onFailure(call: Call<CarouselResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取推荐模特信息
+fun requestRecommendModelData(context: Context, callback: (List<Models>) -> Unit) {
+    val call = ApiNetService.getRecModel()
+
+    call.enqueue(object : Callback<ModelsResponse> {
+        override fun onResponse(call: Call<ModelsResponse>, response: Response<ModelsResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result) {
+                    callback(responseBody.data)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<ModelsResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取流推荐写真集信息
+fun requestLikesData(context: Context, number: Int, callback: (List<Albums>) -> Unit){
+    var call = ApiNetService.getRecAlbum(number)
+    if(userToken != null){
+        call = ApiNetService.getRecAlbum(number, userToken!!)
+    }
+
+    call.enqueue(object : Callback<AlbumsResponse> {
+        override fun onResponse(call: Call<AlbumsResponse>, response: Response<AlbumsResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if(responseBody == null || !responseBody.result){
+                    return
+                }
+                callback(responseBody.data)
+            }
+        }
+
+        override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取写真集信息
+fun requestAlbumData(context: Context, condition: String = "", doNotSetToken: Boolean = false, start: Int = 0, number: Int = 20, callback: (List<Albums>) -> Unit) {
+    var call = ApiNetService.getAlbum(condition = condition, start = start, number = number)
+    if(userToken != null && !doNotSetToken){
+        call = ApiNetService.getAlbum(condition = condition, accessToken = userToken!!, start = start, number = number)
+    }
+    call.enqueue(object : Callback<AlbumsResponse> {
+        override fun onResponse(call: Call<AlbumsResponse>, response: Response<AlbumsResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result && responseBody.data.isNotEmpty()) {
+                    callback(responseBody.data)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取写真集图片文件信息
+fun requestAlbumImageInfo(context: Context, albumImages: List<String>, callback: (List<FileInfo>) -> Unit) {
+    val urls = Gson().toJson(albumImages)
+    val urlRequestBody = UrlRequestBody(urls)
+    val call = ApiNetService.postFileAndInformation(urlRequestBody)
+
+    call.enqueue(object : Callback<List<FileInfo>> {
+        override fun onResponse(call: Call<List<FileInfo>>, response: Response<List<FileInfo>>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null) {
+                    callback(responseBody)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<List<FileInfo>>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取COS图片信息
+fun requestImageInfo(context: Context, image: String, callback: (FileMeta) -> Unit) {
+    val call = ApiNetService.getFileInfoByUrl("$image?imageInfo")
+
+    call.enqueue(object : Callback<FileMeta> {
+        override fun onResponse(call: Call<FileMeta>, response: Response<FileMeta>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null) {
+                    callback(responseBody)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<FileMeta>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 上传图片文件信息
+fun uploadImageInfo(image: String, json: String) {
+    val call = ApiNetService.updateFileMeta(image, json)
+    call.enqueue(object : Callback<ActionResponse> {
+        override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) { }
+        override fun onFailure(call: Call<ActionResponse>, t: Throwable) { }
+    })
+}
+// 获取热搜词
+fun requestHotSearchKeyword(context: Context, callback: (List<String>) -> Unit) {
+    val call = ApiNetService.getHotSearch()
+
+    call.enqueue(object : Callback<HotSearchKeywordResponse> {
+        override fun onResponse(call: Call<HotSearchKeywordResponse>, response: Response<HotSearchKeywordResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null) {
+                    callback(responseBody.keyword)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<HotSearchKeywordResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取写真集搜索结果
+fun requestAlbumSearch(context: Context, keyword: String, callback: (List<Albums>, List<String>?) -> Unit) {
+    var call = ApiNetService.searchAlbum(
+        keyword = keyword
+    )
+    if(userToken != null){
+        call = ApiNetService.searchAlbum(
+            accessToken = userToken!!,
+            keyword = keyword
+        )
+    }
+    call.enqueue(object : Callback<SearchAlbumResponse> {
+        override fun onResponse(call: Call<SearchAlbumResponse>, response: Response<SearchAlbumResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result) {
+                    callback(responseBody.data, responseBody.keywords)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<SearchAlbumResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取模特搜索结果
+fun requestModelSearch(context: Context, keywords: List<String>?, callback: (List<Models>) -> Unit) {
+    val keywordsString = Gson().toJson(keywords)
+    var call = ApiNetService.searchModel(
+        keywords = keywordsString
+    )
+    if(userToken != null){
+        call = ApiNetService.searchModel(
+            accessToken = userToken!!,
+            keywords = keywordsString
+        )
+    }
+    call.enqueue(object : Callback<SearchModelResponse> {
+        override fun onResponse(call: Call<SearchModelResponse>, response: Response<SearchModelResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result) {
+                    callback(responseBody.data)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<SearchModelResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取视频
+fun requestMediaData(context: Context, modelId: Int = -1, albumId: Int = -1, id: Int = -1, callback: (List<Media>) -> Unit) {
+    if(id <= 0 && albumId <= 0 && modelId <= 0){
+        callback(listOf())
+        return
+    }
+    var call = ApiNetService.getMedia(id = id.toString(), number = 9999)
+    if(albumId > 0){
+        call = ApiNetService.getMedia(albumId = albumId.toString(), number = 9999)
+    }
+    if(modelId > 0){
+        call = ApiNetService.getMedia(modelId = modelId.toString(), number = 9999)
+    }
+
+    call.enqueue(object : Callback<MediaResponse> {
+        @SuppressLint("SetTextI18n")
+        override fun onResponse(call: Call<MediaResponse>, response: Response<MediaResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result) {
+                    callback(responseBody.data)
+                } else {
+                    callback(listOf())
+                }
+            } else {
+                Toast.makeText(context, "请求失败", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        override fun onFailure(call: Call<MediaResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 获取模特信息
+fun requestModelData(context: Context, condition: String = "", doNotSetToken: Boolean = false, callback: (List<Models>) -> Unit) {
+    var call = ApiNetService.getModel(condition = condition)
+    if(userToken != null && !doNotSetToken){
+        call = ApiNetService.getModel(condition = condition, accessToken = userToken!!)
+    }
+    call.enqueue(object : Callback<ModelsResponse> {
+        override fun onResponse(call: Call<ModelsResponse>, response: Response<ModelsResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result && responseBody.data.isNotEmpty()) {
+                    callback(responseBody.data)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<ModelsResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+
+// 登录相关正则表达式
+val phonePattern = Regex("""^(13[0-9]|14[01456879]|15[0-35-9]|16[2567]|17[0-8]|18[0-9]|19[0-35-9])\d{8}$""")
+val mailPattern = Regex("""^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$""")
+// 发送验证码函数
+fun sendCode(context: Context, target: String?, callback: (String?) -> Unit) {
+    if(target.isNullOrEmpty()){
+        Toast.makeText(context, "请输入手机号或者邮箱", Toast.LENGTH_SHORT).show()
+        callback(null)
+        return
+    }
+
+    if(!target.matches(phonePattern) && !target.matches(mailPattern)){
+        Toast.makeText(context, "请输入正确的11位手机号或者电子邮箱", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val call = ApiNetService.sendVerifyCode(target)
+    call.enqueue(object : Callback<SendVerifyCodeResponse> {
+        override fun onResponse(call: Call<SendVerifyCodeResponse>, response: Response<SendVerifyCodeResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null) {
+                    if(responseBody.result){
+                        callback(responseBody.verify_id)
+                    } else {
+                        callback(null)
+                    }
+                    if(responseBody.message != null){
+                        Toast.makeText(context, responseBody.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+        override fun onFailure(call: Call<SendVerifyCodeResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 账号密码登录函数
+fun requestPasswordLogin(context: Context, account: String?, password: String?, callback: (String?) -> Unit) {
+    if(account.isNullOrEmpty() || password.isNullOrEmpty()){
+        Toast.makeText(context, "账号或者密码不能为空", Toast.LENGTH_SHORT).show()
+        callback(null)
+        return
+    }
+    if(account.length < 6){
+        Toast.makeText(context, "账号格式不正确，请输入正确的" + context.getString(R.string.username_phone_or_mail), Toast.LENGTH_SHORT).show()
+        callback(null)
+        return
+    }
+    if(password.length < 6){
+        Toast.makeText(context, "密码格式不正确，请输入正确的" + context.getString(R.string.password), Toast.LENGTH_SHORT).show()
+        callback(null)
+        return
+    }
+    val call = ApiNetService.loginByPass(account, password)
+    call.enqueue(object : Callback<LoginResponse> {
+        override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null) {
+                    if(responseBody.result && responseBody.token != null){
+                        Toast.makeText(context, "登录成功", Toast.LENGTH_SHORT).show()
+                        callback(responseBody.token)
+                    } else {
+                        callback(null)
+                    }
+
+                    if(responseBody.message != null){
+                        Toast.makeText(context, responseBody.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 验证码登录函数
+fun requestVerifyCodeLogin(context: Context, target: String?, verifyId: String?, codeText: String?, callback: (String?) -> Unit) {
+    if(target.isNullOrEmpty()){
+        Toast.makeText(context, "请输入手机号或者邮箱", Toast.LENGTH_SHORT).show()
+        callback(null)
+        return
+    }
+    if(!target.matches(phonePattern) && !target.matches(mailPattern)){
+        Toast.makeText(context, "请输入正确的11位手机号或者电子邮箱", Toast.LENGTH_SHORT).show()
+        callback(null)
+        return
+    }
+    if(verifyId == null){
+        Toast.makeText(context, "请先发送验证码", Toast.LENGTH_SHORT).show()
+        callback(null)
+        return
+    }
+    if(codeText.isNullOrEmpty()){
+        Toast.makeText(context, "请输入验证码", Toast.LENGTH_SHORT).show()
+        callback(null)
+        return
+    }
+    if(codeText.length != 6){
+        Toast.makeText(context, "请输入正确的验证码", Toast.LENGTH_SHORT).show()
+        callback(null)
+        return
+    }
+    val code = codeText.toIntOrNull()
+    val call = ApiNetService.loginByCode(target, verifyId, code)
+
+    call.enqueue(object : Callback<LoginResponse> {
+        override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null) {
+                    if(responseBody.result && responseBody.token != null){
+                        Toast.makeText(context, "登录成功", Toast.LENGTH_SHORT).show()
+                        callback(responseBody.token)
+                    } else {
+                        callback(null)
+                    }
+
+                    if(responseBody.message != null){
+                        Toast.makeText(context, responseBody.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
             Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
         }
     })

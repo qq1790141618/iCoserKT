@@ -93,7 +93,7 @@ fun downloadImage(imageUrl: String, context: Context) {
             if (DownloadManager.ACTION_DOWNLOAD_COMPLETE == action) {
                 val downloadIdCompleted = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0)
                 if (downloadIdCompleted == downloadId) {
-                    val downloadedUri = downloadManager.getUriForDownloadedFile(downloadIdCompleted)
+                    downloadManager.getUriForDownloadedFile(downloadIdCompleted)
                     Toast.makeText(context, "图片已经保存到相册${imageUrl.substringAfterLast("/")}", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -202,7 +202,7 @@ fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Uri? {
 
     val resolver = context.contentResolver
     var stream: OutputStream? = null
-    var uri: Uri? = null
+    var uri: Uri?
 
     try {
         // 插入图片
@@ -387,7 +387,7 @@ fun setOptionItemPress(view: View, isDark: Boolean, onClick: (View) -> Unit){
 }
 
 // 复制到剪贴板
-fun copyToClipboard(context: Context, text: String, callback: () -> Unit) {
+fun copyToClipboard(context: Context, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val clip = ClipData.newPlainText("label", text)
     clipboard.setPrimaryClip(clip)

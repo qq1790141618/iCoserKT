@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -18,6 +19,8 @@ import com.fixeam.icoser.network.Albums
 import com.fixeam.icoser.network.accessLog
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.main.activity.MainActivity
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 /**
  * 向用户发送一条写真集类的通知
@@ -25,6 +28,17 @@ import com.fixeam.icoser.ui.main.activity.MainActivity
  * @param album 需要向用户推送的写真集对象
  */
 fun sendAlbumNotification(context: Context, album: Albums) {
+    // 获取已经推送过的写真集并保存当前推送
+    val sharedPreferences = context.getSharedPreferences("push", AppCompatActivity.MODE_PRIVATE)
+    val pushedAlbums = sharedPreferences.getString("pushed_albums", "[]")
+    val listType = object : TypeToken<MutableSet<Int>>() {}.type
+    val pushedList: MutableSet<Int> = Gson().fromJson(pushedAlbums, listType)
+    if(pushedList.contains(album.id)){
+        return
+    }
+    pushedList.add(album.id)
+    sharedPreferences.edit().putString("pushed_albums", Gson().toJson(pushedList)).apply()
+
     val title = when(album.type){
         "follow" -> "您关注的模特 ${album.model} 有更新"
         else -> "热门推荐 模特 ${album.model} 的新内容"

@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.login_page.LoginActivity">
+    tools:context=".ui.login_page.LoginActivity"
+    tools:viewBindingIgnore="false">
 
     <ImageView
         android:id="@+id/logo"
@@ -26,8 +27,8 @@
         android:textSize="18sp"
         android:textFontWeight="700" />
 
-    <include layout="@layout/login_with_account_and_password" />
+    <include android:id="@+id/login_with_account_and_password" layout="@layout/login_with_account_and_password" />
 
-    <include layout="@layout/login_with_verify_code" />
+    <include android:id="@+id/login_with_verify_code" layout="@layout/login_with_verify_code" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

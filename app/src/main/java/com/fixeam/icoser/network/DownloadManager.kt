@@ -23,7 +23,7 @@ interface DownloadService {
     fun download(@Url url: String): Call<ResponseBody>
 }
 sealed class DownloadState {
-    data class InProgress(val progress: Int) : DownloadState()
+    data class InProgress(val progress: Int, val downloadedBytes: Int, val totalBytes: Int) : DownloadState()
     data class Success(val file: File) : DownloadState()
     data class Error(val throwable: Throwable) : DownloadState()
 }
@@ -35,8 +35,8 @@ object DownloadManager {
                 .build()
             val response = retrofit.create(DownloadService::class.java).download(url).execute()
             if (response.isSuccessful) {
-                saveToFile(response.body()!!, file) {
-                    emit(DownloadState.InProgress(it))
+                saveToFile(response.body()!!, file) { progress, downloadedBytes, totalBytes ->
+                    emit(DownloadState.InProgress(progress, downloadedBytes, totalBytes))
                 }
                 emit(DownloadState.Success(file))
             } else {
@@ -47,7 +47,7 @@ object DownloadManager {
         }.flowOn(Dispatchers.IO)
     }
 
-    private inline fun saveToFile(responseBody: ResponseBody, file: File, progressListener: (Int) -> Unit) {
+    private inline fun saveToFile(responseBody: ResponseBody, file: File, progressListener: (Int, Int, Int) -> Unit) {
         val total = responseBody.contentLength()
         var bytesCopied = 0
         var emittedProgress = 0
@@ -61,7 +61,7 @@ object DownloadManager {
                 bytes = input.read(buffer)
                 val progress = (bytesCopied * 100 / total).toInt()
                 if (progress - emittedProgress > 0) {
-                    progressListener(progress)
+                    progressListener(progress, bytesCopied, total.toInt())
                     emittedProgress = progress
                 }
             }
@@ -69,7 +69,6 @@ object DownloadManager {
     }
 }
 object UrlUtils {
-
     /**
      * 从url分割出BaseUrl
      */

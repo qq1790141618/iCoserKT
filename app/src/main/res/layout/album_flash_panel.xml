@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
     android:padding="20dp"
     android:background="@drawable/rounded_square">
@@ -13,7 +14,8 @@
         android:layout_height="wrap_content"
         android:textAlignment="center"
         android:layout_marginBottom="8dp"
-        android:text="Model And Album Name" />
+        android:text="Model And Album Name"
+        tools:ignore="HardcodedText" />
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"

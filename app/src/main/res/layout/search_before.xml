@@ -11,7 +11,7 @@
         android:id="@+id/search_history_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="18dp"
+        android:layout_marginHorizontal="15dp"
         android:layout_marginTop="24dp"
         android:layout_marginBottom="10dp"
         android:orientation="horizontal"
@@ -31,7 +31,8 @@
             android:layout_width="18dp"
             android:layout_height="18dp"
             android:src="@drawable/clear"
-            app:tint="?attr/colorPrimary"/>
+            app:tint="?attr/colorPrimary"
+            android:importantForAccessibility="no" />
 
     </LinearLayout>
 
@@ -40,8 +41,28 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="15dp"
-        android:padding="12dp"
-        android:background="@drawable/rounded_square"
+        app:flexWrap="wrap"
+        android:visibility="gone" >
+    </com.google.android.flexbox.FlexboxLayout>
+
+    <TextView
+        android:id="@+id/hot_search_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="18dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="10dp"
+        android:textColor="@color/danger"
+        android:text="@string/hot_search"
+        android:textSize="14sp"
+        android:textFontWeight="700"
+        android:visibility="gone" />
+
+    <com.google.android.flexbox.FlexboxLayout
+        android:id="@+id/hot_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="15dp"
         app:flexWrap="wrap"
         android:visibility="gone" >
     </com.google.android.flexbox.FlexboxLayout>

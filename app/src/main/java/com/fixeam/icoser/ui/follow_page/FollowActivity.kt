@@ -2,7 +2,6 @@ package com.fixeam.icoser.ui.follow_page
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -18,20 +17,24 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.ActivityFollowBinding
 import com.fixeam.icoser.model.calculateTimeAgo
 import com.fixeam.icoser.model.setStatusBar
+import com.fixeam.icoser.model.startLoginActivity
+import com.fixeam.icoser.model.startModelActivity
 import com.fixeam.icoser.network.getUserFollow
 import com.fixeam.icoser.network.setModelFollowing
 import com.fixeam.icoser.network.userFollow
 import com.fixeam.icoser.network.userToken
-import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.model_page.ModelViewActivity
 import com.google.android.material.button.MaterialButton
 
 class FollowActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityFollowBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_follow)
+        binding = ActivityFollowBinding.inflate(LayoutInflater.from(this))
+        setContentView(binding.root)
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
@@ -39,8 +42,7 @@ class FollowActivity : AppCompatActivity() {
         // 获取登录状态
         if(userToken == null){
             onBackPressed()
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
+            startLoginActivity(this)
         }
 
         initPage()
@@ -49,13 +51,13 @@ class FollowActivity : AppCompatActivity() {
     @SuppressLint("NotifyDataSetChanged")
     private fun initPage(isRefresh: Boolean = false){
         // 设置加载动画
-        val imageView = findViewById<ImageView>(R.id.image_loading)
+        val imageView = binding.imageLoading
         val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
         imageView.startAnimation(animation)
         imageView.visibility = View.VISIBLE
 
         // 设置导航栏
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        val toolbar: Toolbar = binding.toolbar
         toolbar.title = "加载中..."
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -67,12 +69,11 @@ class FollowActivity : AppCompatActivity() {
             imageView.visibility = View.GONE
             toolbar.title = getString(R.string.my_following)
 
-            val list = findViewById<RecyclerView>(R.id.list)
             if(isRefresh){
-                list.adapter?.notifyDataSetChanged()
+                binding.list.adapter?.notifyDataSetChanged()
             } else {
-                list.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-                list.adapter = MyAdapter()
+                binding.list.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+                binding.list.adapter = MyAdapter()
             }
         }
     }
@@ -109,9 +110,7 @@ class FollowActivity : AppCompatActivity() {
 
                     // 创建点击事件
                     holder.itemView.setOnClickListener {
-                        val intent = Intent(this@FollowActivity, ModelViewActivity::class.java)
-                        intent.putExtra("id", model.id)
-                        startActivity(intent)
+                        startModelActivity(this@FollowActivity, model.id)
                     }
 
                     // 更新头像

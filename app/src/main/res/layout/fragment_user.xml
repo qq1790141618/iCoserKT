@@ -7,9 +7,10 @@
     tools:context=".ui.main.fragment.UserFragment"
     android:background="?attr/colorContainer"
     android:orientation="vertical"
-    tools:ignore="PrivateResource">
+    tools:ignore="PrivateResource"
+    tools:viewBindingIgnore="false">
 
-    <include layout="@layout/user_card" />
+    <include android:id="@+id/user_card" layout="@layout/user_card" />
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"

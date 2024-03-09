@@ -46,6 +46,7 @@
     <string name="latest_create_time">最近更新时间</string>
     <string name="albums_number">写真集数量</string>
     <string name="hot_view">热门浏览</string>
+    <string name="hot_search">热搜关键词</string>
     <string name="search_history">搜索历史</string>
     <string name="search_no_result">搜索结果为空~</string>
     <string name="from_collection">来自已经收藏的项目</string>
@@ -110,4 +111,6 @@
     <string name="third_level">第三级</string>
     <string name="fourth_level">第四级</string>
     <string name="cascader_title">请选择</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

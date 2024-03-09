@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
 import android.provider.OpenableColumns
 import android.text.Editable
 import android.view.View
@@ -25,6 +26,7 @@ import androidx.core.content.FileProvider
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.ActivityUserCenterBinding
 import com.fixeam.icoser.model.CascaderItem
 import com.fixeam.icoser.model.Option
 import com.fixeam.icoser.model.copyToClipboard
@@ -33,20 +35,21 @@ import com.fixeam.icoser.model.initOptionItem
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setOptionItemPress
 import com.fixeam.icoser.model.setStatusBar
+import com.fixeam.icoser.model.startLoginActivity
 import com.fixeam.icoser.model.userFragment
 import com.fixeam.icoser.network.ApiNetService
 import com.fixeam.icoser.network.FileUploadResponse
 import com.fixeam.icoser.network.setUserInform
 import com.fixeam.icoser.network.userInform
 import com.fixeam.icoser.network.userToken
-import com.fixeam.icoser.ui.login_page.LoginActivity
+import com.fixeam.icoser.network.verifyTokenAndGetUserInform
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.yalantis.ucrop.UCrop
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Call
@@ -58,17 +61,19 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 class UserCenterActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityUserCenterBinding
     private lateinit var resultLauncher: ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_user_center)
+        binding = ActivityUserCenterBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
 
         // 设置导航栏
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        val toolbar: Toolbar = binding.toolbar
         toolbar.title = getString(R.string.user_inform)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -77,8 +82,18 @@ class UserCenterActivity : AppCompatActivity() {
         // 获取登录状态
         if(userToken == null){
             onBackPressed()
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
+            startLoginActivity(this)
+        } else {
+            val runnable: Runnable?
+            val handler = Handler()
+            runnable = object: Runnable{
+                override fun run(){
+                    verifyTokenAndGetUserInform(userToken!!, this@UserCenterActivity)
+                    handler.postDelayed(this, 1000)
+                }
+            }
+            handler.postDelayed(runnable, 1000)
+            initPage()
         }
 
         // 设置文件选择启动器
@@ -88,8 +103,6 @@ class UserCenterActivity : AppCompatActivity() {
                 startAvatarCrop(uri)
             }
         }
-
-        initPage()
     }
 
     @SuppressLint("InflateParams")
@@ -99,13 +112,9 @@ class UserCenterActivity : AppCompatActivity() {
         // 显示昵称
         initNickname()
         // 设置头像选项点击
-        val avatarOption = findViewById<LinearLayout>(R.id.avatar_option)
-        setOptionItemPress(avatarOption, isDarken(this)){
-            resultLauncher.launch("image/*")
-        }
+        setOptionItemPress(binding.avatarOption, isDarken(this)){ resultLauncher.launch("image/*") }
         // 监听昵称编辑
-        val nicknameOption = findViewById<LinearLayout>(R.id.nickname_option)
-        setOptionItemPress(nicknameOption, isDarken(this)){
+        setOptionItemPress(binding.nicknameOption, isDarken(this)){
             val builder = AlertDialog.Builder(this)
             val textInput = layoutInflater.inflate(R.layout.text_input, null)
             textInput.findViewById<TextInputLayout>(R.id.label).hint = getString(R.string.user_nickname)
@@ -162,7 +171,7 @@ class UserCenterActivity : AppCompatActivity() {
             alertDialog.show()
         }
         // 添加不可编辑内容
-        val aOptionsContainer = findViewById<LinearLayout>(R.id.a_option)
+        binding.aOption.removeAllViews()
         initOptionItem(
             Option(
                 iconId = R.drawable.id,
@@ -171,10 +180,10 @@ class UserCenterActivity : AppCompatActivity() {
                 contentText = userInform?.username,
                 showHrefIcon = false,
                 onClick = {
-                    userInform?.username?.let { copyToClipboard(this, it){} }
+                    userInform?.username?.let { copyToClipboard(this, it) }
                 }
             ),
-            aOptionsContainer,
+            binding.aOption,
             this,
             isDarken(this)
         )
@@ -186,7 +195,7 @@ class UserCenterActivity : AppCompatActivity() {
                 contentText = userInform?.identity,
                 showHrefIcon = false
             ),
-            aOptionsContainer,
+            binding.aOption,
             this,
             isDarken(this)
         )
@@ -198,10 +207,10 @@ class UserCenterActivity : AppCompatActivity() {
                 contentText = userInform?.phone,
                 showHrefIcon = false,
                 onClick = {
-                    userInform?.phone?.let { copyToClipboard(this, it){} }
+                    userInform?.phone?.let { copyToClipboard(this, it) }
                 }
             ),
-            aOptionsContainer,
+            binding.aOption,
             this,
             isDarken(this)
         )
@@ -214,15 +223,14 @@ class UserCenterActivity : AppCompatActivity() {
                 showHrefIcon = false,
                 clearMargin = true,
                 onClick = {
-                    userInform?.mail?.let { copyToClipboard(this, it){} }
+                    userInform?.mail?.let { copyToClipboard(this, it) }
                 }
             ),
-            aOptionsContainer,
+            binding.aOption,
             this,
             isDarken(this)
         )
         // 更多选项
-        val bOptionsContainer = findViewById<LinearLayout>(R.id.b_option)
         initOptionItem(
             Option(
                 iconId = R.drawable.location,
@@ -233,7 +241,7 @@ class UserCenterActivity : AppCompatActivity() {
                     openCitySelector()
                 }
             ),
-            bOptionsContainer,
+            binding.bOption,
             this,
             isDarken(this)
         )
@@ -248,7 +256,7 @@ class UserCenterActivity : AppCompatActivity() {
                     openDateSelector()
                 }
             ),
-            bOptionsContainer,
+            binding.bOption,
             this,
             isDarken(this)
         )
@@ -270,11 +278,10 @@ class UserCenterActivity : AppCompatActivity() {
     }
 
     private fun initBirthday(){
-        val bOptionsContainer = findViewById<LinearLayout>(R.id.b_option)
-        if(bOptionsContainer.childCount < 2){
+        if(binding.bOption.childCount < 2){
             return
         }
-        val item = bOptionsContainer.getChildAt(1) as LinearLayout
+        val item = binding.bOption.getChildAt(1) as LinearLayout
         val contentText = item.findViewById<TextView>(R.id.content_text)
         contentText.text = userInform?.birthday
     }
@@ -380,7 +387,7 @@ class UserCenterActivity : AppCompatActivity() {
                 }
             }
 
-            val requestFile = RequestBody.create(MediaType.parse("image/jpg"), file)
+            val requestFile = RequestBody.create("image/jpg".toMediaTypeOrNull(), file)
             val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
             val call = ApiNetService.uploadFile(userToken!!, body)
@@ -418,11 +425,10 @@ class UserCenterActivity : AppCompatActivity() {
         val localItems = loadLocalItemsFromJson()
         val text = userInform?.location?.let { getLocationNameFromCityJson(localItems, it) }
 
-        val bOptionsContainer = findViewById<LinearLayout>(R.id.b_option)
-        if(bOptionsContainer.childCount < 1){
+        if(binding.bOption.childCount < 1){
             return
         }
-        val item = bOptionsContainer.getChildAt(0) as LinearLayout
+        val item = binding.bOption.getChildAt(0) as LinearLayout
         val contentText = item.findViewById<TextView>(R.id.content_text)
         contentText.text = text
     }

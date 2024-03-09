@@ -2,7 +2,6 @@ package com.fixeam.icoser.ui.history_page
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,19 +9,22 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.ActivityHistoryBinding
 import com.fixeam.icoser.model.setStatusBar
+import com.fixeam.icoser.model.startAlbumActivity
+import com.fixeam.icoser.model.startLoginActivity
+import com.fixeam.icoser.model.startMediaActivity
+import com.fixeam.icoser.model.startModelActivity
 import com.fixeam.icoser.network.clearUserHistory
 import com.fixeam.icoser.network.getUserHistory
 import com.fixeam.icoser.network.userForbidden
@@ -30,18 +32,14 @@ import com.fixeam.icoser.network.userHistory
 import com.fixeam.icoser.network.userHistoryList
 import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.painter.GlideBlurTransformation
-import com.fixeam.icoser.ui.album_page.AlbumViewActivity
-import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.media_page.MediaViewActivity
-import com.fixeam.icoser.ui.model_page.ModelViewActivity
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.scwang.smart.refresh.layout.SmartRefreshLayout
 
 class HistoryActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityHistoryBinding
     @SuppressLint("NotifyDataSetChanged")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_history)
+        binding = ActivityHistoryBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
@@ -49,25 +47,23 @@ class HistoryActivity : AppCompatActivity() {
         // 获取登录状态
         if(userToken == null){
             onBackPressed()
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
+            startLoginActivity(this)
         }
 
         // 设置导航栏
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        val toolbar: Toolbar = binding.toolbar
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { onBackPressed() }
 
         // 创建内容列表
-        val list = findViewById<RecyclerView>(R.id.history_list)
-        list.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        binding.historyList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         val adapter = MyAdapter()
-        list.adapter = adapter
+        binding.historyList.adapter = adapter
 
         // 创建下拉刷新
-        val refreshLayout = findViewById<SmartRefreshLayout>(R.id.refreshLayout)
-        refreshLayout.setOnRefreshListener {
+        val refreshLayout = binding.refreshLayout
+        binding.refreshLayout.setOnRefreshListener {
             getUserHistory(this, false){
                 adapter.notifyDataSetChanged()
                 refreshLayout.finishRefresh()
@@ -84,12 +80,8 @@ class HistoryActivity : AppCompatActivity() {
         }
 
         // 设置悬浮按钮
-        val toUpButton: FloatingActionButton = findViewById(R.id.to_up)
-        toUpButton.setOnClickListener {
-            list.smoothScrollToPosition(0)
-        }
-        val clearButton: FloatingActionButton = findViewById(R.id.clear_history)
-        clearButton.setOnClickListener {
+        binding.toUp.setOnClickListener { binding.historyList.smoothScrollToPosition(0) }
+        binding.clearHistory.setOnClickListener {
             val builder = AlertDialog.Builder(this)
             builder.setMessage("确认清除所有的浏览历史记录吗?")
 
@@ -116,23 +108,19 @@ class HistoryActivity : AppCompatActivity() {
     @SuppressLint("NotifyDataSetChanged")
     private fun initPage(){
         // 设置加载动画
-        val imageView = findViewById<ImageView>(R.id.image_loading)
+        val imageView = binding.imageLoading
         val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
         imageView.startAnimation(animation)
         imageView.visibility = View.VISIBLE
-
-        // 设置导航栏
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
-        toolbar.title = "加载中..."
+        binding.toolbar.title = "加载中..."
 
         // 再次获取用户收藏内容
         getUserHistory(this){
             imageView.clearAnimation()
             imageView.visibility = View.GONE
-            toolbar.title = getString(R.string.my_history)
+            binding.toolbar.title = getString(R.string.my_history)
 
-            val list = findViewById<RecyclerView>(R.id.history_list)
-            list.adapter?.notifyDataSetChanged()
+            binding.historyList.adapter?.notifyDataSetChanged()
             initTimeRange()
         }
     }
@@ -144,8 +132,7 @@ class HistoryActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun initTimeRange(){
-        val list = findViewById<RecyclerView>(R.id.history_list)
-        val timeRangeView = findViewById<LinearLayout>(R.id.time_range_view)
+        val list = binding.historyList
 
         val timeRangePosition: MutableList<RangeIndex> = mutableListOf(
             RangeIndex(),
@@ -170,7 +157,7 @@ class HistoryActivity : AppCompatActivity() {
                 timeRangePositionItem.end = timeRangePositionItem.start + timeRange.count
             }
 
-            val textView = timeRangeView.getChildAt(index) as TextView
+            val textView = binding.timeRangeView.getChildAt(index) as TextView
             textView.visibility = View.VISIBLE
             textView.text = timeRange.time_range + "\n" + timeRange.count
             textView.setOnClickListener {
@@ -207,10 +194,9 @@ class HistoryActivity : AppCompatActivity() {
     }
 
     private fun moveMenuBlock(index: Int){
-        val menuBlock = findViewById<ConstraintLayout>(R.id.menu_block)
-        val menuBlockHeight = menuBlock.height
+        val menuBlockHeight = binding.menuBlock.menuBlock.height
         val moveDistance = menuBlockHeight * index
-        menuBlock.animate().translationY(moveDistance.toFloat()).setDuration(300).start()
+        binding.menuBlock.menuBlock.animate().translationY(moveDistance.toFloat()).setDuration(300).start()
     }
 
     inner class MyAdapter: RecyclerView.Adapter<MyViewHolder>() {
@@ -228,27 +214,17 @@ class HistoryActivity : AppCompatActivity() {
             val id = idDouble.toInt()
 
             holder.itemView.setOnClickListener {
-                val intent = when(historyItem.type){
-                    "VISIT_ALBUM" -> {
-                        Intent(this@HistoryActivity, AlbumViewActivity::class.java)
-                    }
-                    "VISIT_MODEL" -> {
-                        Intent(this@HistoryActivity, ModelViewActivity::class.java)
-                    }
-                    "VISIT_MEDIA" -> {
-                        Intent(this@HistoryActivity, MediaViewActivity::class.java)
-                    }
-                    else -> {
-                        Intent(this@HistoryActivity, AlbumViewActivity::class.java)
-                    }
-                }
-                intent.putExtra("id", id)
+                var doNotSetToken = false
                 for (forbid in userForbidden){
                     if(forbid.res_id.toInt() == id){
-                        intent.putExtra("doNotSetToken", true)
+                        doNotSetToken = true
                     }
                 }
-                startActivity(intent)
+                when(historyItem.type){
+                    "VISIT_ALBUM" -> startAlbumActivity(this@HistoryActivity, id, doNotSetToken)
+                    "VISIT_MODEL" -> startModelActivity(this@HistoryActivity, id, doNotSetToken)
+                    "VISIT_MEDIA" -> startMediaActivity(this@HistoryActivity, id)
+                }
             }
 
             val imageUrl = when(historyItem.type){

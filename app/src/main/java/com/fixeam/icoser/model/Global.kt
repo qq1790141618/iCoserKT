@@ -2,7 +2,6 @@ package com.fixeam.icoser.model
 
 import android.content.Context
 import android.content.res.ColorStateList
-import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.GlideBuilder
@@ -123,16 +122,15 @@ fun getSystemInfo(context: Context): String {
 }
 
 var newVersion: PackageInfo? = null
+var versionType = "release"
 fun checkForUpdate(context: Context, callback: (Boolean) -> Unit) {
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-    val version = packageInfo.versionName
-    val versionSuffix = version.substringAfterLast(" ")
     val versionCode = packageInfo.versionCode
 
     val sharedPreferences = context.getSharedPreferences("version", AppCompatActivity.MODE_PRIVATE)
     val doNotAlertVersion = sharedPreferences.getInt("do_not_alert_version", -1)
 
-    val call = ApiNetService.GetLatestVersion(versionSuffix)
+    val call = ApiNetService.getLatestVersion(versionType)
     call.enqueue(object : Callback<PackageInfo> {
         override fun onResponse(call: Call<PackageInfo>, response: Response<PackageInfo>) {
             if (response.isSuccessful) {

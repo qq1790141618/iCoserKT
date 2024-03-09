@@ -11,9 +11,8 @@ android {
         applicationId "com.fixeam.icoser"
         minSdk 28
         targetSdk 34
-        versionCode 200060
-        versionName "2.0.6"
-        versionNameSuffix(" release")
+        versionCode 200070
+        versionName "2.0.7"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -91,6 +90,7 @@ dependencies {
     implementation 'com.google.android.exoplayer:exoplayer-ui:2.19.1'
     implementation 'com.google.android.exoplayer:exoplayer-hls:2.19.1'
     implementation 'com.google.android.exoplayer:exoplayer-smoothstreaming:2.19.1'
+    implementation 'com.google.android.exoplayer:extension-okhttp:2.19.1'
 
     // 图片预览库
     implementation 'com.github.chrisbanes:PhotoView:2.0.0'

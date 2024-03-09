@@ -9,7 +9,6 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Handler
-import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -29,44 +28,38 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.FragmentHomeBinding
 import com.fixeam.icoser.model.changeBackgroundDim
 import com.fixeam.icoser.model.checkForUpdate
+import com.fixeam.icoser.model.hotData
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.shareTextContent
+import com.fixeam.icoser.model.startAlbumActivity
+import com.fixeam.icoser.model.startModelActivity
+import com.fixeam.icoser.model.startRecommendActivity
 import com.fixeam.icoser.network.Albums
-import com.fixeam.icoser.network.AlbumsResponse
-import com.fixeam.icoser.network.ApiNetService
 import com.fixeam.icoser.network.Carousel
-import com.fixeam.icoser.network.CarouselResponse
 import com.fixeam.icoser.network.Models
-import com.fixeam.icoser.network.ModelsResponse
 import com.fixeam.icoser.network.accessLog
 import com.fixeam.icoser.network.openCollectionSelector
+import com.fixeam.icoser.network.requestCarouselData
+import com.fixeam.icoser.network.requestHotData
+import com.fixeam.icoser.network.requestLikesData
+import com.fixeam.icoser.network.requestRecommendModelData
 import com.fixeam.icoser.network.setAlbumCollection
 import com.fixeam.icoser.network.setForbidden
-import com.fixeam.icoser.network.userToken
-import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.model_page.ModelViewActivity
-import com.fixeam.icoser.ui.recommend_page.RecommendActivity
 import com.fixeam.icoser.ui.search_page.SearchActivity
 import com.fixeam.icoser.ui.update_dialog.UpdateActivity
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.gson.Gson
-import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import com.youth.banner.Banner
 import com.youth.banner.adapter.BannerImageAdapter
 import com.youth.banner.holder.BannerImageHolder
 import com.youth.banner.indicator.CircleIndicator
-import okhttp3.ResponseBody
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 
 class HomeFragment : Fragment() {
-    // 猜你喜欢的推荐列表内容
+    private lateinit var binding: FragmentHomeBinding
     private var albumList: MutableList<Albums> = mutableListOf()
     private var albumIsLoading: Boolean = false
     private var typeface: Typeface? = null
@@ -76,67 +69,59 @@ class HomeFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_home, container, false)
+    ): View {
+        binding = FragmentHomeBinding.inflate(layoutInflater)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        initMainList()
+        setLikeList()
+        setToUp()
+        setAppHeaderLayout()
+        setRefreshLayout()
+    }
+
+    // 设置置顶按钮
+    private fun setToUp(){
+        binding.toUp.setOnClickListener {
+            binding.mainList.smoothScrollToPosition(0)
+        }
+    }
+    // 设置页头函数
+    private fun setAppHeaderLayout(){
         // 设置标题字体
         typeface = Typeface.createFromAsset(requireContext().assets, "font/JosefinSans-Regular-7.ttf")
-        view.findViewById<TextView>(R.id.top_text).typeface = typeface
-
-        // 加载瀑布流推荐
-        val handle = Handler()
-        initLikeList()
-        requestLikesData(50){
-            closeLaunchImage()
-            handle.postDelayed({
-                checkForUpdate(requireContext()){
-                    if(it){
-                        val intent = Intent(requireContext(), UpdateActivity::class.java)
-                        startActivity(intent)
-                    }
-                }
-            }, 1000)
-        }
-
-        // 创建置顶事件
-        val toUpButton: FloatingActionButton = view.findViewById(R.id.to_up)
-        toUpButton.setOnClickListener {
-            view.findViewById<RecyclerView?>(R.id.like_list)?.smoothScrollToPosition(0)
-        }
-
+        binding.appHeader.topText.typeface = typeface
         // 创建搜索按钮点击
-        val homeSearchButton = view.findViewById<ImageView>(R.id.home_search_button)
+        val homeSearchButton = binding.appHeader.homeSearchButton
         homeSearchButton.setOnClickListener {
             val intent = Intent(requireContext(), SearchActivity::class.java)
             startActivity(intent)
         }
-
-        // 延迟3秒关闭加载页面
-        Handler().postDelayed({
-            closeLaunchImage()
-        }, 3000)
-
-        // 设置下拉刷新
-        val refreshLayout = view.findViewById<SmartRefreshLayout>(R.id.refreshLayout)
+    }
+    // 下拉刷新设置函数
+    private fun setRefreshLayout(){
+        val refreshLayout = binding.refreshLayout
         refreshLayout.setOnRefreshListener {
             isRefreshing = true
-            requestLikesData(50){
-                // 清除已有数据
-                carouselData = listOf()
-                hotData = listOf()
-                models = listOf()
-                albumList.clear()
+            albumIsLoading = true
 
+            carouselData = listOf()
+            hotData = listOf()
+            models = listOf()
+            albumList.clear()
+
+            requestLikesData(requireContext(), 50){
                 refreshLayout.finishRefresh()
                 Toast.makeText(requireContext(), "刷新成功", Toast.LENGTH_SHORT).show()
-                isRefreshing = false
 
-                handle.postDelayed({
+                isRefreshing = false
+                albumIsLoading = false
+
+                Handler().postDelayed({
                     checkForUpdate(requireContext()){
                         if(it){
                             val intent = Intent(requireContext(), UpdateActivity::class.java)
@@ -145,37 +130,20 @@ class HomeFragment : Fragment() {
                     }
                 }, 1000)
             }
-            refreshLikeList(0)
+            refreshMainList(0)
         }
     }
-
-    private fun initLikeListHeight(){
-        val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
-
-        val displayMetrics = DisplayMetrics()
-        requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
-        val screenHeight = displayMetrics.heightPixels
-        val layoutParams = likeList?.layoutParams
-        layoutParams?.height = screenHeight - (resources.displayMetrics.density * 130).toInt()
+    // 关闭启动图
+    private fun closeLaunchImage(){
+        requireActivity().findViewById<LinearLayout>(R.id.launch_image).visibility = View.GONE
     }
 
-    private fun openAlbumView(id: Int){
-        val intent = Intent(requireContext(), AlbumViewActivity::class.java)
-        intent.putExtra("id", id)
-        startActivity(intent)
-    }
-
-    private fun openModelView(id: Int){
-        val intent = Intent(requireContext(), ModelViewActivity::class.java)
-        intent.putExtra("id", id)
-        startActivity(intent)
-    }
-
+    // 轮播图模块相关变量和函数
     private var carouselData: List<Carousel> = listOf()
-
-    private fun requestCarouselData(rView: View) {
+    private fun setCarouselHeight(banner: Banner<Carousel, BannerImageAdapter<Carousel>>){
         val displayMetrics = resources.displayMetrics
         val dpWidth = displayMetrics.widthPixels / displayMetrics.density
+
         val bannerHeight = (dpWidth - 30) / 2
         val bannerHeightPx = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
@@ -183,43 +151,24 @@ class HomeFragment : Fragment() {
             resources.displayMetrics
         ).toInt()
 
-        val banner: Banner<Carousel, BannerImageAdapter<Carousel>> = rView.findViewById(R.id.banner)
         val bannerLayoutParams = banner.layoutParams
-        bannerLayoutParams?.height = bannerHeightPx
+        bannerLayoutParams.height = bannerHeightPx
         banner.layoutParams = bannerLayoutParams
-        
+    }
+    private fun setCarouselData(rView: View) {
         if(carouselData.isNotEmpty()){
             initCarouselData(rView)
+            return
         }
-
-        val call = ApiNetService.GetCarousel()
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()?.string()
-                    val carouselResponse = Gson().fromJson(responseBody, CarouselResponse::class.java)
-                    if (carouselResponse.result) {
-                        carouselData = carouselResponse.data
-                        initCarouselData(rView)
-                    } else {
-                        // 处理错误情况
-                        Toast.makeText(requireContext(), "轮播图数据加载失败", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    // 处理错误情况
-                    Toast.makeText(requireContext(), "轮播图数据加载失败", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                // 处理网络请求失败的情况
-                Toast.makeText(requireContext(), "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
+        requestCarouselData(requireContext()){
+            carouselData = it
+            initCarouselData(rView)
+        }
     }
-    
     private fun initCarouselData(rView: View){
         val banner: Banner<Carousel, BannerImageAdapter<Carousel>> = rView.findViewById(R.id.banner)
+        setCarouselHeight(banner)
+
         banner.setAdapter(object : BannerImageAdapter<Carousel>(carouselData) {
             override fun onBindView(
                 holder: BannerImageHolder,
@@ -240,58 +189,33 @@ class HomeFragment : Fragment() {
             .setIndicator(CircleIndicator(requireContext()))
             .setOnBannerListener { _, position ->
                 val albumId = carouselData[position].link.content.id
-                openAlbumView(albumId)
+                startAlbumActivity(requireContext(), albumId)
                 accessLog(requireContext(), albumId.toString(), "CLICK_CAROUSEL"){ }
             }
 
         val hotButton = rView.findViewById<MaterialButton>(R.id.hot)
-        hotButton.setOnClickListener { openRec(0) }
+        hotButton.setOnClickListener { startRecommendActivity(requireContext(), 0) }
         val newsButton = rView.findViewById<MaterialButton>(R.id.news)
-        newsButton.setOnClickListener { openRec(1) }
+        newsButton.setOnClickListener { startRecommendActivity(requireContext(), 1) }
     }
 
-    private fun openRec(type: Int){
-        val intent = Intent(requireContext(), RecommendActivity::class.java)
-        intent.putExtra("type", type)
-        startActivity(intent)
-    }
-
-    private var hotData: List<Albums> = listOf()
-
-    private fun requestHotData(rView: View) {
+    // 热门模块相关变量和函数
+    private var hotDataTake: List<Albums> = listOf()
+    private fun setHotData(rView: View) {
         rView.findViewById<TextView>(R.id.hot_text).typeface = typeface
-
-        if(hotData.isNotEmpty()){
+        if(hotDataTake.isNotEmpty()){
+            initHotData(rView)
+            return
+        }
+        requestHotData(requireContext()){
+            hotDataTake = hotData.take(4)
             initHotData(rView)
         }
-
-        val call = ApiNetService.GetHot()
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()?.string()
-                    val albumsResponse = Gson().fromJson(responseBody, AlbumsResponse::class.java)
-                    if (albumsResponse.result) {
-                        val linearLayout: LinearLayout = rView.findViewById(R.id.hot_content)
-                        val count = linearLayout.childCount
-                        hotData = count.let { albumsResponse.data.take(it) }
-
-                        initHotData(rView)
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(requireContext(), "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
     }
-
     private fun initHotData(rView: View){
         val linearLayout: LinearLayout = rView.findViewById(R.id.hot_content)
 
-        for ((index, album) in hotData.withIndex()) {
+        for ((index, album) in hotDataTake.withIndex()) {
             val cardView = linearLayout.getChildAt(index) as CardView
             val imageView = cardView.getChildAt(0) as ImageView
             val textView = cardView.getChildAt(1) as TextView
@@ -302,112 +226,101 @@ class HomeFragment : Fragment() {
                 .into(imageView)
             textView.text = album.name
 
-            // 设置点击打开写真集预览页面
             cardView.setOnClickListener {
-                openAlbumView(album.id)
+                startAlbumActivity(requireContext(), album.id)
             }
         }
     }
 
+    // 模特推荐模块相关变量和函数
     private var models: List<Models> = listOf()
-
-    private fun requestModelData(view: View) {
-        view.findViewById<TextView>(R.id.model_text).typeface = typeface
+    private fun setModelData(rView: View) {
+        rView.findViewById<TextView>(R.id.model_text).typeface = typeface
 
         if(models.isNotEmpty()){
-            initModelData(view)
+            initModelData(rView)
             return
         }
-
-        val call = ApiNetService.GetRecModel()
-
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()?.string()
-                    val modelsResponse = Gson().fromJson(responseBody, ModelsResponse::class.java)
-                    if (modelsResponse.result) {
-                        models = modelsResponse.data
-                        initModelData(view)
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(requireContext(), "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun initModelData(rview: View){
-        val modelView: LinearLayout = rview.findViewById(R.id.model_view)
-        modelView.removeAllViews()
-
-        // 遍历并创建模特卡片
-        for (model in models) {
-            val modelCardView = layoutInflater.inflate(R.layout.model_card, modelView, false)
-            val modelCardVertical = modelCardView.findViewById<LinearLayout>(R.id.model_card_vertical)
-
-            // 修改模特名称
-            val modelNameTextView = modelCardVertical.getChildAt(0) as TextView
-            modelNameTextView.text = model.name
-            if(model.other_name != null){
-                modelNameTextView.text = "${model.name}${model.other_name}"
-            }
-            modelNameTextView.setOnClickListener {
-                openModelView(model.id)
-            }
-
-            // 修改写真集
-            val modelAlbumCardListContainer = modelCardVertical.getChildAt(1) as LinearLayout
-            val modelAlbumCardListCount = modelAlbumCardListContainer.childCount
-
-            // 遍历并修改写真集图片及其名称
-            val modelAlbums = model.album
-            for ((idx, album) in modelAlbums.withIndex()) {
-                if(idx > modelAlbumCardListCount){
-                    break
-                }
-                val modelAlbumCardLayout = modelAlbumCardListContainer.getChildAt(idx) as LinearLayout
-
-                val modelAlbumCard = modelAlbumCardLayout.getChildAt(0) as CardView
-                val modelAlbumCardImage = modelAlbumCard.getChildAt(0) as ImageView
-                Glide.with(requireContext())
-                    .load(album.poster + "?imageMogr2/thumbnail/500x/format/webp/interlace/1/quality/90")
-                    .placeholder(R.drawable.image_holder)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .into(modelAlbumCardImage)
-
-                val modelAlbumCardText = modelAlbumCardLayout.getChildAt(1) as TextView
-                modelAlbumCardText.text = album.name
-
-                // 创建写真集点击事件
-                modelAlbumCardLayout.setOnClickListener{
-                    openAlbumView(album.album_id)
-                }
-            }
-
-            modelView.addView(modelCardView)
+        requestRecommendModelData(requireContext()){
+            models = it
+            initModelData(rView)
         }
     }
+    private fun initModelData(rView: View){
+        val modelView: LinearLayout = rView.findViewById(R.id.model_view)
+        modelView.removeAllViews()
+        for (model in models) {
+            if(model.album.size < 4){
+                continue
+            }
+            modelView.addView(initModelCard(model, modelView))
+        }
+    }
+    @SuppressLint("SetTextI18n", "InflateParams")
+    private fun initModelCard(model: Models, root: ViewGroup): View{
+        // 创建模特卡片
+        val modelCardView = layoutInflater.inflate(R.layout.model_card, root, false)
+        val modelCardVertical = modelCardView.findViewById<LinearLayout>(R.id.model_card_vertical)
 
+        // 修改模特名称
+        val modelNameTextView = modelCardVertical.getChildAt(0) as TextView
+        modelNameTextView.text = model.name
+        if(model.other_name != null){
+            modelNameTextView.text = "${model.name}${model.other_name}"
+        }
+        modelNameTextView.setOnClickListener {
+            startModelActivity(requireContext(), model.id)
+        }
+
+        // 修改写真集
+        val modelAlbumCardListContainer = modelCardVertical.getChildAt(1) as LinearLayout
+        val modelAlbumCardListCount = modelAlbumCardListContainer.childCount
+
+        // 遍历并修改写真集图片及其名称
+        val modelAlbums = model.album
+        for ((idx, album) in modelAlbums.withIndex()) {
+            if(idx > modelAlbumCardListCount){
+                break
+            }
+            val modelAlbumCardLayout = modelAlbumCardListContainer.getChildAt(idx) as LinearLayout
+
+            val modelAlbumCard = modelAlbumCardLayout.getChildAt(0) as CardView
+            val modelAlbumCardImage = modelAlbumCard.getChildAt(0) as ImageView
+            Glide.with(requireContext())
+                .load(album.poster + "?imageMogr2/thumbnail/500x/format/webp/interlace/1/quality/90")
+                .placeholder(R.drawable.image_holder)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(modelAlbumCardImage)
+
+            val modelAlbumCardText = modelAlbumCardLayout.getChildAt(1) as TextView
+            modelAlbumCardText.text = album.name
+
+            // 创建写真集点击事件
+            modelAlbumCardLayout.setOnClickListener{
+                startAlbumActivity(requireContext(), album.album_id)
+            }
+        }
+
+        return modelCardView
+    }
+
+    // 首页主回收列表布局相关变量及函数
     private val viewTypeInsertion = 0
     private val viewTypeItem = 1
-
-    private fun initLikeList(){
-        val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
+    private var adapter: HomeListAdapter? = null
+    private fun initMainList(){
+        val mainList: RecyclerView = binding.mainList
 
         val layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
-        likeList?.layoutManager = layoutManager
-        val adapter = LikeListAdapter()
-        likeList?.adapter = adapter
-        likeList?.setHasFixedSize(true)
-        likeList?.isFocusable = false
-        likeList?.setHasTransientState(true)
+        mainList.layoutManager = layoutManager
 
-        likeList?.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+        adapter = HomeListAdapter()
+        mainList.adapter = adapter
+        mainList.setHasFixedSize(true)
+        mainList.isFocusable = false
+        mainList.setHasTransientState(true)
+
+        mainList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
 
@@ -418,17 +331,45 @@ class HomeFragment : Fragment() {
 
                 if (lastVisibleItem + 10 > totalItemCount && !albumIsLoading) {
                     isLoadMore = true
-                    requestLikesData(30){}
+                    albumIsLoading = true
+                    requestLikesData(requireContext(), 30){
+                        isLoadMore = false
+                        albumIsLoading = false
+                        albumList.addAll(it)
+                        refreshMainList(it.size)
+                    }
                 }
             }
         })
     }
+    private fun setLikeList(){
+        albumIsLoading = true
+        val handle = Handler()
 
+        requestLikesData(requireContext(), 50){
+            albumIsLoading = false
+            albumList.addAll(it)
+
+            closeLaunchImage()
+            refreshMainList(0)
+
+            handle.postDelayed({
+                checkForUpdate(requireContext()){
+                    if(it){
+                        val intent = Intent(requireContext(), UpdateActivity::class.java)
+                        startActivity(intent)
+                    }
+                }
+            }, 1000)
+        }
+
+        // 延迟3秒关闭加载页面
+        handle.postDelayed({
+            closeLaunchImage()
+        }, 3000)
+    }
     @SuppressLint("NotifyDataSetChanged")
-    private fun refreshLikeList(loadedNumber: Int) {
-        val likeList: RecyclerView? = view?.findViewById(R.id.like_list)
-        val adapter = likeList?.adapter as? LikeListAdapter
-
+    private fun refreshMainList(loadedNumber: Int) {
         if(loadedNumber == 0){
             adapter?.notifyDataSetChanged()
         } else {
@@ -436,62 +377,17 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun requestLikesData(number: Int, before: () -> Unit){
-        albumIsLoading = true
-
-        var call = ApiNetService.GetRecAlbum(number)
-        if(userToken != null){
-            call = ApiNetService.GetRecAlbum(number, userToken!!)
-        }
-
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()?.string()
-                    val albumsResponse = Gson().fromJson(responseBody, AlbumsResponse::class.java)
-
-                    if(!albumsResponse.result){
-                        return
-                    }
-                    before()
-
-                    albumList.addAll(albumsResponse.data)
-                    albumIsLoading = false
-
-                    initLikeListHeight()
-                    if(isLoadMore) {
-                        refreshLikeList(albumsResponse.data.size)
-                        isLoadMore = false
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(requireContext(), "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    private fun closeLaunchImage(){
-        val launchImage = activity?.findViewById<LinearLayout>(R.id.launch_image)
-        if (launchImage != null) {
-            launchImage.visibility = View.GONE
-        }
-    }
-
-    inner class LikeListAdapter : RecyclerView.Adapter<LikeViewHolder>() {
+    // 首页主回收列表适配器
+    inner class HomeListAdapter: RecyclerView.Adapter<HomeViewHolder>() {
         override fun getItemViewType(position: Int): Int {
             return if (position == 0) {
-                // 第一个位置插入单行布局
                 viewTypeInsertion
             } else {
-                // 其他位置为瀑布流布局
                 viewTypeItem
             }
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LikeViewHolder {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HomeViewHolder {
             return when (viewType) {
                 viewTypeInsertion -> {
                     val view = LayoutInflater.from(parent.context).inflate(R.layout.fragment_home_top, parent, false)
@@ -502,12 +398,12 @@ class HomeFragment : Fragment() {
                     layoutParams.isFullSpan = true
                     view.layoutParams = layoutParams
                     view.isFocusable = true
-                    LikeViewHolder(view)
+                    HomeViewHolder(view)
                 }
                 viewTypeItem -> {
                     val view = LayoutInflater.from(parent.context).inflate(R.layout.album_flash_card, parent, false)
                     view.isFocusable = false
-                    LikeViewHolder(view)
+                    HomeViewHolder(view)
                 }
                 else -> throw IllegalArgumentException("Invalid view type")
             }
@@ -518,49 +414,49 @@ class HomeFragment : Fragment() {
         }
 
         @SuppressLint("SetTextI18n")
-        override fun onBindViewHolder(holder: LikeViewHolder, position: Int) {
+        override fun onBindViewHolder(holder: HomeViewHolder, position: Int) {
+            val item = holder.itemView
             when (holder.itemViewType) {
-                // 修改holder
                 viewTypeInsertion -> {
-                    // 绑定单行布局数据
                     // 加载轮播图片
-                    requestCarouselData(holder.itemView)
+                    setCarouselData(item)
                     // 加载热门项目
-                    requestHotData(holder.itemView)
+                    setHotData(item)
                     // 加载模特推荐
-                    requestModelData(holder.itemView)
-
-                    holder.itemView.findViewById<TextView>(R.id.like_text).typeface = typeface
+                    setModelData(item)
+                    // 设置猜你喜欢字体
+                    item.findViewById<TextView>(R.id.like_text).typeface = typeface
                 }
                 viewTypeItem -> {
                     // 绑定瀑布流布局数据
                     val album = albumList[position - 1]
 
                     // 显示已屏蔽遮罩层
-                    val blockOverlay = holder.itemView.findViewById<LinearLayout>(R.id.block_overlay)
+                    val blockOverlay = item.findViewById<LinearLayout>(R.id.block_overlay)
                     if(album.isForbidden){
                         blockOverlay.visibility = View.VISIBLE
-                        holder.itemView.setOnClickListener(null)
+                        item.setOnClickListener(null)
                     } else {
                         blockOverlay.visibility = View.GONE
-                        holder.itemView.setOnClickListener{
+                        item.setOnClickListener{
                             accessLog(requireContext(), "${album.images}", "CLICK_RECOMMEND"){ }
-                            openAlbumView(album.id)
+                            startAlbumActivity(requireContext(), album.id)
                         }
                     }
 
-                    val imageView = holder.itemView.findViewById<ImageView>(R.id.image_view)
+                    // 设置主要内容
+                    val imageView = item.findViewById<ImageView>(R.id.image_view)
                     Glide.with(requireContext())
                         .load("${album.images}/short1200px")
                         .placeholder(R.drawable.image_holder)
                         .diskCacheStrategy(DiskCacheStrategy.ALL)
                         .into(imageView)
 
-                    val textView = holder.itemView.findViewById<TextView>(R.id.text_view)
+                    val textView = item.findViewById<TextView>(R.id.text_view)
                     textView.text = "${album.model} ${album.name}"
 
                     // 喜欢按钮操作
-                    val likeButton = holder.itemView.findViewById<MaterialButton>(R.id.like_button)
+                    val likeButton = item.findViewById<MaterialButton>(R.id.like_button)
                     if(album.is_collection != null){
                         likeButton.setIconResource(R.drawable.like_fill)
                         likeButton.iconTint = ColorStateList.valueOf(Color.parseColor("#FDCDC5"))
@@ -607,8 +503,8 @@ class HomeFragment : Fragment() {
                     }
 
                     // 更多按钮操作
-                    val moreButton = holder.itemView.findViewById<MaterialButton>(R.id.more_button)
-                    holder.itemView.setOnLongClickListener {
+                    val moreButton = item.findViewById<MaterialButton>(R.id.more_button)
+                    item.setOnLongClickListener {
                         moreButton.callOnClick()
                         true
                     }
@@ -616,21 +512,17 @@ class HomeFragment : Fragment() {
                         fun createForbiddenOverlay(){
                             album.isForbidden = true
                             blockOverlay.visibility = View.VISIBLE
-                            holder.itemView.setOnClickListener(null)
+                            item.setOnClickListener(null)
                         }
                         initAlbumFlashPanel(album){ createForbiddenOverlay() }
                     }
                 }
             }
         }
-
-        override fun onViewRecycled(holder: LikeViewHolder) {
-            super.onViewRecycled(holder)
-        }
     }
+    class HomeViewHolder(view: View) : RecyclerView.ViewHolder(view)
 
-    class LikeViewHolder(view: View) : RecyclerView.ViewHolder(view)
-
+    // 打开猜你喜欢的写真集更多按钮
     @SuppressLint("SetTextI18n", "InflateParams")
     private fun initAlbumFlashPanel(album: Albums, forbiddenCallback: () -> Unit){
         changeBackgroundDim(true, requireActivity())
@@ -670,7 +562,7 @@ class HomeFragment : Fragment() {
         }
         val viewAlbums = flashPanel.findViewById<MaterialButton>(R.id.view_album)
         viewAlbums?.setOnClickListener {
-            openAlbumView(album.id)
+            startAlbumActivity(requireContext(), album.id)
         }
         val collection = flashPanel.findViewById<MaterialButton>(R.id.collection)
         if(album.is_collection != null){
@@ -774,7 +666,7 @@ class HomeFragment : Fragment() {
         }
         val model = flashPanel.findViewById<MaterialButton>(R.id.view_model)
         model?.setOnClickListener {
-            openModelView(album.model_id)
+            startModelActivity(requireContext(), album.model_id)
         }
     }
 }

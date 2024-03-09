@@ -1,7 +1,6 @@
 package com.fixeam.icoser.ui.model_page
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -9,126 +8,93 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
-import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.cardview.widget.CardView
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
-import com.bumptech.glide.request.RequestOptions
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.ActivityModelViewBinding
+import com.fixeam.icoser.model.createAlbumCard
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
+import com.fixeam.icoser.model.startLoginActivity
+import com.fixeam.icoser.model.startMediaActivity
 import com.fixeam.icoser.network.Albums
-import com.fixeam.icoser.network.AlbumsResponse
-import com.fixeam.icoser.network.ApiNetService
-import com.fixeam.icoser.network.MediaResponse
 import com.fixeam.icoser.network.Models
-import com.fixeam.icoser.network.ModelsResponse
 import com.fixeam.icoser.network.accessLog
+import com.fixeam.icoser.network.requestAlbumData
+import com.fixeam.icoser.network.requestMediaData
+import com.fixeam.icoser.network.requestModelData
 import com.fixeam.icoser.network.setModelFollowing
 import com.fixeam.icoser.network.updateAccessLog
-import com.fixeam.icoser.network.userToken
-import com.fixeam.icoser.painter.GlideBlurTransformation
-import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.image_preview.ImagePreviewActivity
-import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.media_page.MediaViewActivity
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import okhttp3.ResponseBody
 import org.json.JSONArray
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 class ModelViewActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityModelViewBinding
     private var modelInfo: Models? = null
     private var albumList: MutableList<Albums> = mutableListOf()
     private var isFinished: Boolean = false
     private var albumLoading: Boolean = false
-    private var imagePreview: ConstraintLayout? = null
     private var doNotSetToken = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_model_view)
+        binding = ActivityModelViewBinding.inflate(LayoutInflater.from(this))
+        setContentView(binding.root)
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
 
         // 设置加载动画
-        val imageView = findViewById<ImageView>(R.id.image_loading)
+        val imageView = binding.imageLoading
         val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
         imageView.startAnimation(animation)
         imageView.visibility = View.VISIBLE
 
         // 设置导航栏
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
-        toolbar.title = "加载中..."
+        val toolbar: Toolbar = binding.toolbar
+        toolbar.title = ""
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { onBackPressed() }
 
         // 设置悬浮按钮
-        val toUpButton: FloatingActionButton = findViewById(R.id.to_up)
-        val list: RecyclerView = findViewById(R.id.album_list)
-        toUpButton.setOnClickListener {
-            list.smoothScrollToPosition(0)
-        }
+        binding.toUp.setOnClickListener { binding.albumList.smoothScrollToPosition(0) }
 
         val id = intent.getIntExtra("id", -1)
         doNotSetToken = intent.getBooleanExtra("doNotSetToken", false)
-        requireModelContent(id)
+        setModelContent(id)
     }
 
-    private fun requireModelContent(id: Int){
+    private var accessLogId: Int = 0
 
+    private fun setModelContent(id: Int){
         val condition = JSONArray()
         condition.put(JSONArray().apply {
             put("id")
             put(id.toString())
         })
-        var call = ApiNetService.GetModel(condition.toString())
-        if(userToken != null && !doNotSetToken){
-            call = ApiNetService.GetModel(condition.toString(), userToken!!)
-        }
-
-        call.enqueue(object : Callback<ModelsResponse> {
-            override fun onResponse(call: Call<ModelsResponse>, response: Response<ModelsResponse>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    if (responseBody != null && responseBody.result) {
-                        modelInfo = responseBody.data[0]
-                        accessLog(this@ModelViewActivity, modelInfo!!.id.toString(), "VISIT_MODEL"){
-                            accessLogId = it
-                        }
-
-                        requireAlbumContent(id, true)
-                        requireMedia(id)
-                        if(!doNotSetToken){
-                            setFollowButton()
-                        }
-                    }
+        requestModelData(this, condition.toString(), doNotSetToken){ models ->
+            if(models.isNotEmpty()){
+                modelInfo = models[0]
+                accessLog(this@ModelViewActivity, modelInfo!!.id.toString(), "VISIT_MODEL"){
+                    accessLogId = it
+                }
+                setAlbumContent(id, true)
+                setMedia(id)
+                if(!doNotSetToken){
+                    setFollowButton()
                 }
             }
-
-            override fun onFailure(call: Call<ModelsResponse>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(this@ModelViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
+        }
     }
-
-    private var accessLogId: Int = 0
 
     override fun onPause() {
         updateAccessLog(accessLogId)
@@ -141,7 +107,7 @@ class ModelViewActivity : AppCompatActivity() {
     }
 
     private fun setFollowButton(){
-        val following = findViewById<FloatingActionButton>(R.id.following)
+        val following = binding.following
         following.visibility = View.VISIBLE
 
         val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
@@ -172,12 +138,10 @@ class ModelViewActivity : AppCompatActivity() {
             fun unLog(){
                 following.clearAnimation()
                 following.setImageResource(R.drawable.like)
-                val intent = Intent(this@ModelViewActivity, LoginActivity::class.java)
-                startActivity(intent)
+                startLoginActivity(this@ModelViewActivity)
             }
 
-            setModelFollowing(this@ModelViewActivity,
-                modelInfo!!, { collectionCallback() }, { unLog() })
+            setModelFollowing(this@ModelViewActivity, modelInfo!!, { collectionCallback() }, { unLog() })
         }
 
         if(modelInfo!!.is_collection != null){
@@ -186,88 +150,65 @@ class ModelViewActivity : AppCompatActivity() {
         }
     }
 
-    private fun requireAlbumContent(id: Int, create: Boolean = false){
+    private fun setAlbumContent(id: Int, create: Boolean = false){
         albumLoading = true
+        val getNumber = 20
 
         val condition = JSONArray()
         condition.put(JSONArray().apply {
             put("model_id")
             put(id.toString())
         })
-        var call = ApiNetService.GetAlbum(
-            condition = condition.toString(),
-            start = albumList.size
-        )
-        if(userToken != null && !doNotSetToken){
-            call = ApiNetService.GetAlbum(
-                condition = condition.toString(),
-                access_token = userToken!!,
-                start = albumList.size
-            )
+        requestAlbumData(this, condition.toString(), doNotSetToken, albumList.size, getNumber){
+            binding.imageLoading.clearAnimation()
+            binding.imageLoading.visibility = View.GONE
+
+            albumList.addAll(it)
+            if(it.size < getNumber){
+                isFinished = true
+            }
+
+            if(create){
+                initModelBox()
+                initAlbumList()
+            } else {
+                updateAlbumList(it.size)
+            }
+            albumLoading = false
         }
-
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()?.string()
-                    val albumsResponse = Gson().fromJson(responseBody, AlbumsResponse::class.java)
-
-                    if(!albumsResponse.result){
-                        return
-                    }
-
-                    albumList.addAll(albumsResponse.data)
-                    if(albumsResponse.data.size < 20){
-                        isFinished = true
-                    }
-
-                    val imageView = findViewById<ImageView>(R.id.image_loading)
-                    imageView.clearAnimation()
-                    imageView.visibility = View.GONE
-
-                    if(create){
-                        initModelBox()
-                        initAlbumList()
-                    } else {
-                        updateAlbumList(albumsResponse.data.size)
-                    }
-                    albumLoading = false
-                }
-            }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(this@ModelViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
     }
 
     private fun initModelBox(){
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
-        toolbar.title = modelInfo?.name
-        if(modelInfo?.other_name != null){
-            toolbar.title = "${modelInfo?.name} ${modelInfo?.other_name}"
+        binding.titleOverlay.alpha = 0.7f
+        binding.name.text = when(modelInfo?.other_name){
+            null -> modelInfo?.name
+            else -> "${modelInfo?.name} ${modelInfo?.other_name}"
         }
 
         if(modelInfo?.avatar_image != null){
-            val avatar = findViewById<ImageView>(R.id.avatar)
+            val avatar = binding.avatar
             Glide.with(this)
                 .load("${modelInfo?.avatar_image}/short500px")
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .transform(RoundedCorners(250))
                 .into(avatar)
-            avatar?.setOnClickListener {
+            Glide.with(this)
+                .load("${modelInfo?.avatar_image}/short500px")
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .transform(RoundedCorners(250))
+                .into(binding.avatar2)
+            avatar.setOnClickListener {
                 val header: ArrayList<String> = arrayListOf(modelInfo?.avatar_image!!)
                 ImagePreviewActivity.start(
                     this,
                     0,
                     header,
-                    avatar
+                    binding.avatar2
                 )
             }
         }
         if(modelInfo?.background_image != null){
-            val backgroundView = findViewById<ImageView>(R.id.background_view)
+            val backgroundView = binding.backgroundView
             Glide.with(this)
                 .load("${modelInfo?.background_image}/short1200px")
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
@@ -279,7 +220,7 @@ class ModelViewActivity : AppCompatActivity() {
             val listType = object : TypeToken<List<String>>() {}.type
             val stringList: List<String> = gson.fromJson(modelInfo?.tags, listType)
 
-            val linearLayout = findViewById<LinearLayout>(R.id.tag_box)
+            val linearLayout = binding.tagBox
 
             stringList.forEach {
                 val chip = layoutInflater.inflate(R.layout.tag, linearLayout, false)
@@ -289,40 +230,20 @@ class ModelViewActivity : AppCompatActivity() {
         }
     }
 
-    private fun requireMedia(modelId: Int){
-        val call = ApiNetService.GetMedia(model_id = modelId.toString(), number = 9999)
-
-        call.enqueue(object : Callback<MediaResponse> {
-            override fun onResponse(call: Call<MediaResponse>, response: Response<MediaResponse>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    if (responseBody != null && responseBody.result) {
-                        val medias = responseBody.data
-                        if(medias.isNotEmpty()){
-                            val goToVideo = findViewById<FloatingActionButton>(R.id.go_to_video)
-                            goToVideo.visibility = View.VISIBLE
-                            goToVideo.setOnClickListener {
-                                val intent = Intent(this@ModelViewActivity, MediaViewActivity::class.java)
-                                intent.putExtra("model-id", modelId)
-                                startActivity(intent)
-                            }
-                        }
-                    }
-                } else {
-                    // 处理错误情况
-                    Toast.makeText(this@ModelViewActivity, "轮播图数据加载失败", Toast.LENGTH_SHORT).show()
-                }
+    private fun setMedia(modelId: Int){
+        requestMediaData(
+            context = this,
+            modelId = modelId
+        ){
+            if(it.isNotEmpty()){
+                binding.goToVideo.visibility = View.VISIBLE
+                binding.goToVideo.setOnClickListener { startMediaActivity(this, modelId = modelId) }
             }
-
-            override fun onFailure(call: Call<MediaResponse>, t: Throwable) {
-                // 处理网络请求失败的情况
-                Toast.makeText(this@ModelViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
+        }
     }
 
     private fun initAlbumList(){
-        val albumListView: RecyclerView = findViewById(R.id.album_list)
+        val albumListView: RecyclerView = binding.albumList
         albumListView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         albumListView.adapter = AlbumsAdapter()
 
@@ -336,43 +257,96 @@ class ModelViewActivity : AppCompatActivity() {
                 val totalItemCount = layoutManager.itemCount
 
                 if (lastVisibleItem + 10 > totalItemCount && !isFinished && !albumLoading) {
-                    modelInfo?.id?.let { requireAlbumContent(it) }
+                    modelInfo?.id?.let { setAlbumContent(it) }
                 }
             }
         })
     }
 
     private fun changeModelBoxHeight(scrollOffset: Int){
-        val modelBox = findViewById<ConstraintLayout>(R.id.model_box)
-        val avatar = findViewById<ImageView>(R.id.avatar)
-        val avatarMin = resources.displayMetrics.density * 50
+        // 变化组件
+        val modelBox = binding.modelBox
+        val avatar = binding.avatar
+        val avatar2 = binding.avatar2
+        val tagBox = binding.tagBox
+        val titleOverlay = binding.titleOverlay
+        val name = binding.name
+
+        // 尺寸范围
+        val avatarScale = resources.displayMetrics.density * 50
         val avatarMax = resources.displayMetrics.density * 80
-        val tagBox = findViewById<LinearLayout>(R.id.tag_box)
+        val modelBoxFirstScale = resources.displayMetrics.density * 50
+        val modelBoxThenScale = resources.displayMetrics.density * 80
+        val modelBoxMax = resources.displayMetrics.density * 180
 
-        if(scrollOffset in 101..999){
-            val offsetRatio = (scrollOffset.toFloat() - 100) / 900
+        // 变化阶段
+        val animStartScroll = 100
+        val animFirstScroll = 600
+        val animThenScroll = 1300
+        val firstOverScroll = animFirstScroll - animStartScroll // 第一阶段滚动的总距离
+        val thenOverScroll = animThenScroll - animFirstScroll // 后置阶段滚动的总距离
 
-            avatar.layoutParams.height = ((1.0f - offsetRatio) * (avatarMax - avatarMin) + avatarMin).toInt()
-            avatar.layoutParams.width = avatar.layoutParams.height
+        // 第一阶段
+        if(scrollOffset in animStartScroll + 1..<animFirstScroll){
+            val offsetRatioFirst = (scrollOffset.toFloat() - animStartScroll) / firstOverScroll // 第一阶段滚动比例： ( 滚动距离 - 第一阶段初始位置 ) / 第一阶段滚动的总距离
+            val avatarSize = (avatarMax - avatarScale * offsetRatioFirst).toInt() // 第一阶段头像大小 ( 头像最大尺寸 - 头像总缩小尺寸 * 缩小比例(第一阶段滚动比例) ) . 转整形
+            val modelBoxHeight = (modelBoxMax - modelBoxFirstScale * offsetRatioFirst).toInt() // 第一阶段盒子大小 ( 盒子最大尺寸 - 盒子第一阶段小尺寸 * 缩小比例(第一阶段滚动比例) ) . 转整形
+
+            avatar.layoutParams.height = avatarSize
+            avatar.layoutParams.width = avatarSize
             avatar.requestLayout()
+            avatar2.layoutParams.height = avatarSize
+            avatar2.layoutParams.width = avatarSize
+            avatar2.requestLayout()
 
-            tagBox.alpha = 1.0f - offsetRatio
+            tagBox.alpha = 1.0f - offsetRatioFirst
             tagBox.requestLayout()
 
-            modelBox.layoutParams.height = (avatar.layoutParams.height + resources.displayMetrics.density * 40).toInt()
+            modelBox.layoutParams.height = modelBoxHeight
             modelBox.requestLayout()
+
+            // 初始形态
+            titleOverlay.alpha = 0.7f
+            name.translationX = 0f
+            avatar.translationX = 0f
+            avatar.translationY = 0f
+            avatar2.translationX = 0f
+            avatar2.translationY = 0f
         }
-        if(scrollOffset in 1000..1400){
-            tagBox.alpha = 0f
-            modelBox.layoutParams.height = (resources.displayMetrics.density * (90 - ((scrollOffset - 1000) / 13))).toInt()
+        // 第二阶段
+        val nameX = resources.displayMetrics.density * 18
+        val avatarX = resources.displayMetrics.density * -40
+        val avatarY = resources.displayMetrics.density * -44
+        if(scrollOffset in animFirstScroll + 1..animThenScroll){
+            val offsetRatioThen = (scrollOffset.toFloat() - animFirstScroll) / thenOverScroll // 后置阶段滚动比例： ( 滚动距离 - 第一阶段结束位置 ) / 第二阶段滚动的总距离
+            val modelBoxHeight = (modelBoxMax - modelBoxFirstScale - modelBoxThenScale * offsetRatioThen).toInt() // 第一阶段盒子大小 ( 盒子最大尺寸 - 盒子第一阶段小尺寸 * 缩小比例(第一阶段滚动比例) ) . 转整形
+            modelBox.layoutParams.height = modelBoxHeight
             modelBox.requestLayout()
+
+            titleOverlay.alpha = offsetRatioThen * 0.3f + 0.7f
+            tagBox.alpha = 0f
+
+            name.translationX = nameX * offsetRatioThen
+            avatar.translationX = avatarX * offsetRatioThen
+            avatar.translationY = avatarY * offsetRatioThen
+            avatar2.translationX = avatarX * offsetRatioThen
+            avatar2.translationY = avatarY * offsetRatioThen
+        }
+        // 最终形态
+        if(scrollOffset > animThenScroll - 20){
+            modelBox.layoutParams.height = (modelBoxMax - modelBoxFirstScale - modelBoxThenScale).toInt()
+            titleOverlay.alpha = 1f
+
+            name.translationX = nameX
+            avatar.translationX = avatarX
+            avatar.translationY = avatarY
+            avatar2.translationX = avatarX
+            avatar2.translationY = avatarY
         }
     }
 
     private fun updateAlbumList(loadedNumber: Int){
-        val albumListView: RecyclerView? = findViewById(R.id.album_list)
-        val adapter = albumListView?.adapter
-        adapter?.notifyItemInserted(albumList.size - loadedNumber)
+        binding.albumList.adapter?.notifyItemInserted(albumList.size - loadedNumber)
     }
 
     inner class AlbumsAdapter : RecyclerView.Adapter<AlbumViewHolder>() {
@@ -387,71 +361,7 @@ class ModelViewActivity : AppCompatActivity() {
         override fun onBindViewHolder(holder: AlbumViewHolder, position: Int) {
             // 修改holder
             val album = albumList[position]
-            holder.itemView.setOnClickListener {
-                val intent = Intent(this@ModelViewActivity, AlbumViewActivity::class.java)
-                intent.putExtra("id", album.id)
-                intent.putExtra("doNotSetToken", doNotSetToken)
-                startActivity(intent)
-            }
-
-            // 修改海报图
-            val posterBackground = holder.itemView.findViewById<ImageView>(R.id.poster_background)
-            Glide.with(this@ModelViewActivity)
-                .load("${album.poster}/short500px")
-                .apply(RequestOptions.bitmapTransform(GlideBlurTransformation(this@ModelViewActivity)))
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .into(posterBackground)
-            val poster = holder.itemView.findViewById<ImageView>(R.id.poster)
-            Glide.with(this@ModelViewActivity)
-                .load("${album.poster}/short1200px")
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .into(poster)
-
-            // 修改图片数量
-            val picNumber = holder.itemView.findViewById<TextView>(R.id.text)
-            picNumber.text = "${(album.images as MutableList<String>).size}P"
-
-            // 修改写真集名
-            val name = holder.itemView.findViewById<TextView>(R.id.name)
-            name.text = "${album.model} ${album.name}"
-
-            // 添加图片
-            val imagePreview = holder.itemView.findViewById<LinearLayout>(R.id.image_preview)
-            imagePreview.removeAllViews()
-            for ((index, image) in (album.images as MutableList<String>).withIndex()){
-                if(index >= 4){
-                    break
-                }
-
-                val cardView = CardView(this@ModelViewActivity)
-                val layoutParams = ViewGroup.MarginLayoutParams(
-                    (resources.displayMetrics.density * 36).toInt(), // 设置宽度为屏幕宽度的四分之一
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                layoutParams.rightMargin = (resources.displayMetrics.density * 5).toInt() // 设置右边距
-                cardView.layoutParams = layoutParams
-                cardView.cardElevation = 0F
-                cardView.radius = resources.displayMetrics.density * 3 // 设置圆角半径
-
-                val imageView = ImageView(this@ModelViewActivity)
-                imageView.id = View.generateViewId()
-                val imageLayoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                imageView.layoutParams = imageLayoutParams
-                imageView.scaleType = ImageView.ScaleType.CENTER_CROP
-
-                Glide.with(this@ModelViewActivity)
-                    .load("${image}/yswidth300px")
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .into(imageView)
-
-                cardView.addView(imageView)
-                if(imagePreview.childCount < 5){
-                    imagePreview.addView(cardView, index)
-                }
-            }
+            createAlbumCard(this@ModelViewActivity, album, holder.itemView)
         }
     }
 

@@ -1,64 +1,58 @@
 package com.fixeam.icoser.ui.about_page
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
-import android.net.Uri
 import android.os.Bundle
-import android.util.Log
-import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.ActivityAboutBinding
 import com.fixeam.icoser.model.Option
 import com.fixeam.icoser.model.checkForUpdate
 import com.fixeam.icoser.model.initOptionItem
 import com.fixeam.icoser.model.isDarken
+import com.fixeam.icoser.model.openUrlInBrowser
 import com.fixeam.icoser.model.setStatusBar
-import com.fixeam.icoser.ui.update_dialog.UpdateActivity
+import com.fixeam.icoser.model.startUpdateActivity
 
 class AboutActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityAboutBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_about)
+        binding = ActivityAboutBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
 
-        // 设置导航栏
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        // 设置导航
+        val toolbar: Toolbar = binding.toolbar
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { onBackPressed() }
 
         // 设置字体
-        val appName = findViewById<TextView>(R.id.app_name)
-        val typeface = Typeface.createFromAsset(assets, "font/JosefinSans-Regular-7.ttf")
-        appName.typeface = typeface
+        binding.appName.typeface = Typeface.createFromAsset(assets, "font/JosefinSans-Regular-7.ttf")
 
-        initOptions()
-
-        val beian = findViewById<TextView>(R.id.beian)
-        beian.setOnClickListener {
-            val url = "https://beian.miit.gov.cn"
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-            startActivity(intent)
+        // 设置备案号点击
+        binding.beian.setOnClickListener {
+            openUrlInBrowser(this, "https://beian.miit.gov.cn/")
         }
+
+        // 添加选项
+        initOptions()
     }
 
     private var clickTime = 0
 
     @SuppressLint("CommitPrefEdits")
     private fun initOptions() {
-        val optionsContainer = findViewById<LinearLayout>(R.id.option_list)
         val packageInfo = packageManager.getPackageInfo(packageName, 0)
         val version = packageInfo.versionName
-
-        Log.d("checkForUpdate", "$version")
 
         initOptionItem(
             Option(
@@ -75,7 +69,7 @@ class AboutActivity : AppCompatActivity() {
                     }
                 }
             ),
-            optionsContainer,
+            binding.optionList,
             this,
             isDarken(this)
         )
@@ -94,7 +88,7 @@ class AboutActivity : AppCompatActivity() {
                     }
                 }
             ),
-            optionsContainer,
+            binding.optionList,
             this,
             isDarken(this)
         )
@@ -113,7 +107,7 @@ class AboutActivity : AppCompatActivity() {
                     }
                 }
             ),
-            optionsContainer,
+            binding.optionList,
             this,
             isDarken(this)
         )
@@ -126,22 +120,21 @@ class AboutActivity : AppCompatActivity() {
                     val sharedPreferences = getSharedPreferences("version", MODE_PRIVATE)
                     val doNotAlertVersion = sharedPreferences.getInt("do_not_alert_version", -1)
                     if(doNotAlertVersion >= 0){
-                        sharedPreferences.edit().putInt("do_not_alert_version", -1)
+                        sharedPreferences.edit().putInt("do_not_alert_version", -1).apply()
                     }
                     checkForUpdate(this@AboutActivity){
                         if(doNotAlertVersion >= 0){
-                            sharedPreferences.edit().putInt("do_not_alert_version", doNotAlertVersion)
+                            sharedPreferences.edit().putInt("do_not_alert_version", doNotAlertVersion).apply()
                         }
                         if(it){
-                            val intent = Intent(this, UpdateActivity::class.java)
-                            startActivity(intent)
+                            startUpdateActivity(this)
                         } else {
                             Toast.makeText(this, "当前已经是最新版本", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
             ),
-            optionsContainer,
+            binding.optionList,
             this,
             isDarken(this)
         )
@@ -151,12 +144,10 @@ class AboutActivity : AppCompatActivity() {
                 iconColor = ColorStateList.valueOf(Color.parseColor("#F53F3F")),
                 textId = R.string.official_website,
                 onClick = {
-                    val url = "https://app.fixeam.com"
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(intent)
+                    openUrlInBrowser(this, "https://app.fixeam.com/")
                 }
             ),
-            optionsContainer,
+            binding.optionList,
             this,
             isDarken(this)
         )
@@ -167,12 +158,10 @@ class AboutActivity : AppCompatActivity() {
                 textId = R.string.fixeam_official_website,
                 clearMargin = true,
                 onClick = {
-                    val url = "https://fixeam.com"
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(intent)
+                    openUrlInBrowser(this, "https://fixeam.com/")
                 }
             ),
-            optionsContainer,
+            binding.optionList,
             this,
             isDarken(this)
         )

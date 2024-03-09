@@ -30,6 +30,7 @@ var userForbidden: List<Forbidden> = listOf()
 var userHistory: HistoryResponse? = null
 var userHistoryList: MutableList<History> = mutableListOf()
 var userInformFailTime = 0
+var isSendNetworkCheck = false
 
 /**
  * 检查网络状态和用户登录
@@ -40,24 +41,25 @@ fun checkForUser(context: Context) {
     val isConnected = activeNetworkInfo?.isConnectedOrConnecting == true
 
     if(!isConnected){
-        Toast.makeText(context, "网络连接失败, 请检查您的网络和应用权限配置", Toast.LENGTH_SHORT).show()
-        return
-    } else {
-        val networkType = activeNetworkInfo?.type
-        if (networkType == ConnectivityManager.TYPE_WIFI) {
-            // 当前连接为 Wi-Fi
-//                Toast.makeText(this, "当前为WIFI环境，可放心浏览本APP", Toast.LENGTH_SHORT).show()
-        } else if (networkType == ConnectivityManager.TYPE_MOBILE) {
-            // 当前连接为移动网络
-            Toast.makeText(context, "当前为流量环境，APP加载资源较多，请注意您的流量消耗", Toast.LENGTH_SHORT).show()
+        if(!isSendNetworkCheck){
+            Toast.makeText(context, "网络连接失败, 请检查您的网络和应用权限配置", Toast.LENGTH_SHORT).show()
+            isSendNetworkCheck = true
         }
 
-        val sharedPreferences = context.getSharedPreferences("user", AppCompatActivity.MODE_PRIVATE)
-        val accessToken = sharedPreferences.getString("access_token", null)
-        if(accessToken != null){
-            userToken = accessToken
-            verifyTokenAndGetUserInform(accessToken, context)
-        }
+        return
+    }
+
+    val networkType = activeNetworkInfo?.type
+    if (networkType == ConnectivityManager.TYPE_MOBILE && !isSendNetworkCheck) {
+        Toast.makeText(context, "当前为流量环境，APP加载资源较多，请注意您的流量消耗", Toast.LENGTH_SHORT).show()
+        isSendNetworkCheck = true
+    }
+
+    val sharedPreferences = context.getSharedPreferences("user", AppCompatActivity.MODE_PRIVATE)
+    val accessToken = sharedPreferences.getString("access_token", null)
+    if(accessToken != null){
+        userToken = accessToken
+        verifyTokenAndGetUserInform(accessToken, context)
     }
 }
 /**
@@ -70,7 +72,7 @@ fun verifyTokenAndGetUserInform(access_token: String, context: Context){
         return
     }
 
-    val call = ApiNetService.GetUserInform(access_token)
+    val call = ApiNetService.getUserInform(access_token)
 
     call.enqueue(object : Callback<UserInformResponse> {
         override fun onResponse(call: Call<UserInformResponse>, response: Response<UserInformResponse>) {
@@ -120,7 +122,7 @@ fun getUserCollection(context: Context, callback: () -> Unit){
         return
     }
 
-    val call = ApiNetService.GetUserCollection(userToken!!)
+    val call = ApiNetService.getUserCollection(userToken!!)
 
     call.enqueue(object : Callback<CollectionResponse> {
         override fun onResponse(call: Call<CollectionResponse>, response: Response<CollectionResponse>) {
@@ -205,7 +207,7 @@ fun getUserCollectionFold(context: Context, callback: () -> Unit){
         )
     )
 
-    val call = ApiNetService.GetUserCollectionFold(userToken!!)
+    val call = ApiNetService.getUserCollectionFold(userToken!!)
     call.enqueue(object : Callback<CollectionFoldResponse> {
         override fun onResponse(call: Call<CollectionFoldResponse>, response: Response<CollectionFoldResponse>) {
             if (response.isSuccessful) {
@@ -237,7 +239,7 @@ fun setUserCollectionFold(context: Context, name: String, callback: () -> Unit){
         return
     }
 
-    val call = ApiNetService.SetUserCollectionFold(userToken!!, name)
+    val call = ApiNetService.setUserCollectionFold(userToken!!, name)
     call.enqueue(object : Callback<ActionResponse> {
         override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
             if (response.isSuccessful) {
@@ -267,7 +269,7 @@ fun removeUserCollectionFold(context: Context, id: Int, callback: () -> Unit){
         return
     }
 
-    val call = ApiNetService.RemoveCollectionFold(userToken!!, id)
+    val call = ApiNetService.removeCollectionFold(userToken!!, id)
     call.enqueue(object : Callback<ActionResponse> {
         override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
             if (response.isSuccessful) {
@@ -295,9 +297,9 @@ fun removeUserCollectionFold(context: Context, id: Int, callback: () -> Unit){
  */
 fun setAlbumCollection(context: Context, album: Albums, fold: String = "", callback: () -> Unit, unLog: () -> Unit){
     if(userToken != null){
-        var call = ApiNetService.SetCollectionItem(userToken!!, album.id, "album", fold)
+        var call = ApiNetService.setCollectionItem(userToken!!, album.id, "album", fold)
         if(album.is_collection != null){
-            call = ApiNetService.RemoveCollectionItem(userToken!!, album.id, "album")
+            call = ApiNetService.removeCollectionItem(userToken!!, album.id, "album")
         }
 
         call.enqueue(object : Callback<ActionResponse> {
@@ -335,9 +337,9 @@ fun setAlbumCollection(context: Context, album: Albums, fold: String = "", callb
  */
 fun setModelFollowing(context: Context, model: Models, callback: () -> Unit, unLog: () -> Unit){
     if(userToken != null){
-        var call = ApiNetService.SetCollectionItem(userToken!!, model.id, "model")
+        var call = ApiNetService.setCollectionItem(userToken!!, model.id, "model")
         if(model.is_collection != null){
-            call = ApiNetService.RemoveCollectionItem(userToken!!, model.id, "model")
+            call = ApiNetService.removeCollectionItem(userToken!!, model.id, "model")
         }
 
         call.enqueue(object : Callback<ActionResponse> {
@@ -375,7 +377,7 @@ fun setModelFollowing(context: Context, model: Models, callback: () -> Unit, unL
  */
 fun setModelFollowingById(context: Context, modelId: Int, callback: () -> Unit, unLog: () -> Unit){
     if(userToken != null){
-        val call = ApiNetService.SetCollectionItem(userToken!!, modelId, "model")
+        val call = ApiNetService.setCollectionItem(userToken!!, modelId, "model")
 
         call.enqueue(object : Callback<ActionResponse> {
             override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
@@ -413,7 +415,7 @@ fun setModelFollowingById(context: Context, modelId: Int, callback: () -> Unit, 
  */
 fun setForbidden(context: Context, id: Int, type: String, callback: () -> Unit, unLog: () -> Unit){
     if(userToken != null){
-        val call = ApiNetService.SetForbiddenItem(userToken!!, id, type)
+        val call = ApiNetService.setForbiddenItem(userToken!!, id, type)
 
         call.enqueue(object : Callback<ActionResponse> {
             override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
@@ -451,7 +453,7 @@ fun removeForbidden(context: Context, id: Int, callback: () -> Unit){
         return
     }
 
-    val call = ApiNetService.RemoveForbiddenItem(userToken!!, id)
+    val call = ApiNetService.removeForbiddenItem(userToken!!, id)
     call.enqueue(object : Callback<ActionResponse> {
         override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
             if (response.isSuccessful) {
@@ -618,9 +620,9 @@ fun getUserHistory(context: Context, isRefresh: Boolean = true, number: Int = 50
         return
     }
 
-    var call = ApiNetService.GetUserHistory(userToken!!)
+    var call = ApiNetService.getUserHistory(userToken!!)
     if(!isRefresh){
-        call = ApiNetService.GetUserHistory(userToken!!, userHistoryList.size, number)
+        call = ApiNetService.getUserHistory(userToken!!, userHistoryList.size, number)
     }
 
     call.enqueue(object : Callback<HistoryResponse> {
@@ -665,9 +667,9 @@ fun clearUserHistory(context: Context, id: Int = -1, callback: (Boolean) -> Unit
         return
     }
 
-    var call = ApiNetService.ClearUserHistory(userToken!!)
+    var call = ApiNetService.clearUserHistory(userToken!!)
     if(id > 0){
-        call = ApiNetService.ClearUserHistoryById(userToken!!, id)
+        call = ApiNetService.clearUserHistoryById(userToken!!, id)
     }
 
     call.enqueue(object : Callback<ActionResponse> {
@@ -701,7 +703,7 @@ fun getUserFollow(context: Context, callback: () -> Unit){
         return
     }
 
-    val call = ApiNetService.GetUserFollow(userToken!!)
+    val call = ApiNetService.getUserFollow(userToken!!)
 
     call.enqueue(object : Callback<FollowResponse> {
         override fun onResponse(call: Call<FollowResponse>, response: Response<FollowResponse>) {
@@ -734,7 +736,7 @@ fun getUserForbidden(context: Context, callback: () -> Unit){
         return
     }
 
-    val call = ApiNetService.GetUserForbidden(userToken!!)
+    val call = ApiNetService.getUserForbidden(userToken!!)
 
     call.enqueue(object : Callback<ForbiddenResponse> {
         override fun onResponse(call: Call<ForbiddenResponse>, response: Response<ForbiddenResponse>) {
@@ -777,7 +779,7 @@ fun requestFollowData(context: Context, isRefresh: Boolean = false, callback: ()
     if(isRefresh) {
         start = 0
     }
-    val call = ApiNetService.GetFollow(userToken!!, start, 20)
+    val call = ApiNetService.getFollow(userToken!!, start, 20)
 
     call.enqueue(object : Callback<AlbumsResponse> {
         override fun onResponse(call: Call<AlbumsResponse>, response: Response<AlbumsResponse>) {

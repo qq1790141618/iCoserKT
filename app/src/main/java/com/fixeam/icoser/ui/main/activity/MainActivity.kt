@@ -10,9 +10,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.view.View
 import android.view.animation.AnimationUtils
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
@@ -36,16 +34,16 @@ import com.fixeam.icoser.ui.main.fragment.HomeFragment
 import com.fixeam.icoser.ui.main.fragment.SmartVideoFragment
 import com.fixeam.icoser.ui.main.fragment.UserFragment
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.button.MaterialButtonToggleGroup
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMainBinding
+
     @SuppressLint("ResourceAsColor")
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
-        layout = binding.application
         setContentView(view)
 
         // 设置颜色主题
@@ -57,15 +55,19 @@ class MainActivity : AppCompatActivity() {
         // 打开启动图
         openLaunchLoading()
         // 检测消息推送权限
-        notificationRequestPermission(view){
+        notificationRequestPermission(){
             // 启动推送服务
             startForegroundService(Intent(applicationContext, PushService::class.java))
         }
     }
 
+    private fun openLaunchLoading(){
+        val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
+        binding.launchImage.loading.startAnimation(animation)
+    }
+
     private fun setTab(){
-        val toggleButton = findViewById<MaterialButtonToggleGroup>(R.id.tab_bar)
-        toggleButton.addOnButtonCheckedListener{group, checkedId, isChecked ->
+        binding.tabBar.addOnButtonCheckedListener{group, checkedId, isChecked ->
             if(!isChecked){
                 return@addOnButtonCheckedListener
             }
@@ -127,61 +129,7 @@ class MainActivity : AppCompatActivity() {
 
             switchFragment(selectIndex)
         }
-        toggleButton.check(R.id.home_button)
-    }
-
-    private lateinit var layout: View
-    private lateinit var binding: ActivityMainBinding
-
-    private val requestPermissionLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted: Boolean ->
-            hasNotificationProgression = if (isGranted) {
-                val sharedPreferences = getSharedPreferences("notification", Context.MODE_PRIVATE)
-                val editor = sharedPreferences.edit()
-                editor.putInt("allow", 1).apply()
-                true
-            } else {
-                val sharedPreferences = getSharedPreferences("notification", Context.MODE_PRIVATE)
-                val editor = sharedPreferences.edit()
-                editor.putInt("allow", 0).apply()
-                false
-            }
-        }
-
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    fun notificationRequestPermission(view: View, callback: () -> Unit) {
-        when {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                // 已授予权限
-                callback()
-            }
-
-            ActivityCompat.shouldShowRequestPermissionRationale(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) -> {
-                requestPermissionLauncher.launch(
-                    Manifest.permission.POST_NOTIFICATIONS
-                )
-            }
-
-            else -> {
-                requestPermissionLauncher.launch(
-                    Manifest.permission.POST_NOTIFICATIONS
-                )
-            }
-        }
-    }
-
-    private fun openLaunchLoading(){
-        val imageView = findViewById<ImageView>(R.id.loading)
-        val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
-        imageView?.startAnimation(animation)
+        binding.tabBar.check(R.id.home_button)
     }
 
     private fun switchFragment(selectIndex: Int){
@@ -225,6 +173,51 @@ class MainActivity : AppCompatActivity() {
         }
         showFragment = fragment
         ft.commitAllowingStateLoss()
+    }
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            hasNotificationProgression = if (isGranted) {
+                val sharedPreferences = getSharedPreferences("notification", Context.MODE_PRIVATE)
+                val editor = sharedPreferences.edit()
+                editor.putInt("allow", 1).apply()
+                true
+            } else {
+                val sharedPreferences = getSharedPreferences("notification", Context.MODE_PRIVATE)
+                val editor = sharedPreferences.edit()
+                editor.putInt("allow", 0).apply()
+                false
+            }
+        }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    fun notificationRequestPermission(callback: () -> Unit) {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                // 已授予权限
+                callback()
+            }
+
+            ActivityCompat.shouldShowRequestPermissionRationale(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) -> {
+                requestPermissionLauncher.launch(
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+            }
+
+            else -> {
+                requestPermissionLauncher.launch(
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+            }
+        }
     }
 
     private var pressBack: Boolean = false

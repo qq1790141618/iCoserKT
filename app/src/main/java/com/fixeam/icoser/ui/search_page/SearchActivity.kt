@@ -3,11 +3,9 @@ package com.fixeam.icoser.ui.search_page
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
-import android.os.Handler
 import android.text.Editable
 import android.view.LayoutInflater
 import android.view.View
@@ -16,10 +14,7 @@ import android.view.animation.AnimationUtils
 import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.ListView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
@@ -27,143 +22,124 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.RequestOptions
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.ActivitySearchBinding
 import com.fixeam.icoser.model.CustomArrayAdapter
 import com.fixeam.icoser.model.calculateTimeAgo
+import com.fixeam.icoser.model.createAlbumCard
 import com.fixeam.icoser.model.hotData
 import com.fixeam.icoser.model.setStatusBar
+import com.fixeam.icoser.model.startAlbumActivity
+import com.fixeam.icoser.model.startLoginActivity
+import com.fixeam.icoser.model.startModelActivity
 import com.fixeam.icoser.network.Albums
-import com.fixeam.icoser.network.AlbumsResponse
-import com.fixeam.icoser.network.ApiNetService
 import com.fixeam.icoser.network.Models
-import com.fixeam.icoser.network.SearchAlbumResponse
-import com.fixeam.icoser.network.SearchModelResponse
+import com.fixeam.icoser.network.requestAlbumSearch
+import com.fixeam.icoser.network.requestHotData
+import com.fixeam.icoser.network.requestHotSearchKeyword
+import com.fixeam.icoser.network.requestModelSearch
 import com.fixeam.icoser.network.setModelFollowing
-import com.fixeam.icoser.network.userToken
-import com.fixeam.icoser.painter.GlideBlurTransformation
-import com.fixeam.icoser.ui.album_page.AlbumViewActivity
-import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.model_page.ModelViewActivity
-import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import okhttp3.ResponseBody
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 class SearchActivity : AppCompatActivity() {
+    private lateinit var binding: ActivitySearchBinding
     private var hotViewList: List<Albums> = listOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_search)
+        binding = ActivitySearchBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
 
         // 设置导航栏
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        val toolbar: Toolbar = binding.toolbar
         toolbar.title = ""
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { onBackPressed() }
 
-        requestHotData()
+        // 设置热门搜索数据
+        setHotData()
         initHistory()
 
         // 设置搜索按钮点击事件
-        val searchButton = findViewById<MaterialButton>(R.id.search_button)
-        searchButton.setOnClickListener {
-            search()
-        }
+        binding.searchButton.setOnClickListener { search() }
 
         // 设置预搜索词
         setSearchPlaceHolder()
     }
 
+    // 设置热门搜索和热门数据
     private fun setSearchPlaceHolder(){
-        val keywordList: List<String> = listOf(
-            "黑丝皮裙",
-            "纯欲吊带",
-            "iMiss",
-            "XiuRen",
-            "女仆私房",
-            "JK制服"
-        )
-
-        val searchInput = findViewById<TextInputEditText>(R.id.search_input)
-        searchInput.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_NULL) {
-                search()
-                return@setOnEditorActionListener true
+        requestHotSearchKeyword(this){
+            binding.searchInput.setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_NULL) {
+                    search()
+                    return@setOnEditorActionListener true
+                }
+                false
             }
-            false
-        }
+            val currentKeywordIndex = (1..20).random()
+            binding.searchInput.hint = Editable.Factory.getInstance().newEditable(it[currentKeywordIndex % it.size])
 
-        var currentKeywordIndex = (1..20).random()
+            val hotSearchTitle =  binding.searchBefore.hotSearchTitle
+            hotSearchTitle.typeface = Typeface.createFromAsset(assets, "font/ZiTiQuanXinYiGuanHeiTi4.0-2.ttf")
+            hotSearchTitle.visibility = View.VISIBLE
 
-        val handler = Handler()
-        val runnable = object : Runnable {
-            override fun run() {
-                searchInput.hint = Editable.Factory.getInstance().newEditable(keywordList[currentKeywordIndex % keywordList.size])
-                currentKeywordIndex++
-                handler.postDelayed(this, 5000) // 5秒后再次执行
+            val hotSearch = binding.searchBefore.hotSearch
+            hotSearch.visibility = View.VISIBLE
+
+            for (keyword in it) {
+                val tag = layoutInflater.inflate(R.layout.tag, hotSearch, false) as CardView
+                val text = tag.findViewById<TextView>(R.id.text)
+                text.text = keyword
+                text.textSize = 12f
+                tag.radius = 50f
+                tag.setCardBackgroundColor(Color.parseColor("#ff9285"))
+                text.setTextColor(Color.WHITE)
+
+                tag.setOnClickListener {
+                    val searchInput = findViewById<TextInputEditText>(R.id.search_input)
+                    searchInput.text = Editable.Factory.getInstance().newEditable(keyword)
+                    search()
+                }
+
+                hotSearch.addView(tag)
             }
         }
-
-        handler.post(runnable)
     }
-
-    private fun requestHotData() {
+    private fun setHotData() {
         if(hotData.isNotEmpty()){
             initHotViewList()
+            return
         }
-
-        val call = ApiNetService.GetHot()
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()?.string()
-                    val albumsResponse = Gson().fromJson(responseBody, AlbumsResponse::class.java)
-                    if (albumsResponse.result) {
-                        hotData = albumsResponse.data.take(30)
-                        initHotViewList()
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(this@SearchActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
+        requestHotData(this){
+            initHotViewList()
+        }
     }
-
     private fun initHotViewList(){
         hotViewList = hotData.take(8)
 
-        val hotViewTitle = findViewById<TextView>(R.id.hot_view_title)
+        val hotViewTitle = binding.searchBefore.hotViewTitle
         val typeface = Typeface.createFromAsset(assets, "font/ZiTiQuanXinYiGuanHeiTi4.0-2.ttf")
         hotViewTitle.typeface = typeface
         hotViewTitle.visibility = View.VISIBLE
 
-        val listView = findViewById<ListView>(R.id.hot_view)
+        val listView = binding.searchBefore.hotView
         val adapter = CustomArrayAdapter(this, android.R.layout.simple_list_item_1, hotViewList.map {
             "${it.model_name} ${it.name}" }, 12f, 42)
         listView.adapter = adapter
         adapter.setNotifyOnChange(true)
 
-        listView.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            val intent = Intent(this@SearchActivity, AlbumViewActivity::class.java)
-            intent.putExtra("id", hotViewList[position].id)
-            startActivity(intent)
-        }
+        listView.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ -> startAlbumActivity(this, hotViewList[position].id) }
     }
 
+    // 获取和设置历史记录
     private fun readSearchHistory(): List<SearchHistoryItem>{
         // 获取共享内容
         val sharedPreferences = getSharedPreferences("search_history", Context.MODE_PRIVATE)
@@ -180,7 +156,6 @@ class SearchActivity : AppCompatActivity() {
         // 返回历史记录集
         return historySet
     }
-
     private fun saveSearchHistory(keyword: String){
         // 获取共享内容
         val sharedPreferences = getSharedPreferences("search_history", Context.MODE_PRIVATE)
@@ -219,7 +194,6 @@ class SearchActivity : AppCompatActivity() {
         sharedPreferences.edit().putString("history_set", gson.toJson(updatedSet)).apply()
         initHistory()
     }
-
     private fun clearSearchHistory(){
         val sharedPreferences = getSharedPreferences("search_history", Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
@@ -227,16 +201,14 @@ class SearchActivity : AppCompatActivity() {
         editor.apply()
         initHistory()
     }
-
     inner class SearchHistoryItem(
         var timeStamp: Long,
         val keyword: String
     )
-
     private fun initHistory(){
-        val searchHistoryTitle = findViewById<LinearLayout>(R.id.search_history_title)
-        val clearHistory = findViewById<ImageView>(R.id.clear_history)
-        val searchHistory= findViewById<FlexboxLayout>(R.id.search_history)
+        val searchHistoryTitle = binding.searchBefore.searchHistoryTitle
+        val clearHistory = binding.searchBefore.clearHistory
+        val searchHistory= binding.searchBefore.searchHistory
 
         val historySet = readSearchHistory()
         if(historySet.isEmpty()){
@@ -244,7 +216,6 @@ class SearchActivity : AppCompatActivity() {
             searchHistory.visibility = View.GONE
             return
         }
-
 
         searchHistoryTitle.visibility = View.VISIBLE
 
@@ -283,9 +254,12 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
+    // 执行搜索和显示结果
+    private var resultAlbums:List <Albums> = listOf()
+    private var resultModels:List <Models> = listOf()
     private fun search(){
         // 获取搜索词
-        val searchInput = findViewById<TextInputEditText>(R.id.search_input)
+        val searchInput = binding.searchInput
         var keyword = searchInput.text.toString()
         if (keyword.isEmpty()) {
             keyword = searchInput.hint.toString()
@@ -296,106 +270,49 @@ class SearchActivity : AppCompatActivity() {
         saveSearchHistory(keyword)
 
         // 关闭预显示页面
-        val searchBefore = findViewById<LinearLayout>(R.id.search_before)
+        val searchBefore = binding.searchBefore.searchBefore
         searchBefore.visibility = View.GONE
-        val searchDone = findViewById<LinearLayout>(R.id.search_done)
+        val searchDone = binding.searchDone.searchDone
         searchDone.visibility = View.GONE
-        val noResult = findViewById<TextView>(R.id.no_result)
+        val noResult = binding.noResult
         noResult.visibility = View.GONE
 
         // 显示加载动画
-        val imageView = findViewById<ImageView>(R.id.image_loading)
-        val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
-        imageView.startAnimation(animation)
-        imageView.visibility = View.VISIBLE
+        binding.imageLoading.startAnimation(AnimationUtils.loadAnimation(this, R.anim.loading))
+        binding.imageLoading.visibility = View.VISIBLE
 
         // 开始搜索
         searchOnAlbum(keyword)
     }
-
-    private var resultAlbums:List <Albums> = listOf()
-    private var resultModels:List <Models> = listOf()
-
     private fun searchOnAlbum(keyword: String){
-        var call = ApiNetService.SearchAlbum(
-            keyword = keyword
-        )
-        if(userToken != null){
-            call = ApiNetService.SearchAlbum(
-                access_token = userToken!!,
-                keyword = keyword
-            )
+        requestAlbumSearch(this, keyword){albums, keywords ->
+            resultAlbums = albums
+            searchOnModel(keywords)
         }
-
-        call.enqueue(object : Callback<SearchAlbumResponse> {
-            override fun onResponse(call: Call<SearchAlbumResponse>, response: Response<SearchAlbumResponse>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    if (responseBody != null && responseBody.result) {
-                        resultAlbums = responseBody.data
-                        searchOnModel(responseBody.keywords)
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<SearchAlbumResponse>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(this@SearchActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
     }
-
-    private fun searchOnModel(keywords: List<String>){
-        val keywordsString = Gson().toJson(keywords)
-        var call = ApiNetService.SearchModel(
-            keywords = keywordsString
-        )
-        if(userToken != null){
-            call = ApiNetService.SearchModel(
-                access_token = userToken!!,
-                keywords = keywordsString
-            )
+    private fun searchOnModel(keywords: List<String>?){
+        requestModelSearch(this, keywords){models ->
+            resultModels = models
+            initSearchResult()
         }
-
-        call.enqueue(object : Callback<SearchModelResponse> {
-            override fun onResponse(call: Call<SearchModelResponse>, response: Response<SearchModelResponse>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    if (responseBody != null && responseBody.result) {
-                        resultModels = responseBody.data
-                        initSearchResult()
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<SearchModelResponse>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(this@SearchActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
     }
-
     private fun initSearchResult(){
-        // 关闭加载动画
-        val imageView = findViewById<ImageView>(R.id.image_loading)
-        imageView.clearAnimation()
-        imageView.visibility = View.GONE
+        binding.imageLoading.clearAnimation()
+        binding.imageLoading.visibility = View.GONE
 
-        // 检测结果是否为空
         if(resultAlbums.isEmpty() && resultModels.isEmpty()){
-            val noResult = findViewById<TextView>(R.id.no_result)
-            noResult.visibility = View.VISIBLE
+            binding.noResult.visibility = View.VISIBLE
             return
         }
 
-        // 打开结果页面
-        val searchDone = findViewById<LinearLayout>(R.id.search_done)
+        val searchDone = binding.searchDone.searchDone
         searchDone.visibility = View.VISIBLE
-        val resultView = findViewById<RecyclerView>(R.id.result_view)
+        val resultView = binding.searchDone.resultView
         resultView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         resultView.adapter = MyAdapter()
     }
 
+    // 结果列表适配器
     inner class MyAdapter: RecyclerView.Adapter<MyViewHolder>() {
         override fun getItemViewType(position: Int): Int {
             return if (position < resultModels.size) {
@@ -431,13 +348,8 @@ class SearchActivity : AppCompatActivity() {
             when (holder.itemViewType) {
                 0 -> {
                     val model = resultModels[position]
-
                     // 创建点击事件
-                    holder.itemView.setOnClickListener {
-                        val intent = Intent(this@SearchActivity, ModelViewActivity::class.java)
-                        intent.putExtra("id", model.id)
-                        startActivity(intent)
-                    }
+                    holder.itemView.setOnClickListener { startModelActivity(this@SearchActivity, model.id) }
 
                     // 更新头像
                     val avatar = holder.itemView.findViewById<ImageView>(R.id.avatar)
@@ -469,8 +381,7 @@ class SearchActivity : AppCompatActivity() {
                         model.is_collection = true
                     }
                     fun unLog(){
-                        val intent = Intent(this@SearchActivity, LoginActivity::class.java)
-                        startActivity(intent)
+                        startLoginActivity(this@SearchActivity)
                     }
 
                     if(model.is_collection != null){
@@ -483,72 +394,7 @@ class SearchActivity : AppCompatActivity() {
                 }
                 1 -> {
                     val album = resultAlbums[position - resultModels.size]
-
-                    // 创建点击事件
-                    holder.itemView.setOnClickListener {
-                        val intent = Intent(this@SearchActivity, AlbumViewActivity::class.java)
-                        intent.putExtra("id", album.id)
-                        startActivity(intent)
-                    }
-
-                    // 修改海报图
-                    val posterBackground = holder.itemView.findViewById<ImageView>(R.id.poster_background)
-                    Glide.with(this@SearchActivity)
-                        .load("${album.poster}/short500px")
-                        .apply(RequestOptions.bitmapTransform(GlideBlurTransformation(this@SearchActivity)))
-                        .diskCacheStrategy(DiskCacheStrategy.ALL)
-                        .into(posterBackground)
-                    val poster = holder.itemView.findViewById<ImageView>(R.id.poster)
-                    Glide.with(this@SearchActivity)
-                        .load("${album.poster}/short1200px")
-                        .diskCacheStrategy(DiskCacheStrategy.ALL)
-                        .into(poster)
-
-                    // 修改图片数量
-                    val picNumber = holder.itemView.findViewById<TextView>(R.id.text)
-                    picNumber.text = "${(album.images as MutableList<String>).size}P"
-
-                    // 修改写真集名
-                    val name = holder.itemView.findViewById<TextView>(R.id.name)
-                    name.text = "${album.model_name} ${album.name}"
-
-                    // 添加图片
-                    val imagePreview = holder.itemView.findViewById<LinearLayout>(R.id.image_preview)
-                    imagePreview.removeAllViews()
-                    for ((index, image) in (album.images as MutableList<String>).withIndex()){
-                        if(index >= 4){
-                            break
-                        }
-
-                        val cardView = CardView(this@SearchActivity)
-                        val layoutParams = ViewGroup.MarginLayoutParams(
-                            (resources.displayMetrics.density * 36).toInt(), // 设置宽度为屏幕宽度的四分之一
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        layoutParams.rightMargin = (resources.displayMetrics.density * 5).toInt() // 设置右边距
-                        cardView.layoutParams = layoutParams
-                        cardView.cardElevation = 0F
-                        cardView.radius = resources.displayMetrics.density * 3 // 设置圆角半径
-
-                        val imageView = ImageView(this@SearchActivity)
-                        imageView.id = View.generateViewId()
-                        val imageLayoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        imageView.layoutParams = imageLayoutParams
-                        imageView.scaleType = ImageView.ScaleType.CENTER_CROP
-
-                        Glide.with(this@SearchActivity)
-                            .load("${image}/yswidth300px")
-                            .diskCacheStrategy(DiskCacheStrategy.ALL)
-                            .into(imageView)
-
-                        cardView.addView(imageView)
-                        if(imagePreview.childCount < 5){
-                            imagePreview.addView(cardView, index)
-                        }
-                    }
+                    createAlbumCard(this@SearchActivity, album, holder.itemView)
                 }
                 2 -> {
                     val textView = holder.itemView as TextView
@@ -560,6 +406,5 @@ class SearchActivity : AppCompatActivity() {
             }
         }
     }
-
     class MyViewHolder(view: View) : RecyclerView.ViewHolder(view)
 }

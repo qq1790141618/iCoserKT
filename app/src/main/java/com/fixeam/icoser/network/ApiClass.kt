@@ -1,5 +1,7 @@
 package com.fixeam.icoser.network
 
+import java.io.Serializable
+
 data class ActionResponse(
     val result: Boolean
 )
@@ -42,9 +44,9 @@ data class Albums(
     var album_id: Int,
     var name: String,
     var poster: String,
-    var model: String,
+    var model: String?,
     var model_id: Int,
-    var model_name: String,
+    var model_name: String?,
     var other_model: MutableList<String>?,
     var tags: MutableList<String>?,
     var images: Any,
@@ -57,7 +59,8 @@ data class Albums(
     var model_avatar_image: String?,
     var isForbidden: Boolean = false,
     var isNew: Boolean = false
-)
+) : Serializable
+
 data class AlbumDownload(
     var url: String,
     var password: String,
@@ -289,4 +292,9 @@ data class FileUploadResponse(
     val result: Boolean,
     val name: String,
     val url: String
+)
+
+data class HotSearchKeywordResponse(
+    val result: Boolean,
+    val keyword: List<String>
 )

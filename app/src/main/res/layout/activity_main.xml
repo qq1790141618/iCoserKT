@@ -7,33 +7,30 @@
     tools:context=".ui.main.activity.MainActivity"
     android:orientation="vertical"
     android:id="@+id/application"
-    android:hardwareAccelerated="true" >
+    android:hardwareAccelerated="true"
+    tools:ignore="MissingConstraints"
+    tools:viewBindingIgnore="false">
 
-    <include layout="@layout/launch_image" android:visibility="visible" />
+    <include android:id="@+id/launch_image" layout="@layout/launch_image" />
 
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/tab_bar_card"
+        app:layout_constraintBottom_toTopOf="@+id/tab_bar"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0"
         tools:layout_editor_absoluteX="52dp" />
 
-    <androidx.cardview.widget.CardView
-        android:id="@+id/tab_bar_card"
-        android:layout_width="match_parent"
-        android:layout_height="66dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:cardBackgroundColor="?attr/cardBackgroundColor" >
-
-        <com.google.android.material.button.MaterialButtonToggleGroup
+    <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/tab_bar"
             android:layout_width="match_parent"
             android:layout_height="66dp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:singleSelection="true"
             app:selectionRequired="true"
-            android:background="?attr/cardBackgroundColor" >
+            android:background="?attr/cardBackgroundColor"
+            android:elevation="3dp" >
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/home_button"
                 android:layout_width="0dp"
@@ -101,6 +98,5 @@
                 app:cornerRadius="0dp"
                 app:iconSize="21dp" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
-    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

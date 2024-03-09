@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     app:cardElevation="0dp"
     app:cardBackgroundColor="?attr/colorOnTertiary"
     app:cardCornerRadius="3dp"
-    android:layout_marginRight="5dp"
+    android:layout_marginEnd="5dp"
     android:layout_marginBottom="5dp"
     android:id="@+id/tag">
 
@@ -17,6 +18,7 @@
         android:textSize="10sp"
         android:text="Tag"
         android:layout_marginVertical="3dp"
-        android:layout_marginHorizontal="8dp" />
+        android:layout_marginHorizontal="8dp"
+        tools:ignore="HardcodedText,SmallSp" />
 
 </androidx.cardview.widget.CardView>

@@ -3,7 +3,6 @@ package com.fixeam.icoser.ui.main.fragment
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.view.LayoutInflater
@@ -21,10 +20,13 @@ import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.FragmentSmartVideoBinding
 import com.fixeam.icoser.model.formatTime
 import com.fixeam.icoser.model.getBestMedia
 import com.fixeam.icoser.model.getScreenWidth
 import com.fixeam.icoser.model.shareTextContent
+import com.fixeam.icoser.model.startAlbumActivity
+import com.fixeam.icoser.model.startModelActivity
 import com.fixeam.icoser.network.ApiNetService
 import com.fixeam.icoser.network.Media
 import com.fixeam.icoser.network.MediaResponse
@@ -32,8 +34,6 @@ import com.fixeam.icoser.network.accessLog
 import com.fixeam.icoser.network.updateAccessLog
 import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.painter.GlideBlurTransformation
-import com.fixeam.icoser.ui.album_page.AlbumViewActivity
-import com.fixeam.icoser.ui.model_page.ModelViewActivity
 import com.google.android.exoplayer2.DefaultRenderersFactory
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
@@ -48,13 +48,14 @@ import retrofit2.Response
 class SmartVideoFragment : Fragment() {
     private var mediaList: MutableList<Media> = mutableListOf()
     private var playIndex: Int = 5
+    private lateinit var binding: FragmentSmartVideoBinding
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_smart_video, container, false)
+    ): View {
+        binding = FragmentSmartVideoBinding.inflate(layoutInflater)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -65,9 +66,9 @@ class SmartVideoFragment : Fragment() {
     }
 
     private fun requestMediaData(insert: Boolean = false, createViewPager: Boolean = false){
-        var call = ApiNetService.GetMedia(number = 20)
+        var call = ApiNetService.getMedia(number = 20)
         if(userToken != null){
-            call = ApiNetService.GetMedia(userToken!!, 20)
+            call = ApiNetService.getMedia(userToken!!, 20)
         }
 
         call.enqueue(object : Callback<MediaResponse> {
@@ -103,14 +104,14 @@ class SmartVideoFragment : Fragment() {
         })
     }
 
+    private var adapter = MyPagerAdapter()
     private fun createViewPager(){
-        val viewPager: ViewPager2? = view?.findViewById(R.id.view_pager)
-        viewPager?.getChildAt(0)?.overScrollMode = View.OVER_SCROLL_NEVER
-        val adapter = MyPagerAdapter()
-        viewPager?.adapter = adapter
+        val viewPager: ViewPager2 = binding.viewPager
+        viewPager.getChildAt(0)?.overScrollMode = View.OVER_SCROLL_NEVER
+        viewPager.adapter = adapter
 
-        viewPager?.offscreenPageLimit = 1
-        viewPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+        viewPager.offscreenPageLimit = 1
+        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 val adapter = viewPager.adapter
 
@@ -132,21 +133,21 @@ class SmartVideoFragment : Fragment() {
                 }
 
                 if(position <= 3){
-                    requestMediaData(true, false)
+                    requestMediaData(insert = true, createViewPager = false)
                 } else if(mediaList.size - position <= 3){
-                    requestMediaData(false, false)
+                    requestMediaData(insert = false, createViewPager = false)
                 }
             }
         })
 
-        viewPager?.setCurrentItem(playIndex, false)
+        viewPager.setCurrentItem(playIndex, false)
     }
 
     private var lastIsPlaying = false
 
     private fun leaveFragment(){
-        val viewPager: ViewPager2? = view?.findViewById(R.id.view_pager)
-        val lastViewHolder = (viewPager?.getChildAt(0) as RecyclerView).findViewHolderForAdapterPosition(playIndex)
+        val viewPager: ViewPager2 = binding.viewPager
+        val lastViewHolder = (viewPager.getChildAt(0) as RecyclerView).findViewHolderForAdapterPosition(playIndex)
         if (lastViewHolder is MyViewHolder) {
             val player = lastViewHolder.itemView.findViewById<PlayerView>(R.id.video_view).player
 
@@ -159,8 +160,8 @@ class SmartVideoFragment : Fragment() {
 
     private fun enterFragment(){
         if(lastIsPlaying){
-            val viewPager: ViewPager2? = view?.findViewById(R.id.view_pager)
-            val lastViewHolder = (viewPager?.getChildAt(0) as RecyclerView).findViewHolderForAdapterPosition(playIndex)
+            val viewPager: ViewPager2 = binding.viewPager
+            val lastViewHolder = (viewPager.getChildAt(0) as RecyclerView).findViewHolderForAdapterPosition(playIndex)
             if (lastViewHolder is MyViewHolder) {
                 val player = lastViewHolder.itemView.findViewById<PlayerView>(R.id.video_view).player
 
@@ -200,20 +201,18 @@ class SmartVideoFragment : Fragment() {
         super.onResume()
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun refreshViewPager(number: Int, insert: Boolean = false) {
-        val viewPager: ViewPager2? = view?.findViewById(R.id.view_pager)
-        val adapter = viewPager?.adapter
-        if (adapter != null) {
-            val currentItemCount = adapter.itemCount
-            val currentPosition = viewPager.currentItem  // 记录当前位置
-            if (insert) {
-                adapter.notifyDataSetChanged()
-                viewPager.post {
-                    viewPager.setCurrentItem(currentPosition + number, false)
-                }
-            } else {
-                adapter.notifyItemRangeInserted(currentItemCount, number)
+        val viewPager: ViewPager2 = binding.viewPager
+        val currentItemCount = adapter.itemCount
+        val currentPosition = viewPager.currentItem  // 记录当前位置
+        if (insert) {
+            adapter.notifyDataSetChanged()
+            viewPager.post {
+                viewPager.setCurrentItem(currentPosition + number, false)
             }
+        } else {
+            adapter.notifyItemRangeInserted(currentItemCount, number)
         }
     }
 
@@ -306,11 +305,7 @@ class SmartVideoFragment : Fragment() {
             Glide.with(requireContext())
                 .load("${media.model_avatar_image}/yswidth300px")
                 .into(mediaAvatar)
-            mediaAvatar.setOnClickListener {
-                val intent = Intent(requireContext(), ModelViewActivity::class.java)
-                intent.putExtra("id", media.bind_model_id)
-                startActivity(intent)
-            }
+            mediaAvatar.setOnClickListener { startModelActivity(requireContext(), media.bind_model_id) }
 
             val shareButton: FloatingActionButton = holder.itemView.findViewById(R.id.share)
             shareButton.setOnClickListener {
@@ -321,11 +316,7 @@ class SmartVideoFragment : Fragment() {
                 )
             }
             val albumButton: FloatingActionButton = holder.itemView.findViewById(R.id.album)
-            albumButton.setOnClickListener {
-                val intent = Intent(requireContext(), AlbumViewActivity::class.java)
-                intent.putExtra("id", media.bind_album_id)
-                startActivity(intent)
-            }
+            albumButton.setOnClickListener { startAlbumActivity(requireContext(), media.bind_album_id) }
 
             // 更新视频相关组件
             val playButton = holder.itemView.findViewById<ImageView>(R.id.play_button)

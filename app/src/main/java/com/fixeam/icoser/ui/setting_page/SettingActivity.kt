@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import com.bumptech.glide.Glide
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.ActivitySettingBinding
 import com.fixeam.icoser.model.Option
 import com.fixeam.icoser.model.bytesToReadableSize
 import com.fixeam.icoser.model.initOptionItem
@@ -30,15 +31,17 @@ import java.io.File
 
 
 class SettingActivity : AppCompatActivity() {
+    private lateinit var binding: ActivitySettingBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_setting)
+        binding = ActivitySettingBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
 
         // 设置导航栏
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        val toolbar: Toolbar = binding.toolbar
         toolbar.title = getString(R.string.setting)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -53,7 +56,6 @@ class SettingActivity : AppCompatActivity() {
 
     @SuppressLint("CommitPrefEdits")
     private fun initOptions() {
-        val aOptionsContainer = findViewById<LinearLayout>(R.id.a_option)
         initOptionItem(
             Option(
                 iconId = R.drawable.display,
@@ -65,7 +67,7 @@ class SettingActivity : AppCompatActivity() {
                     startActivity(intent)
                 }
             ),
-            aOptionsContainer,
+            binding.aOption,
             this,
             isDarken(this)
         )
@@ -80,7 +82,7 @@ class SettingActivity : AppCompatActivity() {
                     startActivity(intent)
                 }
             ),
-            aOptionsContainer,
+            binding.aOption,
             this,
             isDarken(this)
         )
@@ -95,12 +97,11 @@ class SettingActivity : AppCompatActivity() {
                     startActivity(intent)
                 }
             ),
-            aOptionsContainer,
+            binding.aOption,
             this,
             isDarken(this)
         )
 
-        val bOptionsContainer = findViewById<LinearLayout>(R.id.b_option)
         initOptionItem(
             Option(
                 iconId = R.drawable.st_storage_port,
@@ -108,7 +109,7 @@ class SettingActivity : AppCompatActivity() {
                 textId = R.string.cache_size,
                 showHrefIcon = false
             ),
-            bOptionsContainer,
+            binding.bOption,
             this,
             isDarken(this)
         )
@@ -124,7 +125,7 @@ class SettingActivity : AppCompatActivity() {
                 contentText = "$cacheSize GB",
                 showHrefIcon = false
             ),
-            bOptionsContainer,
+            binding.bOption,
             this,
             isDarken(this)
         )
@@ -165,7 +166,7 @@ class SettingActivity : AppCompatActivity() {
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             @SuppressLint("SetTextI18n")
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                val contentText = bOptionsContainer.getChildAt(1).findViewById<TextView>(R.id.content_text)
+                val contentText = binding.bOption.getChildAt(1).findViewById<TextView>(R.id.content_text)
                 contentText.text = "$progress GB"
                 sharedPreferences.edit().putInt("disk_cache_size_gb", progress).apply()
 
@@ -187,7 +188,7 @@ class SettingActivity : AppCompatActivity() {
 
         layout.addView(seekBar)
         layout.addView(textView)
-        bOptionsContainer.addView(layout)
+        binding.bOption.addView(layout)
 
         initOptionItem(
             Option(
@@ -209,7 +210,7 @@ class SettingActivity : AppCompatActivity() {
                     alertDialog.show()
                 }
             ),
-            bOptionsContainer,
+            binding.bOption,
             this,
             isDarken(this)
         )
@@ -234,8 +235,7 @@ class SettingActivity : AppCompatActivity() {
         val sharedPreferences = getSharedPreferences("video_progress", Context.MODE_PRIVATE)
         bestResolutionRatio = sharedPreferences.getInt("best_resolution_ratio", 720)
 
-        val aOptionsContainer = findViewById<LinearLayout>(R.id.a_option)
-        val resolutionRatioOptionItem = aOptionsContainer.getChildAt(0)
+        val resolutionRatioOptionItem = binding.aOption.getChildAt(0)
         val contentText = resolutionRatioOptionItem.findViewById<TextView>(R.id.content_text)
         contentText.text = "${bestResolutionRatio}p"
     }
@@ -245,8 +245,7 @@ class SettingActivity : AppCompatActivity() {
         val sharedPreferences = getSharedPreferences("theme", Context.MODE_PRIVATE)
         colorMode = sharedPreferences.getInt("color_mode", 0)
 
-        val aOptionsContainer = findViewById<LinearLayout>(R.id.a_option)
-        val colorModeItem = aOptionsContainer.getChildAt(1)
+        val colorModeItem = binding.aOption.getChildAt(1)
         val contentText = colorModeItem.findViewById<TextView>(R.id.content_text)
         contentText.text = when(colorMode){
             0 -> "跟随系统"
@@ -261,8 +260,7 @@ class SettingActivity : AppCompatActivity() {
         val sharedPreferences = getSharedPreferences("notification", Context.MODE_PRIVATE)
         allowedNotification = sharedPreferences.getInt("allow", 1)
 
-        val aOptionsContainer = findViewById<LinearLayout>(R.id.a_option)
-        val colorModeItem = aOptionsContainer.getChildAt(2)
+        val colorModeItem = binding.aOption.getChildAt(2)
         val contentText = colorModeItem.findViewById<TextView>(R.id.content_text)
         contentText.text = when(allowedNotification){
             0 -> "关闭推送"
@@ -276,8 +274,7 @@ class SettingActivity : AppCompatActivity() {
         var totalSize: Long = 0
         totalSize += getGlideCacheSize(this)
 
-        val bOptionsContainer = findViewById<LinearLayout>(R.id.b_option)
-        val resolutionRatioOptionItem = bOptionsContainer.getChildAt(0)
+        val resolutionRatioOptionItem = binding.bOption.getChildAt(0)
         val contentText = resolutionRatioOptionItem.findViewById<TextView>(R.id.content_text)
         contentText.text = bytesToReadableSize(totalSize.toInt())
     }

@@ -15,8 +15,6 @@ import com.fixeam.icoser.model.newVersion
 import com.fixeam.icoser.model.newsData
 import com.fixeam.icoser.model.sendAlbumNotification
 import com.fixeam.icoser.model.sendSoftwareUpdateNotification
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -57,17 +55,14 @@ class DataFetchWorker(appContext: Context, workerParams: WorkerParameters):
     }
 
     private fun donePushRequest(){
-        // 获取已经推送过的写真集
-        val pushedAlbums = applicationContext.getSharedPreferences("push", AppCompatActivity.MODE_PRIVATE).getString("pushed_albums", "[]")
-        val listType = object : TypeToken<List<Int>>() {}.type
-        val pushedList: List<Int> = Gson().fromJson(pushedAlbums, listType)
+
 
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
         val currentTime = LocalDateTime.now()
         if(userToken != null){
             requestFollowData(applicationContext, true){
                 for (album in followAlbumList){
-                    if(!album.isNew || pushedList.contains(album.id)){
+                    if(!album.isNew){
                         continue
                     }
                     val pastTime = LocalDateTime.parse(album.create_time, formatter)
@@ -79,9 +74,6 @@ class DataFetchWorker(appContext: Context, workerParams: WorkerParameters):
         } else {
             requestNewData(applicationContext){
                 for (album in newsData){
-                    if(pushedList.contains(album.id)){
-                        continue
-                    }
                     val pastTime = LocalDateTime.parse(album.create_time, formatter)
                     if(ChronoUnit.MINUTES.between(pastTime, currentTime) < 120){
                         sendAlbumNotification(applicationContext, album)

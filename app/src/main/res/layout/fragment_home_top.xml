@@ -2,6 +2,7 @@
 
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/home_content"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -16,9 +17,10 @@
         android:id="@+id/hot_text"
         android:layout_width="match_parent"
         android:layout_height="35dp"
-        android:layout_marginLeft="15dp"
+        android:layout_marginStart="15dp"
         android:text="HOT RANK"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        tools:ignore="HardcodedText" />
 
     <include layout="@layout/hot_card" />
 
@@ -26,9 +28,10 @@
         android:id="@+id/model_text"
         android:layout_width="match_parent"
         android:layout_height="35dp"
-        android:layout_marginLeft="15dp"
+        android:layout_marginStart="15dp"
         android:text="MODELS"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        tools:ignore="HardcodedText" />
 
     <LinearLayout
         android:id="@+id/model_view"
@@ -46,8 +49,9 @@
         android:id="@+id/like_text"
         android:layout_width="match_parent"
         android:layout_height="35dp"
-        android:layout_marginLeft="15dp"
+        android:layout_marginStart="15dp"
         android:text="MAYBE LIKE"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        tools:ignore="HardcodedText" />
 
 </LinearLayout>

@@ -4,7 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="10dp">
 
     <TextView
         android:id="@+id/title"
@@ -18,7 +19,7 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="210dp">
+        android:layout_height="180dp">
 
         <LinearLayout
             android:id="@+id/content"

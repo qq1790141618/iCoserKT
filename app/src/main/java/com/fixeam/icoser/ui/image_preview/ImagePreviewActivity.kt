@@ -13,18 +13,20 @@ import androidx.viewpager2.widget.ViewPager2
 import com.batchat.preview.AlphaCallback
 import com.batchat.preview.PreviewPictureView
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.ActivityImagePreviewBinding
 import com.fixeam.icoser.model.downloadImage
 import com.fixeam.icoser.model.shareImageContent
-import com.google.android.material.button.MaterialButton
 
 class ImagePreviewActivity : AppCompatActivity(), AlphaCallback {
     private var mPreviewPictureView: PreviewPictureView<String>? =null
     private var disPlayerUrl: String = ""
+    private lateinit var binding: ActivityImagePreviewBinding
 
     @SuppressLint("NewApi", "MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_image_preview)
+        binding = ActivityImagePreviewBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // 初始化预览控件
         mPreviewPictureView = findViewById(R.id.mPreviewPictureView)
@@ -48,15 +50,13 @@ class ImagePreviewActivity : AppCompatActivity(), AlphaCallback {
 
         disPlayerUrl = data?.get(intent.getIntExtra("index",0)).toString()
         // 设置下载和分享事件
-        val download = findViewById<MaterialButton>(R.id.download)
-        download.setOnClickListener {
+        binding.download.setOnClickListener {
             downloadImage(
                 imageUrl = disPlayerUrl,
                 context = this@ImagePreviewActivity
             )
         }
-        val share = findViewById<MaterialButton>(R.id.share)
-        share.setOnClickListener {
+        binding.share.setOnClickListener {
             shareImageContent(
                 imageUrl = disPlayerUrl,
                 context = this@ImagePreviewActivity

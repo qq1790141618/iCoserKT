@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.search_page.SearchActivity">
+    tools:context=".ui.search_page.SearchActivity"
+    tools:viewBindingIgnore="false">
 
     <LinearLayout
         android:id="@+id/top_context"
@@ -61,7 +62,7 @@
         app:layout_constraintTop_toBottomOf="@id/top_context"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <include layout="@layout/search_before" />
+        <include android:id="@+id/search_before" layout="@layout/search_before" />
 
         <ImageView
             android:id="@+id/image_loading"
@@ -85,7 +86,7 @@
             android:textSize="13sp"
             android:visibility="gone" />
 
-        <include layout="@layout/search_done" />
+        <include android:id="@+id/search_done" layout="@layout/search_done" />
 
     </FrameLayout>
 

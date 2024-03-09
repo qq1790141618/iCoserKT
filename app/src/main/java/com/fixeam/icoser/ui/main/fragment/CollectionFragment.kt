@@ -1,7 +1,6 @@
 package com.fixeam.icoser.ui.main.fragment
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.PorterDuff
@@ -25,118 +24,121 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.FragmentCollectionBinding
 import com.fixeam.icoser.model.calculateTimeAgo
 import com.fixeam.icoser.model.getScreenWidth
+import com.fixeam.icoser.model.startAlbumActivity
+import com.fixeam.icoser.model.startLoginActivity
+import com.fixeam.icoser.model.startMediaActivity
+import com.fixeam.icoser.model.startModelActivity
+import com.fixeam.icoser.model.startSearchActivity
 import com.fixeam.icoser.network.accessLog
 import com.fixeam.icoser.network.followAlbumList
 import com.fixeam.icoser.network.requestFollowData
 import com.fixeam.icoser.network.setForbidden
 import com.fixeam.icoser.network.setModelFollowingById
 import com.fixeam.icoser.network.userToken
-import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.image_preview.ImagePreviewActivity
-import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.media_page.MediaViewActivity
-import com.fixeam.icoser.ui.model_page.ModelViewActivity
-import com.fixeam.icoser.ui.search_page.SearchActivity
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.button.MaterialButton
-import com.scwang.smart.refresh.layout.SmartRefreshLayout
 
 class CollectionFragment : Fragment() {
+    private lateinit var binding: FragmentCollectionBinding
     private var adapter: MyListAdapter? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_collection, container, false)
+    ): View {
+        binding = FragmentCollectionBinding.inflate(layoutInflater)
+        return binding.root
     }
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 设置标题字体
-        val title = view.findViewById<TextView>(R.id.top_text)
-        title.typeface = Typeface.createFromAsset(requireContext().assets, "font/JosefinSans-Regular-7.ttf")
-
-        // 创建搜索按钮点击
-        val homeSearchButton = view.findViewById<ImageView>(R.id.home_search_button)
-        homeSearchButton.setOnClickListener {
-            val intent = Intent(requireContext(), SearchActivity::class.java)
-            startActivity(intent)
-        }
+        setAppHeaderLayout()
 
         if(userToken == null){
-            val intent = Intent(requireContext(), LoginActivity::class.java)
-            startActivity(intent)
+            startLoginActivity(requireContext())
         } else {
-            val imageView = view.findViewById<ImageView>(R.id.image_loading)
-            val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.loading)
-            imageView.startAnimation(animation)
+            val imageView = binding.imageLoading
+            imageView.startAnimation(AnimationUtils.loadAnimation(requireContext(), R.anim.loading))
             imageView.visibility = View.VISIBLE
 
             requestFollowData(requireContext()) {
                 imageView.clearAnimation()
                 imageView.visibility = View.GONE
 
-                val refreshLayout = view.findViewById<SmartRefreshLayout>(R.id.refreshLayout)
-                refreshLayout.visibility = View.VISIBLE
-                refreshLayout.setOnRefreshListener {
-                    requestFollowData(requireContext(), true){
-                        val followList = view.findViewById<RecyclerView>(R.id.follow_list)
-                        val adapter = followList.adapter
-                        adapter?.notifyDataSetChanged()
-
-                        refreshLayout.finishRefresh()
-                        Toast.makeText(requireContext(), "刷新成功", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                refreshLayout.setOnLoadMoreListener {
-                    val index = followAlbumList.size
-                    requestFollowData(requireContext()) {
-                        adapter?.notifyItemInserted(index)
-                        refreshLayout.finishLoadMore()
-                    }
-                }
-
+                setRefreshLayout()
                 initFollowList()
             }
         }
     }
 
+    // 设置页头函数
+    private fun setAppHeaderLayout(){
+        // 设置标题字体
+        val typeface = Typeface.createFromAsset(requireContext().assets, "font/JosefinSans-Regular-7.ttf")
+        binding.appHeader.topText.typeface = typeface
+        // 创建搜索按钮点击
+        val homeSearchButton = binding.appHeader.homeSearchButton
+        homeSearchButton.setOnClickListener { startSearchActivity(requireContext()) }
+    }
+    // 设置下拉刷新函数
+    @SuppressLint("NotifyDataSetChanged")
+    private fun setRefreshLayout(){
+        val refreshLayout = binding.refreshLayout
+        refreshLayout.visibility = View.VISIBLE
+        refreshLayout.setOnRefreshListener {
+            requestFollowData(requireContext(), true){
+                val followList = binding.followList
+                val adapter = followList.adapter
+                adapter?.notifyDataSetChanged()
+
+                refreshLayout.finishRefresh()
+                Toast.makeText(requireContext(), "刷新成功", Toast.LENGTH_SHORT).show()
+            }
+        }
+        refreshLayout.setOnLoadMoreListener {
+            val index = followAlbumList.size
+            requestFollowData(requireContext()) {
+                adapter?.notifyItemInserted(index)
+                refreshLayout.finishLoadMore()
+            }
+        }
+    }
+
     private fun initFollowList() {
-        val followList = view?.findViewById<RecyclerView>(R.id.follow_list)
-        if (followList != null) {
-            followList.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
-            adapter = MyListAdapter()
-            followList.adapter = adapter
+        val followList = binding.followList
+        followList.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+        adapter = MyListAdapter()
+        followList.adapter = adapter
 
-            followList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
+        followList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
 
-                    val layoutManager = recyclerView.layoutManager as LinearLayoutManager
-                    val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
-                    val lastVisibleItemPosition = layoutManager.findLastVisibleItemPosition()
+                val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+                val lastVisibleItemPosition = layoutManager.findLastVisibleItemPosition()
 
-                    for (index in firstVisibleItemPosition..lastVisibleItemPosition){
-                        if(followAlbumList[index].isNew){
-                            followAlbumList[index].isNew = false
-                            accessLog(requireContext(), followAlbumList[index].id.toString(), "VISIT_ALBUM"){ }
-                        }
+                for (index in firstVisibleItemPosition..lastVisibleItemPosition){
+                    if(followAlbumList[index].isNew){
+                        followAlbumList[index].isNew = false
+                        accessLog(requireContext(), followAlbumList[index].id.toString(), "VISIT_ALBUM"){ }
                     }
                 }
-            })
-        }
+            }
+        })
     }
 
     private fun setForbiddenIcon(icon: ImageView, position: Int){
         icon.setOnClickListener {
             followAlbumList.removeAt(position)
-            val followList = view?.findViewById<RecyclerView>(R.id.follow_list)
-            val adapter = followList?.adapter
+            val followList = binding.followList
+            val adapter = followList.adapter
             adapter?.notifyItemRemoved(position)
 
             setForbidden(
@@ -166,9 +168,7 @@ class CollectionFragment : Fragment() {
             // 修改holder
             val album = followAlbumList[position]
             holder.itemView.setOnClickListener {
-                val intent = Intent(requireContext(), AlbumViewActivity::class.java)
-                intent.putExtra("id", album.id)
-                startActivity(intent)
+                startAlbumActivity(requireContext(), album.id)
             }
 
             // 修改上方内容
@@ -187,7 +187,7 @@ class CollectionFragment : Fragment() {
                             followedButton.visibility = View.VISIBLE
                         },
                         {
-                            startActivity(Intent(requireContext(), LoginActivity::class.java))
+                            startLoginActivity(requireContext())
                         }
                     )
                 }
@@ -227,16 +227,8 @@ class CollectionFragment : Fragment() {
             val modelName = holder.itemView.findViewById<TextView>(R.id.model_name)
             modelName.text = album.model
             
-            avatar.setOnClickListener {
-                val intent = Intent(requireContext(), ModelViewActivity::class.java)
-                intent.putExtra("id", album.model_id)
-                startActivity(intent)
-            }
-            modelName.setOnClickListener {
-                val intent = Intent(requireContext(), ModelViewActivity::class.java)
-                intent.putExtra("id", album.model_id)
-                startActivity(intent)
-            }
+            avatar.setOnClickListener { startModelActivity(requireContext(), album.model_id) }
+            modelName.setOnClickListener { startModelActivity(requireContext(), album.model_id) }
 
             // 设置动态内容
             val publishContentText = holder.itemView.findViewById<TextView>(R.id.publish_content_text)
@@ -318,11 +310,7 @@ class CollectionFragment : Fragment() {
                     playButtonImage.colorFilter = colorFilter
 
                     // 添加到内容
-                    constraintLayout.setOnClickListener {
-                        val intent = Intent(requireContext(), MediaViewActivity::class.java)
-                        intent.putExtra("id", media.id)
-                        startActivity(intent)
-                    }
+                    constraintLayout.setOnClickListener { startMediaActivity(requireContext(), media.id) }
                     publishContent.addView(constraintLayout)
                 }
             }

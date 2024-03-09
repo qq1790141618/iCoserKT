@@ -3,10 +3,8 @@ package com.fixeam.icoser.ui.album_page
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,7 +12,6 @@ import android.view.animation.AnimationUtils
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,38 +19,34 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.ActivityAlbumViewBinding
 import com.fixeam.icoser.model.bytesToReadableSize
 import com.fixeam.icoser.model.getScreenWidth
 import com.fixeam.icoser.model.saveImageToGallery
 import com.fixeam.icoser.model.setStatusBar
 import com.fixeam.icoser.model.shareImageContent
 import com.fixeam.icoser.model.shareTextContent
-import com.fixeam.icoser.network.ActionResponse
+import com.fixeam.icoser.model.startLoginActivity
+import com.fixeam.icoser.model.startMediaActivity
+import com.fixeam.icoser.model.startModelActivity
 import com.fixeam.icoser.network.Albums
-import com.fixeam.icoser.network.AlbumsResponse
-import com.fixeam.icoser.network.ApiNetService
 import com.fixeam.icoser.network.FileInfo
 import com.fixeam.icoser.network.FileMeta
-import com.fixeam.icoser.network.UrlRequestBody
 import com.fixeam.icoser.network.accessLog
 import com.fixeam.icoser.network.checkForUser
 import com.fixeam.icoser.network.openCollectionSelector
+import com.fixeam.icoser.network.requestAlbumData
+import com.fixeam.icoser.network.requestAlbumImageInfo
+import com.fixeam.icoser.network.requestImageInfo
 import com.fixeam.icoser.network.setAlbumCollection
 import com.fixeam.icoser.network.updateAccessLog
-import com.fixeam.icoser.network.userToken
-import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.media_page.MediaViewActivity
-import com.fixeam.icoser.ui.model_page.ModelViewActivity
+import com.fixeam.icoser.network.uploadImageInfo
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
-import okhttp3.ResponseBody
 import org.json.JSONArray
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 class AlbumViewActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityAlbumViewBinding
     private var albumInfo: Albums? = null
     private var albumImages: MutableList<String> = mutableListOf()
     private var imageList: List<FileInfo> = listOf()
@@ -61,7 +54,8 @@ class AlbumViewActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_album_view)
+        binding = ActivityAlbumViewBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // 设置颜色主题
         setStatusBar(this, Color.WHITE, Color.BLACK)
@@ -70,25 +64,23 @@ class AlbumViewActivity : AppCompatActivity() {
         checkForUser(this)
 
         // 设置加载动画
-        val imageView = findViewById<ImageView>(R.id.image_loading)
-        val animation = AnimationUtils.loadAnimation(this, R.anim.loading)
-        imageView.startAnimation(animation)
+        val imageView = binding.imageLoading
+        imageView.startAnimation(AnimationUtils.loadAnimation(this, R.anim.loading))
         imageView.visibility = View.VISIBLE
 
         // 设置导航栏
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        val toolbar: Toolbar = binding.toolbar
         toolbar.title = "加载中..."
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { onBackPressed() }
 
         // 设置悬浮按钮
-        val toUpButton: FloatingActionButton = findViewById(R.id.to_up)
-        val list: RecyclerView = findViewById(R.id.image_list)
-        toUpButton.setOnClickListener {
-            list.smoothScrollToPosition(0)
+        binding.toUp.setOnClickListener {
+            binding.imageList.smoothScrollToPosition(0)
         }
 
+        // 获取参数执行请求
         doNotSetToken = intent.getBooleanExtra("doNotSetToken", false)
         val id = intent.getIntExtra("id", -1)
         requireAlbumContent(id)
@@ -107,133 +99,72 @@ class AlbumViewActivity : AppCompatActivity() {
     }
 
     private fun requireAlbumContent(id: Int){
-        val currentTimestampSeconds = System.currentTimeMillis()
-
         val condition = JSONArray()
         condition.put(JSONArray().apply {
             put("id")
             put(id.toString())
         })
-        var call = ApiNetService.GetAlbum(condition.toString())
-        if(userToken != null && !doNotSetToken){
-            call = ApiNetService.GetAlbum(condition.toString(), userToken!!)
-        }
+        requestAlbumData(this, condition.toString(), doNotSetToken){
+            val album = it[0]
+            albumImages = album.images as MutableList<String>
 
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()?.string()
-                    val albumsResponse = Gson().fromJson(responseBody, AlbumsResponse::class.java)
+            accessLog(this@AlbumViewActivity, album.id.toString(), "VISIT_ALBUM"){
+                accessLogId = it
+            }
 
-                    if(!albumsResponse.result || albumsResponse.data.isEmpty()){
-                        Toast.makeText(this@AlbumViewActivity, "写真集获取失败", Toast.LENGTH_SHORT).show()
-                        return
-                    }
+            binding.imageLoading.clearAnimation()
+            binding.imageLoading.visibility = View.GONE
 
-                    val album: Albums = albumsResponse.data[0]
-                    albumImages = album.images as MutableList<String>
-                    accessLog(this@AlbumViewActivity, album.id.toString(), "VISIT_ALBUM"){
-                        accessLogId = it
-                    }
+            binding.toolbar.title = album.name
+            binding.toolbar.subtitle = album.model
 
-                    val imageView = findViewById<ImageView>(R.id.image_loading)
-                    imageView.clearAnimation()
-                    imageView.visibility = View.GONE
-
-                    val toolbar: Toolbar = findViewById(R.id.toolbar)
-                    toolbar.title = album.name
-                    toolbar.subtitle = album.model
-
-                    if(album.media != null && album.media!!.size > 0){
-                        val goToVideo = findViewById<MaterialButton>(R.id.go_to_video)
-                        goToVideo.visibility = View.VISIBLE
-                        goToVideo.setOnClickListener {
-                            val intent = Intent(this@AlbumViewActivity, MediaViewActivity::class.java)
-                            intent.putExtra("album-id", album.id)
-                            startActivity(intent)
-                        }
-                    }
-
-
-                    albumInfo = album
-                    initImageList()
-                    initMoreOptions()
-
-                    val newTimestampSeconds = System.currentTimeMillis()
-                    Log.d("Album Request Time", "请求时长：${(newTimestampSeconds - currentTimestampSeconds).toFloat() / 1000}s")
+            if(album.media != null && album.media!!.isNotEmpty()){
+                binding.goToVideo.visibility = View.VISIBLE
+                binding.goToVideo.setOnClickListener {
+                    startMediaActivity(
+                        this,
+                        albumId = album.id
+                    )
                 }
             }
 
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                // 处理请求失败的逻辑
-                Toast.makeText(this@AlbumViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
+            albumInfo = album
+            initImageList()
+            initMoreOptions()
+        }
     }
 
     private fun initImageList(){
-        val urls = Gson().toJson(albumImages)
-        val urlRequestBody = UrlRequestBody(urls)
-        val call = ApiNetService.PostFileAndInformation(urlRequestBody)
+        requestAlbumImageInfo(this, albumImages){ fileInfoList ->
+            val urlComparator = compareBy<FileInfo> { fileInfo ->
+                albumImages.indexOf(fileInfo.url)
+            }
+            imageList = fileInfoList.sortedWith(urlComparator)
 
-        call.enqueue(object : Callback<List<FileInfo>> {
-            override fun onResponse(call: Call<List<FileInfo>>, response: Response<List<FileInfo>>) {
-                // 处理响应结果
-                val fileInfoList = response.body()
-                if (fileInfoList != null) {
-                    val urlComparator = compareBy<FileInfo> { fileInfo ->
-                        albumImages.indexOf(fileInfo.url)
-                    }
-                    imageList = fileInfoList.sortedWith(urlComparator)
+            val list: RecyclerView = binding.imageList
+            list.layoutManager = LinearLayoutManager(this@AlbumViewActivity, LinearLayoutManager.VERTICAL, false)
+            val adapter = ListAdapter()
+            list.adapter = adapter
+            list.setItemViewCacheSize(16)
+            list.setHasTransientState(true)
 
-                    val list: RecyclerView = findViewById(R.id.image_list)
-                    list.layoutManager = LinearLayoutManager(this@AlbumViewActivity, LinearLayoutManager.VERTICAL, false)
-                    val adapter = listAdapter()
-                    list.adapter = adapter
-                    list.setItemViewCacheSize(16)
-                    list.setHasTransientState(true)
-
-                    for ((index, _) in fileInfoList.withIndex()){
-                        if(imageList[index].meta != null){
-                            continue
-                        }
-
-                        ApiNetService.GetFileInfoByUrl("${imageList[index].url}?imageInfo").enqueue(object : Callback<FileMeta> {
-                            override fun onResponse(call: Call<FileMeta>, response: Response<FileMeta>) {
-                                // 处理响应结果
-                                val fileMetaItem = response.body()
-                                if(fileMetaItem != null){
-                                    val json = Gson().toJson(fileMetaItem)
-                                    imageList[index].meta = json
-                                    adapter.notifyItemChanged(index)
-
-                                    ApiNetService.UpdateFileMeta(imageList[index].url, json).enqueue(object : Callback<ActionResponse> {
-                                        override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) { }
-                                        override fun onFailure(call: Call<ActionResponse>, t: Throwable) { }
-                                    })
-                                }
-                            }
-
-                            override fun onFailure(call: Call<FileMeta>, t: Throwable) {
-                                // 处理请求失败
-                                Toast.makeText(this@AlbumViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-                            }
-                        })
+            for ((index, fileItem) in fileInfoList.withIndex()){
+                if(fileItem.meta == null){
+                    requestImageInfo(this, fileItem.url){
+                        val json = Gson().toJson(it)
+                        fileItem.meta = json
+                        adapter.notifyItemChanged(index)
+                        uploadImageInfo(fileItem.url, json)
                     }
                 }
             }
-
-            override fun onFailure(call: Call<List<FileInfo>>, t: Throwable) {
-                // 处理请求失败
-                Toast.makeText(this@AlbumViewActivity, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-            }
-        })
+        }
     }
 
     @SuppressLint("SetTextI18n")
     private fun initMoreOptions(){
         // 显示按钮
-        val moreButton = findViewById<FloatingActionButton>(R.id.more)
+        val moreButton = binding.more
         moreButton.visibility = View.VISIBLE
 
         moreButton.setOnClickListener {
@@ -264,8 +195,8 @@ class AlbumViewActivity : AppCompatActivity() {
             // 隐藏无关按钮
             val viewAlbums = dialogView.findViewById<MaterialButton>(R.id.view_album)
             viewAlbums.visibility = View.GONE
-            val forbbiden = dialogView.findViewById<MaterialButton>(R.id.forbidden)
-            forbbiden.visibility = View.GONE
+            val forbidden = dialogView.findViewById<MaterialButton>(R.id.forbidden)
+            forbidden.visibility = View.GONE
 
             // 调整按钮操作
             val share = dialogView.findViewById<MaterialButton>(R.id.share)
@@ -286,8 +217,7 @@ class AlbumViewActivity : AppCompatActivity() {
             collection?.setOnClickListener {
                 fun unLog(){
                     collection.setIconResource(R.drawable.favor)
-                    val intent = Intent(this, LoginActivity::class.java)
-                    startActivity(intent)
+                    startLoginActivity(this)
                 }
 
                 albumInfo?.let { it1 ->
@@ -320,17 +250,14 @@ class AlbumViewActivity : AppCompatActivity() {
             }
             val model = dialogView.findViewById<MaterialButton>(R.id.view_model)
             model?.setOnClickListener {
-                val intent = Intent(this@AlbumViewActivity, ModelViewActivity::class.java)
-                intent.putExtra("id", albumInfo?.model_id)
-                intent.putExtra("doNotSetToken", doNotSetToken)
-                startActivity(intent)
+                albumInfo?.model_id?.let { it1 -> startModelActivity(this, it1, doNotSetToken) }
             }
 
             alertDialog.show()
         }
     }
 
-    inner class listAdapter : RecyclerView.Adapter<viewHolder>() {
+    inner class ListAdapter : RecyclerView.Adapter<viewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): viewHolder {
             val itemView = LayoutInflater.from(this@AlbumViewActivity).inflate(R.layout.margin_image, parent, false)
             return viewHolder(itemView)
