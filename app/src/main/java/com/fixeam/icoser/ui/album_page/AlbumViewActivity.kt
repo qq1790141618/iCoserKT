@@ -2,7 +2,6 @@ package com.fixeam.icoser.ui.album_page
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -11,7 +10,6 @@ import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -20,6 +18,8 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivityAlbumViewBinding
+import com.fixeam.icoser.databinding.AlbumFlashPanelBinding
+import com.fixeam.icoser.databinding.ImageShareBinding
 import com.fixeam.icoser.model.bytesToReadableSize
 import com.fixeam.icoser.model.getScreenWidth
 import com.fixeam.icoser.model.saveImageToGallery
@@ -41,7 +41,6 @@ import com.fixeam.icoser.network.requestImageInfo
 import com.fixeam.icoser.network.setAlbumCollection
 import com.fixeam.icoser.network.updateAccessLog
 import com.fixeam.icoser.network.uploadImageInfo
-import com.google.android.material.button.MaterialButton
 import com.google.gson.Gson
 import org.json.JSONArray
 
@@ -169,57 +168,44 @@ class AlbumViewActivity : AppCompatActivity() {
 
         moreButton.setOnClickListener {
             val builder = AlertDialog.Builder(this)
-            val inflater = this.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            val dialogView: View = inflater.inflate(R.layout.album_flash_panel, null)
-            builder.setView(dialogView)
+            val binding = AlbumFlashPanelBinding.inflate(layoutInflater)
+            builder.setView(binding.root)
             val alertDialog = builder.create()
-
             // 调整面板内容
-            dialogView.findViewById<TextView>(R.id.text_info)?.text = "${albumInfo?.model} ${albumInfo?.name}"
-            val posterImage = dialogView.findViewById<ImageView>(R.id.poster_info)
-            posterImage.layoutParams.height = (resources.displayMetrics.density * 220).toInt()
-            posterImage?.let { it1 ->
+            binding.textInfo.text = "${albumInfo?.model} ${albumInfo?.name}"
+            binding.posterInfo.layoutParams.height = (resources.displayMetrics.density * 220).toInt()
+            binding.posterInfo.let { it1 ->
                 Glide.with(this)
                     .load("${albumInfo?.poster}/short1200px")
                     .placeholder(R.drawable.image_holder)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
                     .into(it1)
             }
-
             // 绑定关闭事件
-            val dialogClose = dialogView.findViewById<MaterialButton>(R.id.close)
-            dialogClose.setOnClickListener {
-                alertDialog.cancel()
-            }
-
+            binding.close.setOnClickListener { alertDialog.cancel() }
             // 隐藏无关按钮
-            val viewAlbums = dialogView.findViewById<MaterialButton>(R.id.view_album)
-            viewAlbums.visibility = View.GONE
-            val forbidden = dialogView.findViewById<MaterialButton>(R.id.forbidden)
-            forbidden.visibility = View.GONE
-
+            binding.viewAlbum.visibility = View.GONE
+            binding.forbidden.visibility = View.GONE
             // 调整按钮操作
-            val share = dialogView.findViewById<MaterialButton>(R.id.share)
-            share?.setOnClickListener {
+            binding.share.setOnClickListener {
                 shareTextContent(
                     context = this,
                     text = "来自iCoser的分享内容：模特 - ${albumInfo?.model}, 写真集 - ${albumInfo?.name}, 访问链接：https://app.fixeam.com/album?id=${albumInfo?.id}"
                 )
             }
-            val collection = dialogView.findViewById<MaterialButton>(R.id.collection)
+            val collection =  binding.collection
             if(doNotSetToken){
                 collection.visibility = View.GONE
             }
             if(albumInfo?.is_collection != null){
-                collection?.setIconResource(R.drawable.favor_fill)
-                collection?.text = getString(R.string.uncollection)
+                collection.setIconResource(R.drawable.favor_fill)
+                collection.text = getString(R.string.uncollection)
             }
-            collection?.setOnClickListener {
+            collection.setOnClickListener {
                 fun unLog(){
                     collection.setIconResource(R.drawable.favor)
                     startLoginActivity(this)
                 }
-
                 albumInfo?.let { it1 ->
                     if(it1.is_collection != null){
                         collection.setIconResource(R.drawable.loading2)
@@ -248,11 +234,9 @@ class AlbumViewActivity : AppCompatActivity() {
                     }
                 }
             }
-            val model = dialogView.findViewById<MaterialButton>(R.id.view_model)
-            model?.setOnClickListener {
+            binding.viewModel.setOnClickListener {
                 albumInfo?.model_id?.let { it1 -> startModelActivity(this, it1, doNotSetToken) }
             }
-
             alertDialog.show()
         }
     }
@@ -265,7 +249,7 @@ class AlbumViewActivity : AppCompatActivity() {
         override fun getItemCount(): Int {
             return albumImages.size
         }
-        @SuppressLint("NewApi")
+        @SuppressLint("NewApi", "SetTextI18n")
         override fun onBindViewHolder(holder: viewHolder, position: Int) {
             // 修改holder
             val image = imageList[position]
@@ -278,39 +262,27 @@ class AlbumViewActivity : AppCompatActivity() {
 
                 if(image.meta != null) {
                     val builder = AlertDialog.Builder(this@AlbumViewActivity)
-                    val inflater =
-                        this@AlbumViewActivity.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-                    val dialogView: View = inflater.inflate(R.layout.image_share, null)
-                    builder.setView(dialogView)
+                    val binding = ImageShareBinding.inflate(layoutInflater)
+                    builder.setView(binding.root)
                     val alertDialog = builder.create()
-
-                    dialogView.setOnClickListener {
+                    binding.root.setOnClickListener {
                         alertDialog.cancel()
                     }
 
-                    val imageName = dialogView.findViewById<TextView>(R.id.image_name)
-                    val fileName = image.url.substringAfterLast("/")
-                    imageName.text = fileName
-
-                    val imageItemView = dialogView.findViewById<ImageView>(R.id.image_view)
+                    binding.imageName.text = image.url.substringAfterLast("/")
                     Glide.with(this@AlbumViewActivity)
                         .load(image.url)
                         .diskCacheStrategy(DiskCacheStrategy.ALL)
-                        .into(imageItemView)
-
-                    val shareImage = dialogView.findViewById<MaterialButton>(R.id.share)
-                    shareImage.setOnClickListener {
+                        .into(binding.imageView)
+                    binding.share.setOnClickListener {
                         shareImageContent(
                             imageUrl = image.url,
                             context = this@AlbumViewActivity
                         )
                     }
-
-                    val downloadImage = dialogView.findViewById<MaterialButton>(R.id.download)
-                    downloadImage.text = "${downloadImage.text} (${bytesToReadableSize(image.size)})"
-                    downloadImage.setOnClickListener {
-                        // 下载
-                        saveImageToGallery(this@AlbumViewActivity, imageItemView)
+                    binding.download.text = "${binding.download.text} (${bytesToReadableSize(image.size.toLong())})"
+                    binding.download.setOnClickListener {
+                        saveImageToGallery(this@AlbumViewActivity, binding.imageView)
                     }
 
                     alertDialog.show()

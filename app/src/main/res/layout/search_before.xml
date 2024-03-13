@@ -85,6 +85,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="15dp"
+        android:dividerHeight="0.5dp"
+        android:divider="?attr/colorOnTertiary"
         android:background="@drawable/rounded_square" />
 
 </LinearLayout>

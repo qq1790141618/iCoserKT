@@ -4,10 +4,13 @@ import android.annotation.SuppressLint
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
+import android.widget.LinearLayout
+import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -18,9 +21,14 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivityModelViewBinding
-import com.fixeam.icoser.model.createAlbumCard
+import com.fixeam.icoser.databinding.AlbumItemBinding
+import com.fixeam.icoser.model.AlbumViewHolder
+import com.fixeam.icoser.model.changeBackgroundDim
+import com.fixeam.icoser.model.createAlbumBinding
+import com.fixeam.icoser.model.createSimpleDialog
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
+import com.fixeam.icoser.model.shareTextContent
 import com.fixeam.icoser.model.startLoginActivity
 import com.fixeam.icoser.model.startMediaActivity
 import com.fixeam.icoser.network.Albums
@@ -29,9 +37,11 @@ import com.fixeam.icoser.network.accessLog
 import com.fixeam.icoser.network.requestAlbumData
 import com.fixeam.icoser.network.requestMediaData
 import com.fixeam.icoser.network.requestModelData
+import com.fixeam.icoser.network.setForbidden
 import com.fixeam.icoser.network.setModelFollowing
 import com.fixeam.icoser.network.updateAccessLog
 import com.fixeam.icoser.ui.image_preview.ImagePreviewActivity
+import com.google.android.material.button.MaterialButton
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.json.JSONArray
@@ -179,7 +189,7 @@ class ModelViewActivity : AppCompatActivity() {
     }
 
     private fun initModelBox(){
-        binding.titleOverlay.alpha = 0.7f
+        binding.titleOverlay.alpha = 0f
         binding.name.text = when(modelInfo?.other_name){
             null -> modelInfo?.name
             else -> "${modelInfo?.name} ${modelInfo?.other_name}"
@@ -213,6 +223,9 @@ class ModelViewActivity : AppCompatActivity() {
                 .load("${modelInfo?.background_image}/short1200px")
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(backgroundView)
+            binding.toolbar.navigationIcon?.setTint(Color.WHITE)
+            binding.name.setTextColor(Color.WHITE)
+            binding.more.iconTint = ColorStateList.valueOf(Color.WHITE)
         }
 
         if(modelInfo?.tags != null){
@@ -228,6 +241,8 @@ class ModelViewActivity : AppCompatActivity() {
                 linearLayout.addView(chip)
             }
         }
+
+        binding.more.setOnClickListener { createModelOptions() }
     }
 
     private fun setMedia(modelId: Int){
@@ -271,6 +286,8 @@ class ModelViewActivity : AppCompatActivity() {
         val tagBox = binding.tagBox
         val titleOverlay = binding.titleOverlay
         val name = binding.name
+        val toolbar = binding.toolbar
+        val more = binding.more
 
         // 尺寸范围
         val avatarScale = resources.displayMetrics.density * 50
@@ -306,24 +323,29 @@ class ModelViewActivity : AppCompatActivity() {
             modelBox.requestLayout()
 
             // 初始形态
-            titleOverlay.alpha = 0.7f
+            titleOverlay.alpha = 0f
             name.translationX = 0f
             avatar.translationX = 0f
             avatar.translationY = 0f
             avatar2.translationX = 0f
             avatar2.translationY = 0f
+            if(modelInfo?.background_image != null && !isDarken(this)){
+                toolbar.navigationIcon?.setTint(Color.WHITE)
+                name.setTextColor(Color.WHITE)
+                more.iconTint = ColorStateList.valueOf(Color.WHITE)
+            }
         }
         // 第二阶段
-        val nameX = resources.displayMetrics.density * 18
-        val avatarX = resources.displayMetrics.density * -40
-        val avatarY = resources.displayMetrics.density * -44
+        val nameX = resources.displayMetrics.density * 30 / 2
+        val avatarX = -(name.width / 2 + resources.displayMetrics.density * 15)
+        val avatarY = resources.displayMetrics.density * -40.5f
         if(scrollOffset in animFirstScroll + 1..animThenScroll){
             val offsetRatioThen = (scrollOffset.toFloat() - animFirstScroll) / thenOverScroll // 后置阶段滚动比例： ( 滚动距离 - 第一阶段结束位置 ) / 第二阶段滚动的总距离
             val modelBoxHeight = (modelBoxMax - modelBoxFirstScale - modelBoxThenScale * offsetRatioThen).toInt() // 第一阶段盒子大小 ( 盒子最大尺寸 - 盒子第一阶段小尺寸 * 缩小比例(第一阶段滚动比例) ) . 转整形
             modelBox.layoutParams.height = modelBoxHeight
             modelBox.requestLayout()
 
-            titleOverlay.alpha = offsetRatioThen * 0.3f + 0.7f
+            titleOverlay.alpha = offsetRatioThen
             tagBox.alpha = 0f
 
             name.translationX = nameX * offsetRatioThen
@@ -331,6 +353,16 @@ class ModelViewActivity : AppCompatActivity() {
             avatar.translationY = avatarY * offsetRatioThen
             avatar2.translationX = avatarX * offsetRatioThen
             avatar2.translationY = avatarY * offsetRatioThen
+            if(modelInfo?.background_image != null && !isDarken(this)){
+                val color16 = Integer.toHexString((255 * (1 - offsetRatioThen)).toInt())
+                val colorString = when(color16.length){
+                    2 -> "#$color16$color16$color16"
+                    else -> "#0${color16}0${color16}0${color16}"
+                }
+                toolbar.navigationIcon?.setTint(Color.parseColor(colorString))
+                name.setTextColor(Color.parseColor(colorString))
+                more.iconTint = ColorStateList.valueOf(Color.parseColor(colorString))
+            }
         }
         // 最终形态
         if(scrollOffset > animThenScroll - 20){
@@ -342,6 +374,58 @@ class ModelViewActivity : AppCompatActivity() {
             avatar.translationY = avatarY
             avatar2.translationX = avatarX
             avatar2.translationY = avatarY
+            if(modelInfo?.background_image != null){
+                if(!isDarken(this)){
+                    toolbar.navigationIcon?.setTint(Color.BLACK)
+                    name.setTextColor(Color.BLACK)
+                    more.iconTint = ColorStateList.valueOf(Color.BLACK)
+                }
+            }
+        }
+    }
+
+    private fun createModelOptions(){
+        changeBackgroundDim(true, this)
+        val flashPanel = layoutInflater.inflate(R.layout.model_flash_panel, null)
+        val popupWindow = PopupWindow(
+            flashPanel,
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            true
+        )
+        popupWindow.animationStyle = R.style.PopupAnimation
+        popupWindow.showAtLocation(
+            binding.root,
+            Gravity.BOTTOM,
+            0,
+            0
+        )
+        popupWindow.setOnDismissListener {
+            changeBackgroundDim(false, this)
+        }
+
+        // 调整按钮操作
+        flashPanel.findViewById<MaterialButton>(R.id.close)?.setOnClickListener { popupWindow.dismiss() }
+        flashPanel.findViewById<MaterialButton>(R.id.share)?.setOnClickListener {
+            shareTextContent(
+                context = this,
+                text = "来自iCoser分享的模特 - ${modelInfo?.name}, 访问链接：https://app.fixeam.com/model?id=${modelInfo?.id}"
+            )
+        }
+        flashPanel.findViewById<MaterialButton>(R.id.forbidden).setOnClickListener {
+            createSimpleDialog(this, "确定屏蔽此模特吗? 您将不会收到任何与此模特有关的内容推送.", true){
+                setForbidden(
+                    this,
+                    modelInfo?.id!!,
+                    "model",
+                    {
+                        popupWindow.dismiss()
+                        onBackPressed()
+                    },
+                    {
+                        startLoginActivity(this)
+                    })
+            }
         }
     }
 
@@ -349,10 +433,10 @@ class ModelViewActivity : AppCompatActivity() {
         binding.albumList.adapter?.notifyItemInserted(albumList.size - loadedNumber)
     }
 
-    inner class AlbumsAdapter : RecyclerView.Adapter<AlbumViewHolder>() {
+    inner class AlbumsAdapter: RecyclerView.Adapter<AlbumViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlbumViewHolder {
-            val itemView = LayoutInflater.from(this@ModelViewActivity).inflate(R.layout.album_item, parent, false)
-            return AlbumViewHolder(itemView)
+            val binding = AlbumItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return AlbumViewHolder(binding)
         }
         override fun getItemCount(): Int {
             return albumList.size
@@ -361,9 +445,7 @@ class ModelViewActivity : AppCompatActivity() {
         override fun onBindViewHolder(holder: AlbumViewHolder, position: Int) {
             // 修改holder
             val album = albumList[position]
-            createAlbumCard(this@ModelViewActivity, album, holder.itemView)
+            createAlbumBinding(this@ModelViewActivity, album, holder.itemView, holder.binding)
         }
     }
-
-    class AlbumViewHolder(view: View) : RecyclerView.ViewHolder(view)
 }

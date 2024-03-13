@@ -1,7 +1,6 @@
 package com.fixeam.icoser.ui.search_page
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
@@ -13,20 +12,24 @@ import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewbinding.ViewBinding
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivitySearchBinding
+import com.fixeam.icoser.databinding.AlbumItemBinding
+import com.fixeam.icoser.databinding.MessageTextBinding
+import com.fixeam.icoser.databinding.ModelItemBinding
 import com.fixeam.icoser.model.CustomArrayAdapter
 import com.fixeam.icoser.model.calculateTimeAgo
-import com.fixeam.icoser.model.createAlbumCard
+import com.fixeam.icoser.model.createAlbumBinding
+import com.fixeam.icoser.model.createSimpleDialog
 import com.fixeam.icoser.model.hotData
 import com.fixeam.icoser.model.setStatusBar
 import com.fixeam.icoser.model.startAlbumActivity
@@ -39,7 +42,6 @@ import com.fixeam.icoser.network.requestHotData
 import com.fixeam.icoser.network.requestHotSearchKeyword
 import com.fixeam.icoser.network.requestModelSearch
 import com.fixeam.icoser.network.setModelFollowing
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -220,18 +222,9 @@ class SearchActivity : AppCompatActivity() {
         searchHistoryTitle.visibility = View.VISIBLE
 
         clearHistory.setOnClickListener {
-            val builder = AlertDialog.Builder(this)
-            builder.setMessage("确认清除全部历史记录吗？")
-
-            builder.setPositiveButton("确定") { _, _ ->
+            createSimpleDialog(this, "确认清除全部历史记录吗？", true){
                 clearSearchHistory()
             }
-            builder.setNegativeButton("取消") { _, _ ->
-                // 不清除历史记录
-            }
-
-            val alertDialog = builder.create()
-            alertDialog.show()
         }
 
         searchHistory.visibility = View.VISIBLE
@@ -313,7 +306,7 @@ class SearchActivity : AppCompatActivity() {
     }
 
     // 结果列表适配器
-    inner class MyAdapter: RecyclerView.Adapter<MyViewHolder>() {
+    inner class MyAdapter: RecyclerView.Adapter<SearchViewHolder>() {
         override fun getItemViewType(position: Int): Int {
             return if (position < resultModels.size) {
                 0
@@ -326,85 +319,74 @@ class SearchActivity : AppCompatActivity() {
         override fun getItemCount(): Int {
             return resultModels.size + resultAlbums.size + 1
         }
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SearchViewHolder {
             return when (viewType) {
                 0 -> {
-                    val view = LayoutInflater.from(parent.context).inflate(R.layout.model_item, parent, false)
-                    MyViewHolder(view)
+                    val binding = ModelItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                    SearchViewHolder(binding)
                 }
                 1 -> {
-                    val view = LayoutInflater.from(parent.context).inflate(R.layout.album_item, parent, false)
-                    MyViewHolder(view)
+                    val binding = AlbumItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                    SearchViewHolder(binding)
                 }
                 2 -> {
-                    val view = TextView(this@SearchActivity)
-                    MyViewHolder(view)
+                    val binding = MessageTextBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                    SearchViewHolder(binding)
                 }
                 else -> throw IllegalArgumentException("Invalid view type")
             }
         }
         @SuppressLint("SetTextI18n")
-        override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
+        override fun onBindViewHolder(holder: SearchViewHolder, position: Int) {
             when (holder.itemViewType) {
                 0 -> {
+                    // 获取对应的写真集
                     val model = resultModels[position]
+                    val item = holder.binding as ModelItemBinding
                     // 创建点击事件
                     holder.itemView.setOnClickListener { startModelActivity(this@SearchActivity, model.id) }
-
                     // 更新头像
-                    val avatar = holder.itemView.findViewById<ImageView>(R.id.avatar)
                     Glide.with(this@SearchActivity)
                         .load("${model.avatar_image}/short500px")
                         .diskCacheStrategy(DiskCacheStrategy.ALL)
-                        .into(avatar)
-
+                        .into(item.avatar)
                     // 更新名称
-                    val name = holder.itemView.findViewById<TextView>(R.id.name)
-                    if(model.other_name != null){
-                        name.text = model.name + model.other_name
-                    } else {
-                        name.text = model.name
+                    item.name.text = when(model.other_name){
+                        null -> model.name
+                        else -> model.name + model.other_name
                     }
-
                     // 更新写真集数量及更新时间
-                    val number = holder.itemView.findViewById<TextView>(R.id.number)
-                    number.text = "写真集数量 ${model.total} 套"
-                    val time = holder.itemView.findViewById<TextView>(R.id.time)
-                    time.text = "最后更新于 ${calculateTimeAgo(model.latest_create_time)}"
-
+                    item.number.text = "写真集数量 ${model.total} 套"
+                    item.time.text = "最后更新于 ${calculateTimeAgo(model.latest_create_time)}"
                     // 更新关注按钮
-                    val following = holder.itemView.findViewById<MaterialButton>(R.id.following)
-                    val followed = holder.itemView.findViewById<MaterialButton>(R.id.followed)
                     fun setFollowed(){
-                        following.visibility = View.GONE
-                        followed.visibility = View.VISIBLE
+                        item.following.visibility = View.GONE
+                        item.followed.visibility = View.VISIBLE
                         model.is_collection = true
                     }
                     fun unLog(){
                         startLoginActivity(this@SearchActivity)
                     }
-
                     if(model.is_collection != null){
                         setFollowed()
                     } else {
-                        following.setOnClickListener {
+                        item.following.setOnClickListener {
                             setModelFollowing(this@SearchActivity, model, { setFollowed() }, { unLog() })
                         }
                     }
                 }
                 1 -> {
                     val album = resultAlbums[position - resultModels.size]
-                    createAlbumCard(this@SearchActivity, album, holder.itemView)
+                    createAlbumBinding(this@SearchActivity, album, holder.itemView, holder.binding as AlbumItemBinding)
                 }
                 2 -> {
                     val textView = holder.itemView as TextView
                     textView.setPadding(0, 35, 0, 50)
                     textView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                    textView.textAlignment = TextView.TEXT_ALIGNMENT_CENTER
                     textView.text = "已经到底了哦~"
                 }
             }
         }
     }
-    class MyViewHolder(view: View) : RecyclerView.ViewHolder(view)
+    class SearchViewHolder(val binding: ViewBinding) : RecyclerView.ViewHolder(binding.root)
 }

@@ -1,6 +1,5 @@
 package com.fixeam.icoser.ui.forbidden_page
 
-import android.app.AlertDialog
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -11,6 +10,7 @@ import androidx.appcompat.widget.Toolbar
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivityForbbidenBinding
 import com.fixeam.icoser.model.Option
+import com.fixeam.icoser.model.createSimpleDialog
 import com.fixeam.icoser.model.initOptionItem
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
@@ -111,18 +111,11 @@ class ForbiddenActivity : AppCompatActivity() {
                         }
                     },
                     onRemove = {
-                        val builder = AlertDialog.Builder(this)
-                        builder.setMessage("确认解除对内容($contentType $name)的屏蔽吗?")
-
-                        builder.setPositiveButton("确定") { _, _ ->
+                        createSimpleDialog(this, "确认解除对内容($contentType $name)的屏蔽吗?", true){
                             removeForbidden(this, forbidden.id){
                                 initPage()
                             }
                         }
-                        builder.setNegativeButton("取消") { _, _ -> }
-
-                        val alertDialog = builder.create()
-                        alertDialog.show()
                     }
                 ),
                 binding.aOption,

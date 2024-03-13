@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.button.MaterialButton xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:textSize="13sp"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginTop="12dp"
+    android:textColor="@color/white"
+    android:backgroundTint="@color/danger"
+    app:cornerRadius="50dp">
+
+</com.google.android.material.button.MaterialButton>

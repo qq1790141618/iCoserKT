@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import com.fixeam.icoser.ui.album_page.AlbumViewActivity
 import com.fixeam.icoser.ui.login_page.LoginActivity
-import com.fixeam.icoser.ui.media_page.MediaViewActivity
+import com.fixeam.icoser.ui.media_page.MediaActivity
 import com.fixeam.icoser.ui.model_page.ModelViewActivity
 import com.fixeam.icoser.ui.recommend_page.RecommendActivity
 import com.fixeam.icoser.ui.search_page.SearchActivity
@@ -59,9 +59,13 @@ fun startRecommendActivity(context: Context, type: Int): Intent {
  * @param [albumId] 写真集编号，默认-1
  * @return 打开的 Activity Intent
  */
-fun startMediaActivity(context: Context, id: Int = -1, modelId: Int = -1, albumId: Int = -1): Intent {
-    val intent = Intent(context, MediaViewActivity::class.java)
+fun startMediaActivity(context: Context, id: Int = -1, modelId: Int = -1, albumId: Int = -1, isMyFavor: Boolean = false, startFrom: Int = 0): Intent {
+    val intent = Intent(context, MediaActivity::class.java)
     intent.putExtra("id", id)
+    intent.putExtra("model-id", modelId)
+    intent.putExtra("album-id", albumId)
+    intent.putExtra("is-my-favor", isMyFavor)
+    intent.putExtra("start-from", startFrom)
     context.startActivity(intent)
     return intent
 }

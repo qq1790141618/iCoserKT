@@ -18,15 +18,19 @@ import retrofit2.Response
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import kotlin.math.min
+import kotlin.math.pow
 
 // 字节转可视化大小
-fun bytesToReadableSize(size: Int): String {
+fun bytesToReadableSize(size: Long): String {
     if (size <= 0) {
         return "0 B"
     }
-    val units = arrayOf("B", "KB", "MB")
-    val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
-    return String.format("%.1f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
+
+    val units = arrayOf("B", "KB", "MB", "GB")
+    val digitGroups = min((Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt(), units.size - 1)
+
+    return String.format("%.1f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
 }
 
 // 获取最佳视频分辨率

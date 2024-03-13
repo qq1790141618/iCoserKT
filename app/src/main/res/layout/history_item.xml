@@ -2,10 +2,12 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="90dp"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_marginHorizontal="9dp"
     android:layout_marginTop="9dp"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@drawable/rounded_square_7dp">
+    android:background="@drawable/rounded_square_7dp"
+    tools:viewBindingIgnore="false">
 
     <androidx.cardview.widget.CardView
         android:id="@+id/poster_card"
@@ -48,7 +50,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <include layout="@layout/tag" />
+            <include android:id="@+id/tag" layout="@layout/tag" />
 
             <Space
                 android:layout_width="0dp"

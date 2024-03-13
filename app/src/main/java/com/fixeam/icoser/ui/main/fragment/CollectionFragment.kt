@@ -25,6 +25,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.FragmentCollectionBinding
+import com.fixeam.icoser.databinding.PublishItemBinding
 import com.fixeam.icoser.model.calculateTimeAgo
 import com.fixeam.icoser.model.getScreenWidth
 import com.fixeam.icoser.model.startAlbumActivity
@@ -39,8 +40,6 @@ import com.fixeam.icoser.network.setForbidden
 import com.fixeam.icoser.network.setModelFollowingById
 import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.ui.image_preview.ImagePreviewActivity
-import com.google.android.flexbox.FlexboxLayout
-import com.google.android.material.button.MaterialButton
 
 class CollectionFragment : Fragment() {
     private lateinit var binding: FragmentCollectionBinding
@@ -67,7 +66,7 @@ class CollectionFragment : Fragment() {
             imageView.startAnimation(AnimationUtils.loadAnimation(requireContext(), R.anim.loading))
             imageView.visibility = View.VISIBLE
 
-            requestFollowData(requireContext()) {
+            requestFollowData() {
                 imageView.clearAnimation()
                 imageView.visibility = View.GONE
 
@@ -92,7 +91,7 @@ class CollectionFragment : Fragment() {
         val refreshLayout = binding.refreshLayout
         refreshLayout.visibility = View.VISIBLE
         refreshLayout.setOnRefreshListener {
-            requestFollowData(requireContext(), true){
+            requestFollowData(true){
                 val followList = binding.followList
                 val adapter = followList.adapter
                 adapter?.notifyDataSetChanged()
@@ -103,7 +102,7 @@ class CollectionFragment : Fragment() {
         }
         refreshLayout.setOnLoadMoreListener {
             val index = followAlbumList.size
-            requestFollowData(requireContext()) {
+            requestFollowData() {
                 adapter?.notifyItemInserted(index)
                 refreshLayout.finishLoadMore()
             }
@@ -157,8 +156,8 @@ class CollectionFragment : Fragment() {
 
     inner class MyListAdapter : RecyclerView.Adapter<MyViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
-            val itemView = LayoutInflater.from(requireContext()).inflate(R.layout.publish_item, parent, false)
-            return MyViewHolder(itemView)
+            val binding = PublishItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return MyViewHolder(binding)
         }
         override fun getItemCount(): Int {
             return followAlbumList.size
@@ -167,14 +166,12 @@ class CollectionFragment : Fragment() {
         override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
             // 修改holder
             val album = followAlbumList[position]
-            holder.itemView.setOnClickListener {
-                startAlbumActivity(requireContext(), album.id)
-            }
+            holder.itemView.setOnClickListener { startAlbumActivity(requireContext(), album.id) }
 
             // 修改上方内容
-            val followButton = holder.itemView.findViewById<MaterialButton>(R.id.following)
-            val followedButton = holder.itemView.findViewById<MaterialButton>(R.id.followed)
-            val closeButton = holder.itemView.findViewById<ImageView>(R.id.close)
+            val followButton = holder.binding.following
+            val followedButton = holder.binding.followed
+            val closeButton = holder.binding.close
 
             if (album.type == "recommend" || album.type == "push"){
                 followButton.visibility = View.VISIBLE
@@ -200,8 +197,8 @@ class CollectionFragment : Fragment() {
                 closeButton.visibility = View.GONE
             }
 
-            val fromIcon = holder.itemView.findViewById<ImageView>(R.id.from_icon)
-            val fromText = holder.itemView.findViewById<TextView>(R.id.from_text)
+            val fromIcon = holder.binding.fromIcon
+            val fromText = holder.binding.fromText
             when(album.type){
                 "follow" -> {
                     fromIcon.setImageResource(R.drawable.evaluate)
@@ -218,27 +215,24 @@ class CollectionFragment : Fragment() {
             }
 
             // 设置模特内容
-            val avatar = holder.itemView.findViewById<ImageView>(R.id.avatar)
             Glide.with(requireContext())
                 .load("${album.model_avatar_image}/short500px")
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .transform(RoundedCorners(250))
-                .into(avatar)
-            val modelName = holder.itemView.findViewById<TextView>(R.id.model_name)
-            modelName.text = album.model
-            
-            avatar.setOnClickListener { startModelActivity(requireContext(), album.model_id) }
-            modelName.setOnClickListener { startModelActivity(requireContext(), album.model_id) }
+                .into(holder.binding.avatar)
+            holder.binding.modelName.text = album.model
+            holder.binding.avatar.setOnClickListener { startModelActivity(requireContext(), album.model_id) }
+            holder.binding.modelName.setOnClickListener { startModelActivity(requireContext(), album.model_id) }
 
             // 设置动态内容
-            val publishContentText = holder.itemView.findViewById<TextView>(R.id.publish_content_text)
+            val publishContentText = holder.binding.publishContentText
             publishContentText.text = album.name
             if(album.tags != null){
                 publishContentText.text = album.name + ", " + album.tags!!.joinToString(", ")
             }
-            val publishContent = holder.itemView.findViewById<FlexboxLayout>(R.id.publish_content_media)
+            val publishContent = holder.binding.publishContentMedia
             publishContent.removeAllViews()
-            val publishTime = holder.itemView.findViewById<TextView>(R.id.publish_time)
+            val publishTime = holder.binding.publishTime
             publishTime.text = "发布于 ${calculateTimeAgo(album.create_time)}"
 
             // 计算动态内容宽度(3像素的容差)
@@ -411,5 +405,5 @@ class CollectionFragment : Fragment() {
         }
     }
 
-    class MyViewHolder(view: View) : RecyclerView.ViewHolder(view)
+    class MyViewHolder(val binding: PublishItemBinding) : RecyclerView.ViewHolder(binding.root)
 }

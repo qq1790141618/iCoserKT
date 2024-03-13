@@ -23,7 +23,7 @@ interface DownloadService {
     fun download(@Url url: String): Call<ResponseBody>
 }
 sealed class DownloadState {
-    data class InProgress(val progress: Int, val downloadedBytes: Int, val totalBytes: Int) : DownloadState()
+    data class InProgress(val progress: Int, val downloadedBytes: Long, val totalBytes: Long) : DownloadState()
     data class Success(val file: File) : DownloadState()
     data class Error(val throwable: Throwable) : DownloadState()
 }
@@ -47,7 +47,7 @@ object DownloadManager {
         }.flowOn(Dispatchers.IO)
     }
 
-    private inline fun saveToFile(responseBody: ResponseBody, file: File, progressListener: (Int, Int, Int) -> Unit) {
+    private inline fun saveToFile(responseBody: ResponseBody, file: File, progressListener: (Int, Long, Long) -> Unit) {
         val total = responseBody.contentLength()
         var bytesCopied = 0
         var emittedProgress = 0
@@ -61,7 +61,7 @@ object DownloadManager {
                 bytes = input.read(buffer)
                 val progress = (bytesCopied * 100 / total).toInt()
                 if (progress - emittedProgress > 0) {
-                    progressListener(progress, bytesCopied, total.toInt())
+                    progressListener(progress, bytesCopied.toLong(), total)
                     emittedProgress = progress
                 }
             }

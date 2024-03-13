@@ -1,14 +1,12 @@
 package com.fixeam.icoser.ui.history_page
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -20,6 +18,8 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivityHistoryBinding
+import com.fixeam.icoser.databinding.HistoryItemBinding
+import com.fixeam.icoser.model.createSimpleDialog
 import com.fixeam.icoser.model.setStatusBar
 import com.fixeam.icoser.model.startAlbumActivity
 import com.fixeam.icoser.model.startLoginActivity
@@ -82,10 +82,7 @@ class HistoryActivity : AppCompatActivity() {
         // 设置悬浮按钮
         binding.toUp.setOnClickListener { binding.historyList.smoothScrollToPosition(0) }
         binding.clearHistory.setOnClickListener {
-            val builder = AlertDialog.Builder(this)
-            builder.setMessage("确认清除所有的浏览历史记录吗?")
-
-            builder.setPositiveButton("确定") { _, _ ->
+            createSimpleDialog(this, "确认清除所有的浏览历史记录吗?", true){
                 clearUserHistory(this){
                     if(it){
                         getUserHistory(this, false){
@@ -95,10 +92,6 @@ class HistoryActivity : AppCompatActivity() {
                     }
                 }
             }
-            builder.setNegativeButton("取消") { _, _ -> }
-
-            val alertDialog = builder.create()
-            alertDialog.show()
         }
 
         // 安装页面
@@ -204,14 +197,14 @@ class HistoryActivity : AppCompatActivity() {
             return userHistoryList.size
         }
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.history_item, parent, false)
-            return MyViewHolder(view)
+            val binding = HistoryItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return MyViewHolder(binding)
         }
         @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
             val historyItem = userHistoryList[position]
-            val idDouble: Double = historyItem.content["id"] as Double
-            val id = idDouble.toInt()
+            val item = holder.binding
+            val id = historyItem.content["id"]?.toInt()
 
             holder.itemView.setOnClickListener {
                 var doNotSetToken = false
@@ -220,17 +213,19 @@ class HistoryActivity : AppCompatActivity() {
                         doNotSetToken = true
                     }
                 }
-                when(historyItem.type){
-                    "VISIT_ALBUM" -> startAlbumActivity(this@HistoryActivity, id, doNotSetToken)
-                    "VISIT_MODEL" -> startModelActivity(this@HistoryActivity, id, doNotSetToken)
-                    "VISIT_MEDIA" -> startMediaActivity(this@HistoryActivity, id)
+                id?.let {
+                    when(historyItem.type){
+                        "VISIT_ALBUM" -> startAlbumActivity(this@HistoryActivity, id, doNotSetToken)
+                        "VISIT_MODEL" -> startModelActivity(this@HistoryActivity, id, doNotSetToken)
+                        "VISIT_MEDIA" -> startMediaActivity(this@HistoryActivity, id)
+                    }
                 }
             }
 
             val imageUrl = when(historyItem.type){
-                "VISIT_ALBUM" -> historyItem.content["poster"].toString()
-                "VISIT_MODEL" -> historyItem.content["avatar_image"].toString()
-                "VISIT_MEDIA" -> historyItem.content["cover"].toString()
+                "VISIT_ALBUM" -> historyItem.content["poster"]
+                "VISIT_MODEL" -> historyItem.content["avatar_image"]
+                "VISIT_MEDIA" -> historyItem.content["cover"]
                 else -> ""
             }
             val tagText = when(historyItem.type){
@@ -246,37 +241,30 @@ class HistoryActivity : AppCompatActivity() {
                 else -> "其他"
             }
 
-            val posterBackground = holder.itemView.findViewById<ImageView>(R.id.poster_background)
             Glide.with(this@HistoryActivity)
                 .load("${imageUrl}/short500px")
                 .apply(RequestOptions.bitmapTransform(GlideBlurTransformation(this@HistoryActivity)))
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .into(posterBackground)
-            val poster = holder.itemView.findViewById<ImageView>(R.id.poster)
+                .into(item.posterBackground)
             Glide.with(this@HistoryActivity)
                 .load("${imageUrl}/short1200px")
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .into(poster)
+                .into(item.poster)
 
-            val tagTextView = holder.itemView.findViewById<TextView>(R.id.text)
-            tagTextView.text = tagText
-            val nameTextView = holder.itemView.findViewById<TextView>(R.id.name)
-            nameTextView.text = nameText
-            val timeTextView = holder.itemView.findViewById<TextView>(R.id.time)
-            timeTextView.text = historyItem.time
+            item.tag.text.text = tagText
+            item.name.text = nameText
+            item.time.text = historyItem.time
 
-            val removeButton = holder.itemView.findViewById<ImageView>(R.id.close)
-            removeButton.setOnClickListener {
+            item.close.setOnClickListener {
                 clearUserHistory(this@HistoryActivity, historyItem.id){
                     if(it){
                         userHistoryList.removeAt(position)
-                        val list = findViewById<RecyclerView>(R.id.history_list)
-                        list.adapter?.notifyItemRemoved(position)
+                        binding.historyList.adapter?.notifyItemRemoved(position)
                     }
                 }
             }
         }
     }
 
-    class MyViewHolder(view: View) : RecyclerView.ViewHolder(view)
+    class MyViewHolder(var binding: HistoryItemBinding) : RecyclerView.ViewHolder(binding.root)
 }

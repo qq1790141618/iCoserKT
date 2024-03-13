@@ -1,7 +1,6 @@
 package com.fixeam.icoser.ui.setting_page
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
@@ -19,6 +18,7 @@ import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivitySettingBinding
 import com.fixeam.icoser.model.Option
 import com.fixeam.icoser.model.bytesToReadableSize
+import com.fixeam.icoser.model.createSimpleDialog
 import com.fixeam.icoser.model.initOptionItem
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
@@ -107,6 +107,7 @@ class SettingActivity : AppCompatActivity() {
                 iconId = R.drawable.st_storage_port,
                 iconColor = ColorStateList.valueOf(Color.parseColor("#a9aeb8")),
                 textId = R.string.cache_size,
+                contentText = "计算中...",
                 showHrefIcon = false
             ),
             binding.bOption,
@@ -198,16 +199,12 @@ class SettingActivity : AppCompatActivity() {
                 showHrefIcon = false,
                 clearMargin = true,
                 onClick = {
-                    val builder = AlertDialog.Builder(this)
-                    builder.setMessage("确认清除所有缓存吗? 可能会小幅影响页面加载速度。")
-
-                    builder.setPositiveButton("确定") { _, _ ->
-                        clearGlideCache(this)
+                    createSimpleDialog(this, "确认清除所有缓存吗? 可能会小幅影响页面加载速度。", true){
+                        clearGlideCache(this){
+                            Toast.makeText(this, "缓存已清除", Toast.LENGTH_SHORT).show()
+                            setCacheSize()
+                        }
                     }
-                    builder.setNegativeButton("取消") { _, _ -> }
-
-                    val alertDialog = builder.create()
-                    alertDialog.show()
                 }
             ),
             binding.bOption,
@@ -269,14 +266,18 @@ class SettingActivity : AppCompatActivity() {
         }
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     @SuppressLint("SetTextI18n")
     private fun setCacheSize(){
-        var totalSize: Long = 0
-        totalSize += getGlideCacheSize(this)
+        GlobalScope.launch(Dispatchers.IO) {
+            val totalSize = getGlideCacheSize(this@SettingActivity)
 
-        val resolutionRatioOptionItem = binding.bOption.getChildAt(0)
-        val contentText = resolutionRatioOptionItem.findViewById<TextView>(R.id.content_text)
-        contentText.text = bytesToReadableSize(totalSize.toInt())
+            withContext(Dispatchers.Main) {
+                val resolutionRatioOptionItem = binding.bOption.getChildAt(0)
+                val contentText = resolutionRatioOptionItem.findViewById<TextView>(R.id.content_text)
+                contentText.text = bytesToReadableSize(totalSize)
+            }
+        }
     }
 
     private fun getGlideCacheSize(context: Context): Long {
@@ -310,13 +311,12 @@ class SettingActivity : AppCompatActivity() {
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    private fun clearGlideCache(context: Context) {
+    private fun clearGlideCache(context: Context, callback: () -> Unit = {}) {
         GlobalScope.launch(Dispatchers.IO) {
             Glide.get(context).clearDiskCache()
 
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "缓存已清除", Toast.LENGTH_SHORT).show()
-                setCacheSize()
+                callback()
             }
         }
     }

@@ -10,9 +10,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
+import android.os.Looper
 import android.provider.OpenableColumns
 import android.text.Editable
-import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -27,6 +27,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivityUserCenterBinding
+import com.fixeam.icoser.databinding.TextInputBinding
 import com.fixeam.icoser.model.CascaderItem
 import com.fixeam.icoser.model.Option
 import com.fixeam.icoser.model.copyToClipboard
@@ -43,9 +44,6 @@ import com.fixeam.icoser.network.setUserInform
 import com.fixeam.icoser.network.userInform
 import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.network.verifyTokenAndGetUserInform
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.yalantis.ucrop.UCrop
@@ -85,7 +83,7 @@ class UserCenterActivity : AppCompatActivity() {
             startLoginActivity(this)
         } else {
             val runnable: Runnable?
-            val handler = Handler()
+            val handler = Handler(Looper.getMainLooper())
             runnable = object: Runnable{
                 override fun run(){
                     verifyTokenAndGetUserInform(userToken!!, this@UserCenterActivity)
@@ -116,31 +114,27 @@ class UserCenterActivity : AppCompatActivity() {
         // 监听昵称编辑
         setOptionItemPress(binding.nicknameOption, isDarken(this)){
             val builder = AlertDialog.Builder(this)
-            val textInput = layoutInflater.inflate(R.layout.text_input, null)
-            textInput.findViewById<TextInputLayout>(R.id.label).hint = getString(R.string.user_nickname)
-            val textEdit = textInput.findViewById<TextInputEditText>(R.id.edit)
-            textEdit.text = Editable.Factory.getInstance().newEditable(userInform?.nickname)
+            val textInput = TextInputBinding.inflate(layoutInflater)
+            textInput.label.hint = getString(R.string.user_nickname)
+            textInput.edit.text = Editable.Factory.getInstance().newEditable(userInform?.nickname)
 
-            val dialogView: View = textInput
-            builder.setView(dialogView)
+            builder.setView(textInput.root)
             val alertDialog = builder.create()
 
-            val closeButton = textInput.findViewById<MaterialButton>(R.id.close)
-            closeButton.setOnClickListener {
+            textInput.close.setOnClickListener {
                 alertDialog.cancel()
             }
-            val confirmButton = textInput.findViewById<MaterialButton>(R.id.confirm)
-            confirmButton.setOnClickListener {
-                val name = textEdit.text.toString()
+            textInput.confirm.setOnClickListener {
+                val name = textInput.edit.text.toString()
                 if(name != ""){
-                    confirmButton.setIconResource(R.drawable.loading2)
-                    closeButton.isEnabled = false
-                    confirmButton.isEnabled = false
+                    textInput.confirm.setIconResource(R.drawable.loading2)
+                    textInput.close.isEnabled = false
+                    textInput.confirm.isEnabled = false
 
                     fun closeDialog(){
-                        confirmButton.icon = null
-                        closeButton.isEnabled = true
-                        confirmButton.isEnabled = true
+                        textInput.confirm.icon = null
+                        textInput.close.isEnabled = true
+                        textInput.confirm.isEnabled = true
                         alertDialog.cancel()
                     }
 

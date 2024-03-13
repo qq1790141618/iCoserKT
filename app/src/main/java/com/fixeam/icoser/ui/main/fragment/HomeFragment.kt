@@ -2,7 +2,6 @@ package com.fixeam.icoser.ui.main.fragment
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -25,10 +24,15 @@ import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import androidx.viewbinding.ViewBinding
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
+import com.fixeam.icoser.databinding.AlbumFlashCardBinding
+import com.fixeam.icoser.databinding.AlbumFlashPanelBinding
+import com.fixeam.icoser.databinding.ForbiddenOptionBinding
 import com.fixeam.icoser.databinding.FragmentHomeBinding
+import com.fixeam.icoser.databinding.FragmentHomeTopBinding
 import com.fixeam.icoser.model.changeBackgroundDim
 import com.fixeam.icoser.model.checkForUpdate
 import com.fixeam.icoser.model.hotData
@@ -51,7 +55,6 @@ import com.fixeam.icoser.network.setForbidden
 import com.fixeam.icoser.ui.login_page.LoginActivity
 import com.fixeam.icoser.ui.search_page.SearchActivity
 import com.fixeam.icoser.ui.update_dialog.UpdateActivity
-import com.google.android.material.button.MaterialButton
 import com.youth.banner.Banner
 import com.youth.banner.adapter.BannerImageAdapter
 import com.youth.banner.holder.BannerImageHolder
@@ -155,18 +158,18 @@ class HomeFragment : Fragment() {
         bannerLayoutParams.height = bannerHeightPx
         banner.layoutParams = bannerLayoutParams
     }
-    private fun setCarouselData(rView: View) {
+    private fun setCarouselData(binding: FragmentHomeTopBinding) {
         if(carouselData.isNotEmpty()){
-            initCarouselData(rView)
+            initCarouselData(binding)
             return
         }
         requestCarouselData(requireContext()){
             carouselData = it
-            initCarouselData(rView)
+            initCarouselData(binding)
         }
     }
-    private fun initCarouselData(rView: View){
-        val banner: Banner<Carousel, BannerImageAdapter<Carousel>> = rView.findViewById(R.id.banner)
+    private fun initCarouselData(binding: FragmentHomeTopBinding){
+        val banner: Banner<Carousel, BannerImageAdapter<Carousel>> = binding.root.findViewById(R.id.banner)
         setCarouselHeight(banner)
 
         banner.setAdapter(object : BannerImageAdapter<Carousel>(carouselData) {
@@ -193,27 +196,25 @@ class HomeFragment : Fragment() {
                 accessLog(requireContext(), albumId.toString(), "CLICK_CAROUSEL"){ }
             }
 
-        val hotButton = rView.findViewById<MaterialButton>(R.id.hot)
-        hotButton.setOnClickListener { startRecommendActivity(requireContext(), 0) }
-        val newsButton = rView.findViewById<MaterialButton>(R.id.news)
-        newsButton.setOnClickListener { startRecommendActivity(requireContext(), 1) }
+        binding.carouselCard.hot.setOnClickListener { startRecommendActivity(requireContext(), 0) }
+        binding.carouselCard.news.setOnClickListener { startRecommendActivity(requireContext(), 1) }
     }
 
     // 热门模块相关变量和函数
     private var hotDataTake: List<Albums> = listOf()
-    private fun setHotData(rView: View) {
-        rView.findViewById<TextView>(R.id.hot_text).typeface = typeface
+    private fun setHotData(binding: FragmentHomeTopBinding) {
+        binding.hotText.typeface = typeface
         if(hotDataTake.isNotEmpty()){
-            initHotData(rView)
+            initHotData(binding)
             return
         }
         requestHotData(requireContext()){
             hotDataTake = hotData.take(4)
-            initHotData(rView)
+            initHotData(binding)
         }
     }
-    private fun initHotData(rView: View){
-        val linearLayout: LinearLayout = rView.findViewById(R.id.hot_content)
+    private fun initHotData(binding: FragmentHomeTopBinding){
+        val linearLayout: LinearLayout = binding.hotCard.hotContent
 
         for ((index, album) in hotDataTake.withIndex()) {
             val cardView = linearLayout.getChildAt(index) as CardView
@@ -234,20 +235,20 @@ class HomeFragment : Fragment() {
 
     // 模特推荐模块相关变量和函数
     private var models: List<Models> = listOf()
-    private fun setModelData(rView: View) {
-        rView.findViewById<TextView>(R.id.model_text).typeface = typeface
+    private fun setModelData(binding: FragmentHomeTopBinding) {
+        binding.modelText.typeface = typeface
 
         if(models.isNotEmpty()){
-            initModelData(rView)
+            initModelData(binding)
             return
         }
         requestRecommendModelData(requireContext()){
             models = it
-            initModelData(rView)
+            initModelData(binding)
         }
     }
-    private fun initModelData(rView: View){
-        val modelView: LinearLayout = rView.findViewById(R.id.model_view)
+    private fun initModelData(binding: FragmentHomeTopBinding){
+        val modelView: LinearLayout = binding.modelView
         modelView.removeAllViews()
         for (model in models) {
             if(model.album.size < 4){
@@ -390,20 +391,21 @@ class HomeFragment : Fragment() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HomeViewHolder {
             return when (viewType) {
                 viewTypeInsertion -> {
-                    val view = LayoutInflater.from(parent.context).inflate(R.layout.fragment_home_top, parent, false)
+                    val binding = FragmentHomeTopBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+
+                    val view = binding.root
                     val layoutParams = StaggeredGridLayoutManager.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
                     )
                     layoutParams.isFullSpan = true
                     view.layoutParams = layoutParams
-                    view.isFocusable = true
-                    HomeViewHolder(view)
+
+                    HomeViewHolder(binding)
                 }
                 viewTypeItem -> {
-                    val view = LayoutInflater.from(parent.context).inflate(R.layout.album_flash_card, parent, false)
-                    view.isFocusable = false
-                    HomeViewHolder(view)
+                    val binding = AlbumFlashCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                    HomeViewHolder(binding)
                 }
                 else -> throw IllegalArgumentException("Invalid view type")
             }
@@ -418,26 +420,26 @@ class HomeFragment : Fragment() {
             val item = holder.itemView
             when (holder.itemViewType) {
                 viewTypeInsertion -> {
+                    val binding = holder.binding as FragmentHomeTopBinding
                     // 加载轮播图片
-                    setCarouselData(item)
+                    setCarouselData(binding)
                     // 加载热门项目
-                    setHotData(item)
+                    setHotData(binding)
                     // 加载模特推荐
-                    setModelData(item)
+                    setModelData(binding)
                     // 设置猜你喜欢字体
-                    item.findViewById<TextView>(R.id.like_text).typeface = typeface
+                    binding.likeText.typeface = typeface
                 }
                 viewTypeItem -> {
                     // 绑定瀑布流布局数据
                     val album = albumList[position - 1]
-
+                    val binding = holder.binding as AlbumFlashCardBinding
                     // 显示已屏蔽遮罩层
-                    val blockOverlay = item.findViewById<LinearLayout>(R.id.block_overlay)
                     if(album.isForbidden){
-                        blockOverlay.visibility = View.VISIBLE
+                        binding.blockOverlay.visibility = View.VISIBLE
                         item.setOnClickListener(null)
                     } else {
-                        blockOverlay.visibility = View.GONE
+                        binding.blockOverlay.visibility = View.GONE
                         item.setOnClickListener{
                             accessLog(requireContext(), "${album.images}", "CLICK_RECOMMEND"){ }
                             startAlbumActivity(requireContext(), album.id)
@@ -445,18 +447,15 @@ class HomeFragment : Fragment() {
                     }
 
                     // 设置主要内容
-                    val imageView = item.findViewById<ImageView>(R.id.image_view)
                     Glide.with(requireContext())
                         .load("${album.images}/short1200px")
                         .placeholder(R.drawable.image_holder)
                         .diskCacheStrategy(DiskCacheStrategy.ALL)
-                        .into(imageView)
-
-                    val textView = item.findViewById<TextView>(R.id.text_view)
-                    textView.text = "${album.model} ${album.name}"
+                        .into(binding.imageView)
+                    binding.textView.text = "${album.model} ${album.name}"
 
                     // 喜欢按钮操作
-                    val likeButton = item.findViewById<MaterialButton>(R.id.like_button)
+                    val likeButton = binding.likeButton
                     if(album.is_collection != null){
                         likeButton.setIconResource(R.drawable.like_fill)
                         likeButton.iconTint = ColorStateList.valueOf(Color.parseColor("#FDCDC5"))
@@ -503,15 +502,14 @@ class HomeFragment : Fragment() {
                     }
 
                     // 更多按钮操作
-                    val moreButton = item.findViewById<MaterialButton>(R.id.more_button)
                     item.setOnLongClickListener {
-                        moreButton.callOnClick()
+                        binding.moreButton.callOnClick()
                         true
                     }
-                    moreButton.setOnClickListener{
+                    binding.moreButton.setOnClickListener{
                         fun createForbiddenOverlay(){
                             album.isForbidden = true
-                            blockOverlay.visibility = View.VISIBLE
+                            binding.blockOverlay.visibility = View.VISIBLE
                             item.setOnClickListener(null)
                         }
                         initAlbumFlashPanel(album){ createForbiddenOverlay() }
@@ -520,13 +518,15 @@ class HomeFragment : Fragment() {
             }
         }
     }
-    class HomeViewHolder(view: View) : RecyclerView.ViewHolder(view)
+    class HomeViewHolder(val binding: ViewBinding) : RecyclerView.ViewHolder(binding.root)
 
     // 打开猜你喜欢的写真集更多按钮
     @SuppressLint("SetTextI18n", "InflateParams")
     private fun initAlbumFlashPanel(album: Albums, forbiddenCallback: () -> Unit){
         changeBackgroundDim(true, requireActivity())
-        val flashPanel = layoutInflater.inflate(R.layout.album_flash_panel, null)
+        val flashPanelBinding = AlbumFlashPanelBinding.inflate(LayoutInflater.from(requireContext()), null, false)
+//        val flashPanel = layoutInflater.inflate(R.layout.album_flash_panel, null)
+        val flashPanel = flashPanelBinding.root
         val popupWindow = PopupWindow(
             flashPanel,
             LayoutParams.MATCH_PARENT,
@@ -545,31 +545,26 @@ class HomeFragment : Fragment() {
         }
 
         // 调整面板内容
-        flashPanel.findViewById<TextView>(R.id.text_info)?.text = "${album.model} ${album.name}"
-        val posterImage = flashPanel.findViewById<ImageView>(R.id.poster_info)
-        posterImage?.let { it1 ->
-            Glide.with(requireContext())
-                .load("${album.poster}/short500px")
-                .placeholder(R.drawable.image_holder)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .into(it1)
-        }
+        flashPanelBinding.textInfo.text = "${album.model} ${album.name}"
+        Glide.with(requireContext())
+            .load("${album.poster}/short500px")
+            .placeholder(R.drawable.image_holder)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .into(flashPanelBinding.posterInfo)
 
         // 调整按钮操作
-        val closeButton = flashPanel.findViewById<MaterialButton>(R.id.close)
-        closeButton?.setOnClickListener {
+        flashPanelBinding.close.setOnClickListener {
             popupWindow.dismiss()
         }
-        val viewAlbums = flashPanel.findViewById<MaterialButton>(R.id.view_album)
-        viewAlbums?.setOnClickListener {
+        flashPanelBinding.viewAlbum.setOnClickListener {
             startAlbumActivity(requireContext(), album.id)
         }
-        val collection = flashPanel.findViewById<MaterialButton>(R.id.collection)
+        val collection = flashPanelBinding.collection
         if(album.is_collection != null){
-            collection?.setIconResource(R.drawable.favor_fill)
-            collection?.text = "${getString(R.string.uncollection)}(${album.is_collection})"
+            collection.setIconResource(R.drawable.favor_fill)
+            collection.text = "${getString(R.string.uncollection)}(${album.is_collection})"
         }
-        collection?.setOnClickListener {
+        collection.setOnClickListener {
             fun unLog(){
                 collection.setIconResource(R.drawable.favor)
                 val intent = Intent(requireContext(), LoginActivity::class.java)
@@ -602,28 +597,25 @@ class HomeFragment : Fragment() {
                 )
             }
         }
-        val share = flashPanel.findViewById<MaterialButton>(R.id.share)
-        share?.setOnClickListener {
+        flashPanelBinding.share.setOnClickListener {
             shareTextContent(
                 context = requireContext(),
                 text = "来自iCoser的分享内容：模特 - ${album.model}, 写真集 - ${album.name}, 访问链接：https://app.fixeam.com/album?id=${album.id}"
             )
         }
-        val forbidden = flashPanel.findViewById<MaterialButton>(R.id.forbidden)
-        forbidden?.setOnClickListener {
+        flashPanelBinding.forbidden.setOnClickListener {
             val builder = AlertDialog.Builder(context)
-            val inflater = requireContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            val dialogView: View = inflater.inflate(R.layout.forbidden_option, null)
+            val forbiddenOptionBinding = ForbiddenOptionBinding.inflate(LayoutInflater.from(requireContext()), null, false)
+            val dialogView: View = forbiddenOptionBinding.root
 
             builder.setView(dialogView)
             val alertDialog = builder.create()
             alertDialog.show()
 
-            val dialogClose = dialogView.findViewById<MaterialButton>(R.id.close)
-            dialogClose.setOnClickListener {
+            forbiddenOptionBinding.close.setOnClickListener {
                 alertDialog.cancel()
             }
-            val dialogForbiddenAlbums = dialogView.findViewById<MaterialButton>(R.id.forbidden_album)
+            val dialogForbiddenAlbums = forbiddenOptionBinding.forbiddenAlbum
             dialogForbiddenAlbums.setOnClickListener {
                 dialogForbiddenAlbums.setIconResource(R.drawable.loading2)
 
@@ -643,7 +635,7 @@ class HomeFragment : Fragment() {
 
                 setForbidden(requireContext(), album.id, "album", { callback() }, { unLog() })
             }
-            val dialogForbiddenModel = dialogView.findViewById<MaterialButton>(R.id.forbidden_model)
+            val dialogForbiddenModel = forbiddenOptionBinding.forbiddenModel
             dialogForbiddenModel.setOnClickListener {
                 dialogForbiddenModel.setIconResource(R.drawable.loading2)
 
@@ -664,8 +656,7 @@ class HomeFragment : Fragment() {
                 setForbidden(requireContext(), album.model_id, "model", { callback() }, { unLog() })
             }
         }
-        val model = flashPanel.findViewById<MaterialButton>(R.id.view_model)
-        model?.setOnClickListener {
+        flashPanelBinding.viewModel.setOnClickListener {
             startModelActivity(requireContext(), album.model_id)
         }
     }

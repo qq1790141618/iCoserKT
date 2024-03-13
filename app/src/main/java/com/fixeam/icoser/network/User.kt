@@ -4,18 +4,15 @@ import android.app.AlertDialog
 import android.content.Context
 import android.net.ConnectivityManager
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.fixeam.icoser.R
-import com.fixeam.icoser.model.removeSharedPreferencesKey
+import com.fixeam.icoser.databinding.CollectionFoldSelectorBinding
+import com.fixeam.icoser.databinding.TextInputBinding
 import com.fixeam.icoser.model.sendAlbumNotification
 import com.fixeam.icoser.model.userFragment
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -25,6 +22,7 @@ var userToken: String? = null
 var userInform: UserInform? = null
 var userCollection: List<Collection> = listOf()
 var userFollow: List<Follow> = listOf()
+var userMediaLike: List<MediaLike> = listOf()
 var userCollectionFold: MutableList<CollectionFold> = mutableListOf()
 var userForbidden: List<Forbidden> = listOf()
 var userHistory: HistoryResponse? = null
@@ -84,7 +82,7 @@ fun verifyTokenAndGetUserInform(access_token: String, context: Context){
                         userToken = access_token
                         userFragment?.initUserCard(responseBody.inform)
 
-                        requestFollowData(context, true){
+                        requestFollowData(true){
                             for (album in followAlbumList){
                                 if(album.type == "follow" && album.isNew){
                                     sendAlbumNotification(context, album)
@@ -97,8 +95,9 @@ fun verifyTokenAndGetUserInform(access_token: String, context: Context){
                         getUserHistory(context){ }
                         getUserFollow(context){ }
                         getUserForbidden(context){ }
+                        getUserMediaLike{}
                     } else {
-                        removeSharedPreferencesKey("access_token", context)
+                        context.getSharedPreferences("user", Context.MODE_PRIVATE).edit().remove("access_token").apply()
                     }
                 }
             }
@@ -494,12 +493,11 @@ fun openCollectionSelector(context: Context, album: Albums, callback: (name: Str
     }
 
     val builder = AlertDialog.Builder(context)
-    val inflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-    val dialogView: View = inflater.inflate(R.layout.collection_fold_selector, null)
-    builder.setView(dialogView)
+    val binding = CollectionFoldSelectorBinding.inflate(LayoutInflater.from(context), null, false)
+    builder.setView(binding.root)
     val alertDialog = builder.create()
 
-    val radioGroup = dialogView.findViewById<RadioGroup>(R.id.radio_group)
+    val radioGroup = binding.radioGroup
     if(userCollectionFold.isEmpty()){
         getUserCollectionFold(context){
             getUserCollection(context) {
@@ -510,36 +508,32 @@ fun openCollectionSelector(context: Context, album: Albums, callback: (name: Str
         initCollectionSelectorRadioGroup(context, radioGroup)
     }
 
-    val createButton = dialogView.findViewById<MaterialButton>(R.id.create)
-    createButton.setOnClickListener {
+    binding.create.setOnClickListener {
         val builder1 = AlertDialog.Builder(context)
-        val textInput = inflater.inflate(R.layout.text_input, null)
-        textInput.findViewById<TextInputLayout>(R.id.label).hint = "收藏夹名称"
+        val binding1 = TextInputBinding.inflate(LayoutInflater.from(context), null, false)
+        binding1.label.hint = "收藏夹名称"
 
-        val dialogView1: View = textInput
-        builder1.setView(dialogView1)
+        builder1.setView(binding1.root)
         val alertDialog1 = builder1.create()
 
-        val closeButton1 = textInput.findViewById<MaterialButton>(R.id.close)
-        closeButton1.setOnClickListener {
+        binding1.close.setOnClickListener {
             alertDialog1.cancel()
         }
-        val confirmButton1 = textInput.findViewById<MaterialButton>(R.id.confirm)
-        confirmButton1.setOnClickListener {
-            var name = textInput.findViewById<TextInputEditText>(R.id.edit).text.toString()
+        binding1.confirm.setOnClickListener {
+            var name = binding1.edit.text.toString()
             if(name == ""){
                 name = "未命名的收藏夹"
             }
-            confirmButton1.setIconResource(R.drawable.loading2)
-            closeButton1.isEnabled = false
-            confirmButton1.isEnabled = false
+            binding1.confirm.setIconResource(R.drawable.loading2)
+            binding1.close.isEnabled = false
+            binding1.confirm.isEnabled = false
 
             setUserCollectionFold(context, name){
                 getUserCollectionFold(context){
                     getUserCollection(context) {
-                        confirmButton1.icon = null
-                        closeButton1.isEnabled = true
-                        confirmButton1.isEnabled = true
+                        binding1.confirm.icon = null
+                        binding1.close.isEnabled = true
+                        binding1.confirm.isEnabled = true
                         alertDialog1.cancel()
 
                         initCollectionSelectorRadioGroup(context, radioGroup)
@@ -550,22 +544,20 @@ fun openCollectionSelector(context: Context, album: Albums, callback: (name: Str
 
         alertDialog1.show()
     }
-    val closeButton = dialogView.findViewById<MaterialButton>(R.id.close)
-    closeButton.setOnClickListener {
+    binding.close.setOnClickListener {
         alertDialog.cancel()
     }
-    val confirmButton = dialogView.findViewById<MaterialButton>(R.id.confirm)
-    confirmButton.setOnClickListener {
+    binding.confirm.setOnClickListener {
         val id = radioGroup.checkedRadioButtonId
         val fold = userCollectionFold[id]
-        confirmButton.setIconResource(R.drawable.loading2)
-        confirmButton.isEnabled = false
-        closeButton.isEnabled = false
+        binding.confirm.setIconResource(R.drawable.loading2)
+        binding.confirm.isEnabled = false
+        binding.close.isEnabled = false
 
         setAlbumCollection(context, album, fold.name, {
-            confirmButton.icon = null
-            confirmButton.isEnabled = true
-            closeButton.isEnabled = true
+            binding.confirm.icon = null
+            binding.confirm.isEnabled = true
+            binding.close.isEnabled = true
             alertDialog.cancel()
 
             callback(fold.name)
@@ -727,6 +719,34 @@ fun getUserFollow(context: Context, callback: () -> Unit){
 }
 
 /**
+ * 获取用户视频收藏
+ * @param callback 在执行完本次请求后的回调函数
+ */
+fun getUserMediaLike(callback: () -> Unit){
+    if(userToken == null){
+        return
+    }
+
+    val call = ApiNetService.getUserMediaLike(userToken!!)
+
+    call.enqueue(object : Callback<MediaLikeResponse> {
+        override fun onResponse(call: Call<MediaLikeResponse>, response: Response<MediaLikeResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+
+                if(responseBody != null && responseBody.result){
+                    userMediaLike = responseBody.data
+                }
+
+                callback()
+            }
+        }
+
+        override fun onFailure(call: Call<MediaLikeResponse>, t: Throwable) {}
+    })
+}
+
+/**
  * 获取用户屏蔽内容
  * @param context 执行本次操作的上下文对象
  * @param callback 在执行完本次请求后的回调函数
@@ -745,7 +765,6 @@ fun getUserForbidden(context: Context, callback: () -> Unit){
 
                 if(responseBody != null && responseBody.result){
                     userForbidden = responseBody.data
-                    userFragment?.setForbiddenNumber(responseBody.data.size)
                 }
 
                 callback()
@@ -765,11 +784,10 @@ var followIsFinished: Boolean = false
 val followAlbumList: MutableList<Albums> = mutableListOf()
 /**
  * 获取关注内容更新
- * @param context 执行本次操作的上下文对象
  * @param callback 在执行完本次请求后的回调函数
  * @param isRefresh 刷新并重新从最开始获取
  */
-fun requestFollowData(context: Context, isRefresh: Boolean = false, callback: () -> Unit) {
+fun requestFollowData(isRefresh: Boolean = false, callback: () -> Unit) {
     if(userToken == null){
         return
     }
@@ -809,10 +827,7 @@ fun requestFollowData(context: Context, isRefresh: Boolean = false, callback: ()
             }
         }
 
-        override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {
-            // 处理请求失败的逻辑
-            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-        }
+        override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {}
     })
 }
 
@@ -847,4 +862,40 @@ fun setUserInform(token: String, inform: String, onSuccess: () -> Unit, onFail: 
             onFail()
         }
     })
+}
+
+/**
+ * 设置视频收藏
+ * @param media 将要收藏/取消的写真集对象
+ * @param callback 在异步获取到信息后的回调函数
+ */
+fun setMediaCollection(media: Media, callback: (Boolean) -> Unit){
+    if(userToken != null){
+        var call = ApiNetService.setCollectionItem(userToken!!, media.id, "media", "media")
+        if(media.is_collection != null){
+            call = ApiNetService.removeCollectionItem(userToken!!, media.id, "media")
+        }
+
+        call.enqueue(object : Callback<ActionResponse> {
+            override fun onResponse(call: Call<ActionResponse>, response: Response<ActionResponse>) {
+                if (response.isSuccessful) {
+                    val responseBody = response.body()
+
+                    if(!responseBody?.result!!){
+                        callback(false)
+                        return
+                    }
+
+                    getUserMediaLike{}
+                    callback(true)
+                }
+            }
+
+            override fun onFailure(call: Call<ActionResponse>, t: Throwable) {
+                callback(false)
+            }
+        })
+    } else {
+        callback(false)
+    }
 }

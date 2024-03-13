@@ -133,7 +133,9 @@ data class Media(
     var status: String,
     var model_avatar_image: String,
     var album_name: String,
-    var model_name: String
+    var model_name: String,
+    var is_collection: String?,
+    var like: Int?
 )
 data class MediaResponse(
     val result: Boolean,
@@ -222,7 +224,7 @@ data class HistoryResponse(
 data class History(
     val id: Int,
     val type: String,
-    val content: Map<String, Any>,
+    val content: Map<String, String>,
     val time: String,
     val stay: Int
 )
@@ -274,6 +276,20 @@ data class Follow(
     val time: String
 )
 
+data class MediaLikeResponse(
+    val result: Boolean,
+    val data: List<MediaLike>
+)
+
+data class MediaLike(
+    val id: Int,
+    val type: String,
+    val content: Media,
+    val fold: String,
+    val res_id: Int,
+    val time: String
+)
+
 data class ForbiddenResponse(
     val result: Boolean,
     val data: List<Forbidden>
@@ -297,4 +313,9 @@ data class FileUploadResponse(
 data class HotSearchKeywordResponse(
     val result: Boolean,
     val keyword: List<String>
+)
+
+data class AppreciateResponse(
+    val result: Boolean,
+    val id: Int?
 )

@@ -56,14 +56,6 @@ var userFragment: UserFragment? = null
 var showFragment: Fragment? = null
 var hasNotificationProgression: Boolean = true
 
-// 移除共享变量
-fun removeSharedPreferencesKey(key: String, context: Context){
-    val sharedPreferences = context.getSharedPreferences("user", Context.MODE_PRIVATE)
-    val editor = sharedPreferences.edit()
-    editor.remove(key)
-    editor.apply()
-}
-
 // 分享文字
 fun shareTextContent(text: String, title: String = "来自iCoser的分享", context: Context) {
     val shareIntent = Intent()

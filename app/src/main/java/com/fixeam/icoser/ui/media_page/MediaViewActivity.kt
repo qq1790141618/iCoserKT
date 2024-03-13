@@ -4,45 +4,49 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
-import android.view.LayoutInflater
+import android.os.Looper
 import android.view.View
 import android.view.WindowManager
 import android.view.animation.AnimationUtils
 import android.widget.AdapterView
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ListView
-import android.widget.TextView
+import android.widget.Toast
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.ExoPlayer
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivityMediaViewBinding
 import com.fixeam.icoser.databinding.ActivityMediaViewLandscapeBinding
+import com.fixeam.icoser.databinding.MediaListBinding
+import com.fixeam.icoser.databinding.MediaListItemBinding
 import com.fixeam.icoser.model.CustomArrayAdapter
 import com.fixeam.icoser.model.formatTime
 import com.fixeam.icoser.model.getBestMedia
 import com.fixeam.icoser.model.getScreenWidth
+import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
 import com.fixeam.icoser.network.Media
 import com.fixeam.icoser.network.accessLog
 import com.fixeam.icoser.network.requestMediaData
 import com.fixeam.icoser.network.updateAccessLog
-import com.google.android.exoplayer2.DefaultRenderersFactory
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.SimpleExoPlayer
-import com.google.android.material.button.MaterialButton
 
 class MediaViewActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMediaViewBinding
     private lateinit var bindingLandscape: ActivityMediaViewLandscapeBinding
-    private var player: SimpleExoPlayer? = null
+    private var player: ExoPlayer? = null
     private var mediaList: List<Media> = listOf()
     private var playIndex: Int = 0
     private var playRatio: Int = 720
@@ -53,15 +57,7 @@ class MediaViewActivity : AppCompatActivity() {
         super.onConfigurationChanged(newConfig)
         binding = ActivityMediaViewBinding.inflate(layoutInflater)
         bindingLandscape = ActivityMediaViewLandscapeBinding.inflate(layoutInflater)
-        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            setContentView(bindingLandscape.root)
-            window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE
-        } else {
-            setContentView(binding.root)
-            window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-            window.decorView.systemUiVisibility = 0
-        }
+        setLandscapeMode(resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
         startOfAll()
     }
 
@@ -69,16 +65,30 @@ class MediaViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMediaViewBinding.inflate(layoutInflater)
         bindingLandscape = ActivityMediaViewLandscapeBinding.inflate(layoutInflater)
-        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        setLandscapeMode(resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
+        startOfAll()
+    }
+
+    private fun setLandscapeMode(status: Boolean = false){
+        if(status){
             setContentView(bindingLandscape.root)
+
             window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE
+
+            val layoutParams = window.attributes
+            layoutParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            window.attributes = layoutParams
         } else {
             setContentView(binding.root)
+
             window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
             window.decorView.systemUiVisibility = 0
+
+            val layoutParams = window.attributes
+            layoutParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+            window.attributes = layoutParams
         }
-        startOfAll()
     }
 
     private fun startOfAll(){
@@ -118,7 +128,20 @@ class MediaViewActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener {
-            onBackPressed()
+            when(resources.configuration.orientation){
+                Configuration.ORIENTATION_LANDSCAPE -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                else -> { onBackPressed() }
+            }
+        }
+        if(resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE){
+            binding.fullscreen.setOnClickListener {
+                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            }
+        }
+        if(isDarken(this) || resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE){
+            toolbar.navigationIcon?.setTint(Color.WHITE)
+        } else {
+            toolbar.navigationIcon?.setTint(Color.BLACK)
         }
     }
     // 切换清晰度按钮绑定
@@ -154,11 +177,13 @@ class MediaViewActivity : AppCompatActivity() {
                         selectVideo()
                     }
                 }
+            } else {
+                Toast.makeText(this, "请求结果为空", Toast.LENGTH_SHORT).show()
             }
         }
     }
     // 切换视频
-    private fun initPlayer(index: Int = 0, ratio: Int = 1080){
+    @OptIn(UnstableApi::class) private fun initPlayer(index: Int = 0, ratio: Int = 1080){
         if(mediaList.isEmpty() || index > mediaList.size - 1){
             return
         }
@@ -186,7 +211,7 @@ class MediaViewActivity : AppCompatActivity() {
         val renderersFactory = DefaultRenderersFactory(this@MediaViewActivity)
         renderersFactory.setEnableDecoderFallback(true)
         // 创建播放器实例
-        val player = SimpleExoPlayer.Builder(this@MediaViewActivity, renderersFactory).build()
+        val player = ExoPlayer.Builder(this@MediaViewActivity, renderersFactory).build()
         // 设置播放资源
         val bestMediaIndex = getBestMedia(media.format, ratio)
         val mediaItem = MediaItem.fromUri(media.format[bestMediaIndex].url)
@@ -219,15 +244,15 @@ class MediaViewActivity : AppCompatActivity() {
             }
         }
         // 定时记录访问日志
-        val handler = Handler()
+        val handler = Handler(Looper.getMainLooper())
         var runnable: Runnable? = null
         val editor = sharedPreferences.edit()
-        player.addListener(object : Player.Listener {
+        player.addListener(object: Player.Listener {
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 if (playWhenReady) {
                     player.seekTo(lastPlayedPosition.toLong())
                     if(isPlaying){
-                        Handler().postDelayed({
+                        Handler(Looper.getMainLooper()).postDelayed({
                             player.play()
                         }, 100)
                     }
@@ -286,7 +311,7 @@ class MediaViewActivity : AppCompatActivity() {
         // 隐藏工具栏
         var toolShow = false
         val runnable2: Runnable?
-        val handler2 = Handler()
+        val handler2 = Handler(Looper.getMainLooper())
         runnable2 = object: Runnable {
             override fun run() {
                 if(videoView.isControllerFullyVisible && !toolShow){
@@ -310,7 +335,7 @@ class MediaViewActivity : AppCompatActivity() {
             if(clickTimes == 0){
                 // 增加点击次数
                 clickTimes++
-                Handler().postDelayed({
+                Handler(Looper.getMainLooper()).postDelayed({
                     clickTimes = 0
                 }, 500)
             } else if(player.isPlaying){
@@ -328,43 +353,30 @@ class MediaViewActivity : AppCompatActivity() {
         }
 
         val builder = AlertDialog.Builder(this)
-        val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        val dialogView: View = inflater.inflate(R.layout.media_list, null)
+        val binding = MediaListBinding.inflate(layoutInflater)
 
-        builder.setView(dialogView)
+        builder.setView(binding.root)
         val alertDialog = builder.create()
-        val linearLayout = dialogView.findViewById<LinearLayout>(R.id.content)
 
         for ((index, media) in mediaList.withIndex()){
-            val mediaListItemView = inflater.inflate(R.layout.media_list_item, null)
-            mediaListItemView.setOnClickListener {
+            val mediaListItem = MediaListItemBinding.inflate(layoutInflater)
+            mediaListItem.root.setOnClickListener {
                 initPlayer(index, playRatio)
                 alertDialog.cancel()
             }
-
-            val coverImage = mediaListItemView.findViewById<ImageView>(R.id.cover_image)
             Glide.with(this@MediaViewActivity)
                 .load("${media.cover}/short1200px")
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .into(coverImage)
-
-            val modeName = mediaListItemView.findViewById<TextView>(R.id.model_name)
-            modeName.text = media.model_name
-
-            val name = mediaListItemView.findViewById<TextView>(R.id.name)
-            name.text = "${media.album_name} ${media.name}"
-
-            val duration = mediaListItemView.findViewById<TextView>(R.id.duration)
-            duration.text = formatTime((media.duration * 1000).toLong())
-
-            linearLayout.addView(mediaListItemView)
+                .into(mediaListItem.coverImage)
+            mediaListItem.modelName.text = media.model_name
+            mediaListItem.name.text = "${media.album_name} ${media.name}"
+            mediaListItem.duration.text = formatTime((media.duration * 1000).toLong())
+            binding.content.addView(mediaListItem.root)
         }
 
-        val close = dialogView.findViewById<MaterialButton>(R.id.close)
-        close.setOnClickListener {
+        binding.close.setOnClickListener {
             alertDialog.cancel()
         }
-
         alertDialog.show()
     }
     // 选择视频分辨率
@@ -375,15 +387,13 @@ class MediaViewActivity : AppCompatActivity() {
         }
 
         val builder = AlertDialog.Builder(this)
-        val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        val dialogView: View = inflater.inflate(R.layout.media_list, null)
+        val binding = MediaListBinding.inflate(layoutInflater)
 
-        builder.setView(dialogView)
+        builder.setView(binding.root)
         val alertDialog = builder.create()
-        val linearLayout = dialogView.findViewById<LinearLayout>(R.id.content)
 
         val format = mediaList[playIndex].format
-        dialogView.findViewById<TextView>(R.id.title).text = "选择视频分辨率"
+        binding.title.text = "选择视频分辨率"
 
         val list = ListView(this)
         list.dividerHeight = (resources.displayMetrics.density * 0.5).toInt()
@@ -398,7 +408,7 @@ class MediaViewActivity : AppCompatActivity() {
         layoutParams.bottomMargin = margin
 
         list.layoutParams = layoutParams
-        linearLayout.addView(list)
+        binding.content.addView(list)
 
         val adapter = CustomArrayAdapter(this, android.R.layout.simple_list_item_1, format.map {
             it.resolution_ratio }, 12f, 42, true)
@@ -408,7 +418,8 @@ class MediaViewActivity : AppCompatActivity() {
             initPlayer(playIndex, format[position].resolution_ratio.replace("p", "").toInt())
             alertDialog.cancel()
         }
-        dialogView.findViewById<MaterialButton>(R.id.close).setOnClickListener {
+
+        binding.close.setOnClickListener {
             alertDialog.cancel()
         }
 

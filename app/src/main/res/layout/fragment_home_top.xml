@@ -9,9 +9,10 @@
     android:descendantFocusability="blocksDescendants"
     android:focusable="true"
     android:focusableInTouchMode="true"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:viewBindingIgnore="false">
 
-    <include layout="@layout/carousel_card" />
+    <include android:id="@+id/carousel_card" layout="@layout/carousel_card" />
 
     <TextView
         android:id="@+id/hot_text"
@@ -22,7 +23,7 @@
         android:textSize="20sp"
         tools:ignore="HardcodedText" />
 
-    <include layout="@layout/hot_card" />
+    <include android:id="@+id/hot_card" layout="@layout/hot_card" />
 
     <TextView
         android:id="@+id/model_text"

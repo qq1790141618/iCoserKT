@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">iCoser</string>
+    <string name="app_name">iCoser Test</string>
     <string name="home">首页</string>
     <string name="smart_video">小视频</string>
     <string name="search">搜索</string>
@@ -33,6 +33,7 @@
     <string name="forbidden_model">屏蔽此模特</string>
     <string name="share">分享</string>
     <string name="collection">收藏</string>
+    <string name="media_collection">喜爱视频</string>
     <string name="uncollection">取消收藏</string>
     <string name="create_collection_fold">创建收藏夹</string>
     <string name="close">关闭</string>
@@ -111,6 +112,7 @@
     <string name="third_level">第三级</string>
     <string name="fourth_level">第四级</string>
     <string name="cascader_title">请选择</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="more_option">更多选项</string>
+    <string name="media_appreciate">视频点赞</string>
+    <string name="media_favor">视频收藏</string>
 </resources>

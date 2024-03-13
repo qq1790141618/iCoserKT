@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -49,18 +50,23 @@ class PushService : Service() {
 class DataFetchWorker(appContext: Context, workerParams: WorkerParameters):
     Worker(appContext, workerParams) {
     override fun doWork(): Result {
-        checkForUser(applicationContext)
-        donePushRequest()
-        return Result.success()
+        return try {
+            userToken = applicationContext.getSharedPreferences("user", AppCompatActivity.MODE_PRIVATE).getString("access_token", null)
+            if(userToken != null){
+                donePushRequest()
+            }
+            Result.success()
+        } catch (e: Exception) {
+            Log.e("PushServiceDied", "Running Error:\n$e")
+            Result.failure()
+        }
     }
 
     private fun donePushRequest(){
-
-
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
         val currentTime = LocalDateTime.now()
         if(userToken != null){
-            requestFollowData(applicationContext, true){
+            requestFollowData(true){
                 for (album in followAlbumList){
                     if(!album.isNew){
                         continue

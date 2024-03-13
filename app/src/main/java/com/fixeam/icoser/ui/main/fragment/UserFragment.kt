@@ -1,17 +1,14 @@
 package com.fixeam.icoser.ui.main.fragment
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
-import android.os.Handler
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
@@ -19,21 +16,21 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.FragmentUserBinding
 import com.fixeam.icoser.model.Option
+import com.fixeam.icoser.model.createSimpleDialog
 import com.fixeam.icoser.model.initOptionItem
 import com.fixeam.icoser.model.isDarken
-import com.fixeam.icoser.model.openUrlInBrowser
-import com.fixeam.icoser.model.removeSharedPreferencesKey
 import com.fixeam.icoser.model.startLoginActivity
 import com.fixeam.icoser.model.userFragment
 import com.fixeam.icoser.network.UserInform
 import com.fixeam.icoser.network.userCollection
 import com.fixeam.icoser.network.userFollow
-import com.fixeam.icoser.network.userForbidden
 import com.fixeam.icoser.network.userHistory
 import com.fixeam.icoser.network.userInform
 import com.fixeam.icoser.network.userToken
 import com.fixeam.icoser.ui.about_page.AboutActivity
+import com.fixeam.icoser.ui.account_center.AccountCenterActivity
 import com.fixeam.icoser.ui.collection_page.CollectionViewActivity
+import com.fixeam.icoser.ui.collection_page.MediaFavorActivity
 import com.fixeam.icoser.ui.follow_page.FollowActivity
 import com.fixeam.icoser.ui.forbidden_page.ForbiddenActivity
 import com.fixeam.icoser.ui.history_page.HistoryActivity
@@ -57,16 +54,7 @@ class UserFragment : Fragment() {
 
         binding.userCard.goLogin.setOnClickListener { startLoginActivity(requireContext()) }
         binding.userCard.logOut.setOnClickListener {
-            val builder = AlertDialog.Builder(context)
-            builder.setMessage("确认退出此用户的登录状态吗? 用户在此设备上的信息将会被清空。")
-
-            builder.setPositiveButton("确定") { _, _ ->
-                logout()
-            }
-            builder.setNegativeButton("取消") { _, _ -> }
-
-            val alertDialog = builder.create()
-            alertDialog.show()
+            createSimpleDialog(requireContext(), "确认退出此用户的登录状态吗? 用户在此设备上的信息将会被清空。", true){ logout() }
         }
 
         userInform?.let { initUserCard(it) }
@@ -94,60 +82,50 @@ class UserFragment : Fragment() {
         }
 
         binding.userCard.nickname.text = userInform.nickname
+        binding.userCard.uid.visibility = View.VISIBLE
         binding.userCard.uid.text = "UID${userInform.id}"
         binding.userCard.goLogin.visibility = View.GONE
         binding.userCard.logOut.visibility = View.VISIBLE
     }
 
     private fun logout(){
-        removeSharedPreferencesKey("access_token", requireContext())
+        requireContext().getSharedPreferences("user", Context.MODE_PRIVATE).edit().remove("access_token").apply()
         userInform = null
         userToken = null
 
         binding.userCard.avatarImage.setImageResource(R.drawable.image_holder)
         binding.userCard.nickname.text = getString(R.string.un_log_user)
+        binding.userCard.uid.visibility = View.GONE
         binding.userCard.uid.text = ""
+        binding.userCard.myFollow.text = 0.toString()
+        binding.userCard.myCollection.text = 0.toString()
+        binding.userCard.myHistory.text = 0.toString()
         binding.userCard.goLogin.visibility = View.VISIBLE
         binding.userCard.logOut.visibility = View.GONE
     }
 
     private fun initOptions() {
+        binding.userCard.myFollowBlock.setOnClickListener {
+            val intent = Intent(requireContext(), FollowActivity::class.java)
+            startActivity(intent)
+        }
+        binding.userCard.myCollectionBlock.setOnClickListener {
+            val intent = Intent(requireContext(), CollectionViewActivity::class.java)
+            startActivity(intent)
+        }
+        binding.userCard.myHistoryBlock.setOnClickListener {
+            val intent = Intent(requireContext(), HistoryActivity::class.java)
+            startActivity(intent)
+        }
+
         initOptionItem(
             Option(
-                iconId = R.drawable.like,
+                iconId = R.drawable.video,
                 iconColor = ColorStateList.valueOf(Color.parseColor("#F53F3F")),
-                textId = R.string.my_following,
-                onClick = {
-                    val intent = Intent(requireContext(), FollowActivity::class.java)
-                    startActivity(intent)
-                }
-            ),
-            binding.aOption,
-            requireActivity(),
-            isDarken(requireActivity())
-        )
-        initOptionItem(
-            Option(
-                iconId = R.drawable.favor,
-                iconColor = ColorStateList.valueOf(Color.parseColor("#FADC6D")),
-                textId = R.string.my_collection,
-                onClick = {
-                    val intent = Intent(requireContext(), CollectionViewActivity::class.java)
-                    startActivity(intent)
-                }
-            ),
-            binding.aOption,
-            requireActivity(),
-            isDarken(requireActivity())
-        )
-        initOptionItem(
-            Option(
-                iconId = R.drawable.footprint,
-                iconColor = ColorStateList.valueOf(Color.parseColor("#7BC0FC")),
-                textId = R.string.my_history,
+                textId = R.string.media_favor,
                 clearMargin = true,
                 onClick = {
-                    val intent = Intent(requireContext(), HistoryActivity::class.java)
+                    val intent = Intent(requireContext(), MediaFavorActivity::class.java)
                     startActivity(intent)
                 }
             ),
@@ -175,8 +153,8 @@ class UserFragment : Fragment() {
                 iconColor = ColorStateList.valueOf(Color.parseColor("#4CD263")),
                 textId = R.string.safe_center,
                 onClick = {
-                    if(userToken == null){ startLoginActivity(requireContext()) }
-                    openUrlInBrowser(requireContext(), "https://app.fixeam.com/account-center?access_token=$userToken")
+                    val intent = Intent(requireContext(), AccountCenterActivity::class.java)
+                    startActivity(intent)
                 }
             ),
             binding.bOption,
@@ -228,19 +206,15 @@ class UserFragment : Fragment() {
             isDarken(requireActivity())
         )
 
-        Handler().postDelayed({
-            setFollowNumber(userFollow.size)
-            setCollectionNumber(userCollection.size)
-            setForbiddenNumber(userForbidden.size)
-
-            if(userHistory != null){
-                var number = 0
-                for (timeRange in userHistory?.time_range!!){
-                    number += timeRange.count
-                }
-                userFragment?.setHistoryNumber(number)
+        setFollowNumber(userFollow.size)
+        setCollectionNumber(userCollection.size)
+        if(userHistory != null){
+            var number = 0
+            for (timeRange in userHistory?.time_range!!){
+                number += timeRange.count
             }
-        }, 800)
+            userFragment?.setHistoryNumber(number)
+        }
     }
 
     @SuppressLint("SetTextI18n")
@@ -248,13 +222,7 @@ class UserFragment : Fragment() {
         if(number <= 0){
             return
         }
-
-        if(binding.aOption.childCount < 1){
-            return
-        }
-        val followItem = binding.aOption.getChildAt(0) as LinearLayout
-        val tagText = followItem.findViewById<TextView>(R.id.text)
-        tagText.text = "${getString(R.string.my_following)} $number"
+        binding.userCard.myFollow.text = number.toString()
     }
 
     @SuppressLint("SetTextI18n")
@@ -262,13 +230,7 @@ class UserFragment : Fragment() {
         if(number <= 0){
             return
         }
-
-        if(binding.aOption.childCount < 2){
-            return
-        }
-        val collectionItem = binding.aOption.getChildAt(1) as LinearLayout
-        val tagText = collectionItem.findViewById<TextView>(R.id.text)
-        tagText.text = "${getString(R.string.my_collection)} $number"
+        binding.userCard.myCollection.text = number.toString()
     }
 
     @SuppressLint("SetTextI18n")
@@ -276,26 +238,6 @@ class UserFragment : Fragment() {
         if(number <= 0){
             return
         }
-
-        if(binding.aOption.childCount < 3){
-            return
-        }
-        val historyItem = binding.aOption.getChildAt(2) as LinearLayout
-        val tagText = historyItem.findViewById<TextView>(R.id.text)
-        tagText.text = "${getString(R.string.my_history)} $number"
-    }
-
-    @SuppressLint("SetTextI18n")
-    fun setForbiddenNumber(number: Int) {
-        if(number <= 0){
-            return
-        }
-
-        if(binding.bOption.childCount < 3){
-            return
-        }
-        val forbiddenItem = binding.bOption.getChildAt(2) as LinearLayout
-        val tagText = forbiddenItem.findViewById<TextView>(R.id.text)
-        tagText.text = "${getString(R.string.forbidden)} $number"
+        binding.userCard.myHistory.text = number.toString()
     }
 }

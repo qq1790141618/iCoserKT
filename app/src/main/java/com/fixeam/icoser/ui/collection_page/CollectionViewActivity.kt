@@ -1,7 +1,6 @@
 package com.fixeam.icoser.ui.collection_page
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -10,16 +9,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.widget.AdapterView
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewbinding.ViewBinding
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivityCollectionViewBinding
+import com.fixeam.icoser.databinding.AlbumItemBinding
+import com.fixeam.icoser.databinding.MaterialButtonBinding
+import com.fixeam.icoser.databinding.MessageTextBinding
 import com.fixeam.icoser.model.CustomArrayAdapter
-import com.fixeam.icoser.model.createAlbumCard
+import com.fixeam.icoser.model.createAlbumBinding
 import com.fixeam.icoser.model.createSimpleDialog
 import com.fixeam.icoser.model.isDarken
 import com.fixeam.icoser.model.setStatusBar
@@ -183,28 +185,16 @@ class CollectionViewActivity : AppCompatActivity() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
             return when (viewType) {
                 0 -> {
-                    val view = MaterialButton(this@CollectionViewActivity)
-                    view.text = "移除此收藏夹"
-                    view.textSize = 13F
-                    view.setTextColor(Color.WHITE)
-                    view.setBackgroundColor(Color.parseColor("#F76560"))
-
-                    val layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
-                    layoutParams.setMargins(50, 50, 50, 0)
-                    view.layoutParams = layoutParams
-
-                    MyViewHolder(view)
+                    val binding = MaterialButtonBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                    MyViewHolder(binding)
                 }
                 1 -> {
-                    val view = LayoutInflater.from(parent.context).inflate(R.layout.album_item, parent, false)
-                    MyViewHolder(view)
+                    val binding = AlbumItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                    MyViewHolder(binding)
                 }
                 2 -> {
-                    val view = TextView(this@CollectionViewActivity)
-                    MyViewHolder(view)
+                    val binding = MessageTextBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                    MyViewHolder(binding)
                 }
                 else -> throw IllegalArgumentException("Invalid view type")
             }
@@ -213,34 +203,28 @@ class CollectionViewActivity : AppCompatActivity() {
         override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
             when (holder.itemViewType) {
                 0 -> {
-                    val builder = AlertDialog.Builder(this@CollectionViewActivity)
                     val selectFold = userCollectionFold[selectFoldIndex]
+                    (holder.binding.root as MaterialButton).text = "移除此收藏夹"
 
                     if(selectFold.name == "default" || selectFold.name == "like"){
                         holder.itemView.setOnClickListener {
-                            builder.setMessage("此收藏夹不可被移除!")
-                            builder.setPositiveButton("确定") { _, _ -> }
-                            val alertDialog = builder.create()
-                            alertDialog.show()
+                            createSimpleDialog(this@CollectionViewActivity, "此收藏夹不可被移除!")
                         }
                     } else {
                         holder.itemView.setOnClickListener {
-                            builder.setMessage("确定移除此收藏夹吗? 收藏夹内所有内容将会被清空!")
-                            builder.setPositiveButton("确定") { _, _ ->
+                            createSimpleDialog(this@CollectionViewActivity, "确定移除此收藏夹吗? 收藏夹内所有内容将会被清空!", true){
                                 removeUserCollectionFold(this@CollectionViewActivity, selectFold.id){
                                     initPage()
                                 }
                             }
-                            builder.setNegativeButton("取消") { _, _ -> }
-                            val alertDialog = builder.create()
-                            alertDialog.show()
                         }
                     }
                 }
                 1 -> {
                     val collectionItem = selectFoldContent[position - 1]
                     val album = collectionItem.content
-                    createAlbumCard(this@CollectionViewActivity, album, holder.itemView, "normal", true){
+                    val item = holder.binding as AlbumItemBinding
+                    createAlbumBinding(this@CollectionViewActivity, album, holder.itemView, item, "normal", true){
                         createSimpleDialog(this@CollectionViewActivity, "确定移除此写真集的收藏吗? ", true){
                             setAlbumCollection(
                                 this@CollectionViewActivity,
@@ -269,5 +253,5 @@ class CollectionViewActivity : AppCompatActivity() {
         }
     }
 
-    class MyViewHolder(view: View) : RecyclerView.ViewHolder(view)
+    class MyViewHolder(var binding: ViewBinding) : RecyclerView.ViewHolder(binding.root)
 }

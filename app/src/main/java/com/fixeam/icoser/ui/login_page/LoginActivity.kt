@@ -1,10 +1,21 @@
 package com.fixeam.icoser.ui.login_page
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.telephony.TelephonyManager
 import android.view.View
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivityLoginBinding
 import com.fixeam.icoser.model.setStatusBar
@@ -15,9 +26,10 @@ import com.fixeam.icoser.network.verifyTokenAndGetUserInform
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
-    private var loginMode: Int = 1
+    private var loginMode: Int = 2
     private var verifyId: String? = null
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
@@ -32,6 +44,78 @@ class LoginActivity : AppCompatActivity() {
         binding.loginWithVerifyCode.sendVerifyCode.setOnClickListener { sendVerifyCode() }
         binding.loginWithAccountAndPassword.login1.setOnClickListener { loginWithPassword() }
         binding.loginWithVerifyCode.login2.setOnClickListener { loginWithVerifyCode() }
+
+        // 设置默认的登录模式
+        changeToMode(1)
+        // 获取用户手机号
+        getUserPhoneNumber()
+    }
+
+    // 权限请求启动器
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()){ isGranted: Boolean ->
+        if (isGranted) {
+            getUserPhoneNumber()
+            Toast.makeText(this, "已授予权限", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "权限已被拒绝", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    fun requestPermission(permission: String, callback: () -> Unit = {}) {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                permission,
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                callback()
+            }
+
+            ActivityCompat.shouldShowRequestPermissionRationale(
+                this,
+                permission
+            ) -> {
+                requestPermissionLauncher.launch(
+                    permission
+                )
+            }
+
+            else -> {
+                requestPermissionLauncher.launch(
+                    permission
+                )
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @SuppressLint("HardwareIds")
+    private fun getUserPhoneNumber() {
+        val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+        val phoneNumber = if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_SMS
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_PHONE_NUMBERS
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_PHONE_STATE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            telephonyManager.line1Number
+        } else {
+            requestPermission(Manifest.permission.READ_PHONE_STATE)
+            requestPermission(Manifest.permission.READ_PHONE_NUMBERS)
+            requestPermission(Manifest.permission.READ_SMS)
+            null
+        }
+
+        if(phoneNumber != null){
+            Toast.makeText(this, "$phoneNumber", Toast.LENGTH_SHORT).show()
+        }
     }
 
     // 切换模式
@@ -39,12 +123,12 @@ class LoginActivity : AppCompatActivity() {
         loginMode = number
         when(number){
             1->{
-                binding.loginWithVerifyCode.mode2.visibility = View.VISIBLE
-                binding.loginWithAccountAndPassword.mode1.visibility = View.GONE
+                binding.loginWithVerifyCode.root.visibility = View.VISIBLE
+                binding.loginWithAccountAndPassword.root.visibility = View.GONE
             }
             2->{
-                binding.loginWithAccountAndPassword.mode1.visibility = View.VISIBLE
-                binding.loginWithVerifyCode.mode2.visibility = View.GONE
+                binding.loginWithAccountAndPassword.root.visibility = View.VISIBLE
+                binding.loginWithVerifyCode.root.visibility = View.GONE
             }
         }
     }

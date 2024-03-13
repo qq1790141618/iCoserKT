@@ -24,6 +24,10 @@
         <item name="android:textSize">14sp</item><!--toolbar标题字体大小-->
         <item name="android:textColor">#F3F3F3</item><!--toolbar标题字体颜色-->
     </style>
+    <!-- 白色字体继承-->
+    <style name="Toolbar.TitleTextWhite" parent="Toolbar.TitleText">
+        <item name="android:textColor">@color/white</item>
+    </style>
     <!-- 设置Toolbar 子标题subtitle标题字体的大小 -->
     <style name="Toolbar.SubTitleText" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
         <item name="android:textSize">10sp</item>
@@ -32,6 +36,10 @@
     <style name="Toolbar.SubTitleTextLandscape" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
         <item name="android:textSize">10sp</item>
         <item name="android:textColor">#F3F3F3</item>
+    </style>
+    <!-- 白色字体继承-->
+    <style name="Toolbar.SubTitleTextWhite" parent="Toolbar.SubTitleText">
+        <item name="android:textColor">@color/white</item>
     </style>
 
     <style name="CustomHintTextAppearance" parent="TextAppearance.Design.Hint">

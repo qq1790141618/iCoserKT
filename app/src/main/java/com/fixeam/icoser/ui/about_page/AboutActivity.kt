@@ -78,7 +78,7 @@ class AboutActivity : AppCompatActivity() {
                 iconId = R.drawable.cpu,
                 iconColor = ColorStateList.valueOf(Color.parseColor("#F53F3F")),
                 textId = R.string.running_platform,
-                contentText = "Android 9-14",
+                contentText = "Android ≥9",
                 showHrefIcon = false,
                 onClick = {
                     clickTime++
@@ -97,7 +97,7 @@ class AboutActivity : AppCompatActivity() {
                 iconId = R.drawable.android,
                 iconColor = ColorStateList.valueOf(Color.parseColor("#F53F3F")),
                 textId = R.string.sdk_version,
-                contentText = "Api 28-34",
+                contentText = "Api 31",
                 showHrefIcon = false,
                 onClick = {
                     clickTime++

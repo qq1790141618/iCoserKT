@@ -15,7 +15,9 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.fixeam.icoser.R
 import com.fixeam.icoser.databinding.ActivityRecommendBinding
-import com.fixeam.icoser.model.createAlbumCard
+import com.fixeam.icoser.databinding.AlbumItemBinding
+import com.fixeam.icoser.model.AlbumViewHolder
+import com.fixeam.icoser.model.createAlbumBinding
 import com.fixeam.icoser.model.hotData
 import com.fixeam.icoser.model.newsData
 import com.fixeam.icoser.model.setStatusBar
@@ -98,37 +100,35 @@ class RecommendActivity : AppCompatActivity() {
 
     inner class ViewPagerViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
 
-    inner class HotAdapter : RecyclerView.Adapter<ViewHolder>() {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val itemView = LayoutInflater.from(this@RecommendActivity).inflate(R.layout.album_item, parent, false)
-            return ViewHolder(itemView)
+    inner class HotAdapter : RecyclerView.Adapter<AlbumViewHolder>() {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlbumViewHolder {
+            val binding = AlbumItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return AlbumViewHolder(binding)
         }
         override fun getItemCount(): Int {
             return hotData.size
         }
         @SuppressLint("SetTextI18n")
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        override fun onBindViewHolder(holder: AlbumViewHolder, position: Int) {
             val album = hotData[position]
-            createAlbumCard(this@RecommendActivity, album, holder.itemView, "hot")
+            createAlbumBinding(this@RecommendActivity, album, holder.itemView, holder.binding, "hot")
         }
     }
 
-    inner class NewsAdapter : RecyclerView.Adapter<ViewHolder>() {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val itemView = LayoutInflater.from(this@RecommendActivity).inflate(R.layout.album_item, parent, false)
-            return ViewHolder(itemView)
+    inner class NewsAdapter : RecyclerView.Adapter<AlbumViewHolder>() {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlbumViewHolder {
+            val binding = AlbumItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return AlbumViewHolder(binding)
         }
         override fun getItemCount(): Int {
             return newsData.size
         }
         @SuppressLint("SetTextI18n")
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        override fun onBindViewHolder(holder: AlbumViewHolder, position: Int) {
             val album = newsData[position]
-            createAlbumCard(this@RecommendActivity, album, holder.itemView, "new")
+            createAlbumBinding(this@RecommendActivity, album, holder.itemView, holder.binding, "new")
         }
     }
-
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view)
 
     private fun setTab(type: Int){
         binding.hot.setOnClickListener {

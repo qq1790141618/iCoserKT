@@ -90,6 +90,8 @@ interface ApiService {
     fun getUserCollection(@Query("access_token") accessToken: String): Call<CollectionResponse>
     @GET("collection/get?type=model")
     fun getUserFollow(@Query("access_token") accessToken: String): Call<FollowResponse>
+    @GET("collection/get?type=media")
+    fun getUserMediaLike(@Query("access_token") accessToken: String): Call<MediaLikeResponse>
     @GET("access/history")
     fun getUserHistory(@Query("access_token") accessToken: String, @Query("start") start: Int = 0, @Query("number") number: Int = 50): Call<HistoryResponse>
     @GET("access/history/clear")
@@ -120,6 +122,10 @@ interface ApiService {
     ): Call<FileUploadResponse>
     @GET("login/user/change/inform")
     fun setUserInform(@Query("access_token") accessToken: String, @Query("inform") inform: String): Call<ActionResponse>
+    @GET("comment?type=Like&content=1&res_type=Media")
+    fun appreciate(@Query("res_id") resId: Int, @Query("access_token") accessToken: String = ""): Call<AppreciateResponse>
+    @GET("comment?cancel=cancel")
+    fun appreciateCancel(@Query("id") id: Int): Call<AppreciateResponse>
 }
 
 // 上传和更新访问记录
@@ -174,9 +180,7 @@ fun requestNewData(context: Context, callback: (List<Albums>) -> Unit) {
             }
         }
 
-        override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {
-            Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
-        }
+        override fun onFailure(call: Call<AlbumsResponse>, t: Throwable) {}
     })
 }
 // 获取热门的写真集
@@ -403,17 +407,16 @@ fun requestModelSearch(context: Context, keywords: List<String>?, callback: (Lis
     })
 }
 // 获取视频
-fun requestMediaData(context: Context, modelId: Int = -1, albumId: Int = -1, id: Int = -1, callback: (List<Media>) -> Unit) {
-    if(id <= 0 && albumId <= 0 && modelId <= 0){
-        callback(listOf())
-        return
+fun requestMediaData(context: Context, modelId: Int = -1, albumId: Int = -1, id: Int = -1, number: Int = 9999, callback: (List<Media>) -> Unit) {
+    var call = ApiNetService.getMedia(number = number)
+    if(id > 0){
+        call = ApiNetService.getMedia(id = id.toString(), number = number)
     }
-    var call = ApiNetService.getMedia(id = id.toString(), number = 9999)
     if(albumId > 0){
-        call = ApiNetService.getMedia(albumId = albumId.toString(), number = 9999)
+        call = ApiNetService.getMedia(albumId = albumId.toString(), number = number)
     }
     if(modelId > 0){
-        call = ApiNetService.getMedia(modelId = modelId.toString(), number = 9999)
+        call = ApiNetService.getMedia(modelId = modelId.toString(), number = number)
     }
 
     call.enqueue(object : Callback<MediaResponse> {
@@ -589,6 +592,50 @@ fun requestVerifyCodeLogin(context: Context, target: String?, verifyId: String?,
 
         override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
             Toast.makeText(context, "请求失败：" + t.message, Toast.LENGTH_SHORT).show()
+        }
+    })
+}
+// 点赞
+fun appreciate(resId: Int, callback: (Boolean, Int?) -> Unit){
+    var call = ApiNetService.appreciate(resId)
+    if(userToken != null){
+        call = ApiNetService.appreciate(resId, userToken!!)
+    }
+
+    call.enqueue(object : Callback<AppreciateResponse> {
+        override fun onResponse(call: Call<AppreciateResponse>, response: Response<AppreciateResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result) {
+                    callback(true, responseBody.id)
+                } else {
+                    callback(false, 0)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<AppreciateResponse>, t: Throwable) {
+            callback(false, 0)
+        }
+    })
+}
+fun appreciateCancel(id: Int, callback: (Boolean) -> Unit){
+    var call = ApiNetService.appreciateCancel(id)
+
+    call.enqueue(object : Callback<AppreciateResponse> {
+        override fun onResponse(call: Call<AppreciateResponse>, response: Response<AppreciateResponse>) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.result) {
+                    callback(true)
+                } else {
+                    callback(false)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<AppreciateResponse>, t: Throwable) {
+            callback(false)
         }
     })
 }

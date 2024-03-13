@@ -41,7 +41,7 @@ class UpdateActivity : AppCompatActivity() {
         binding.versionChange.text = "${getString(R.string.version_change)} $version => ${newVersion?.version} (大小: ${
             newVersion?.package_size?.let {
             bytesToReadableSize(
-                it
+                it.toLong()
             )
         }})"
 
