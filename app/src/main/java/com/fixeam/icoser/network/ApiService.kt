@@ -7,7 +7,6 @@ import com.fixeam.icoser.R
 import com.fixeam.icoser.model.getSystemInfo
 import com.fixeam.icoser.model.hotData
 import com.fixeam.icoser.model.newsData
-import com.fixeam.icoser.model.versionType
 import com.google.gson.Gson
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -130,7 +129,7 @@ interface ApiService {
 
 // 上传和更新访问记录
 fun accessLog(context: Context, content: String, type: String, callback: (id: Int) -> Unit){
-    if(versionType != "release"){
+    if(context.getString(R.string.app_type) != "release"){
         return
     }
     var call = ApiNetService.accessLog(type, content, getSystemInfo(context), "Android Kotlin")
@@ -620,7 +619,7 @@ fun appreciate(resId: Int, callback: (Boolean, Int?) -> Unit){
     })
 }
 fun appreciateCancel(id: Int, callback: (Boolean) -> Unit){
-    var call = ApiNetService.appreciateCancel(id)
+    val call = ApiNetService.appreciateCancel(id)
 
     call.enqueue(object : Callback<AppreciateResponse> {
         override fun onResponse(call: Call<AppreciateResponse>, response: Response<AppreciateResponse>) {

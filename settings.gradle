@@ -16,5 +16,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "iCoser KT"
+rootProject.name = "iCoser"
 include ':app'

@@ -8,6 +8,7 @@ import com.bumptech.glide.GlideBuilder
 import com.bumptech.glide.annotation.GlideModule
 import com.bumptech.glide.load.engine.cache.InternalCacheDiskCacheFactory
 import com.bumptech.glide.module.AppGlideModule
+import com.fixeam.icoser.R
 import com.fixeam.icoser.network.Albums
 import com.fixeam.icoser.network.ApiNetService
 import com.fixeam.icoser.network.MediaFormatItem
@@ -126,7 +127,6 @@ fun getSystemInfo(context: Context): String {
 }
 
 var newVersion: PackageInfo? = null
-var versionType = "release"
 fun checkForUpdate(context: Context, callback: (Boolean) -> Unit) {
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val versionCode = packageInfo.versionCode
@@ -134,7 +134,7 @@ fun checkForUpdate(context: Context, callback: (Boolean) -> Unit) {
     val sharedPreferences = context.getSharedPreferences("version", AppCompatActivity.MODE_PRIVATE)
     val doNotAlertVersion = sharedPreferences.getInt("do_not_alert_version", -1)
 
-    val call = ApiNetService.getLatestVersion(versionType)
+    val call = ApiNetService.getLatestVersion(context.getString(R.string.app_type))
     call.enqueue(object : Callback<PackageInfo> {
         override fun onResponse(call: Call<PackageInfo>, response: Response<PackageInfo>) {
             if (response.isSuccessful) {

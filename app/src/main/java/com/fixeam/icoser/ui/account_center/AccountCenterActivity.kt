@@ -3,6 +3,7 @@ package com.fixeam.icoser.ui.account_center
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
+import android.view.MotionEvent
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebViewClient
@@ -16,7 +17,7 @@ import com.fixeam.icoser.network.userToken
 
 class AccountCenterActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAccountCenterBinding
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAccountCenterBinding.inflate(layoutInflater)
@@ -47,6 +48,13 @@ class AccountCenterActivity : AppCompatActivity() {
             webView.webChromeClient = WebChromeClient()
             webView.loadUrl("https://app.fixeam.com/account-center?access_token=$userToken")
             webView.reload()
+
+            // 禁止WebView滚动
+            webView.setOnTouchListener { _, event ->
+                event.action == MotionEvent.ACTION_MOVE
+            }
+            webView.isVerticalScrollBarEnabled = false
+            webView.isHorizontalScrollBarEnabled = false
         }
     }
 }

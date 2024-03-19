@@ -37,4 +37,12 @@ class MediaActivity : AppCompatActivity() {
             commit()
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        val fragment = supportFragmentManager.findFragmentById(R.id.container)
+        if (fragment is SmartVideoFragment) {
+            supportFragmentManager.beginTransaction().remove(fragment).commitAllowingStateLoss()
+        }
+    }
 }

@@ -2,15 +2,12 @@ package com.fixeam.icoser.ui.login_page
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.telephony.TelephonyManager
 import android.view.View
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -23,6 +20,7 @@ import com.fixeam.icoser.network.requestPasswordLogin
 import com.fixeam.icoser.network.requestVerifyCodeLogin
 import com.fixeam.icoser.network.sendCode
 import com.fixeam.icoser.network.verifyTokenAndGetUserInform
+
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
@@ -48,19 +46,14 @@ class LoginActivity : AppCompatActivity() {
         // 设置默认的登录模式
         changeToMode(1)
         // 获取用户手机号
-        getUserPhoneNumber()
+        requestPermission(Manifest.permission.READ_PHONE_STATE)
+        requestPermission(Manifest.permission.READ_PHONE_NUMBERS)
+        requestPermission(Manifest.permission.READ_SMS)
     }
 
     // 权限请求启动器
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()){ isGranted: Boolean ->
-        if (isGranted) {
-            getUserPhoneNumber()
-            Toast.makeText(this, "已授予权限", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, "权限已被拒绝", Toast.LENGTH_SHORT).show()
-        }
-    }
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()){ _: Boolean -> }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     fun requestPermission(permission: String, callback: () -> Unit = {}) {
@@ -89,35 +82,6 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    @SuppressLint("HardwareIds")
-    private fun getUserPhoneNumber() {
-        val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-
-        val phoneNumber = if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_SMS
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_PHONE_NUMBERS
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_PHONE_STATE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            telephonyManager.line1Number
-        } else {
-            requestPermission(Manifest.permission.READ_PHONE_STATE)
-            requestPermission(Manifest.permission.READ_PHONE_NUMBERS)
-            requestPermission(Manifest.permission.READ_SMS)
-            null
-        }
-
-        if(phoneNumber != null){
-            Toast.makeText(this, "$phoneNumber", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     // 切换模式
     private fun changeToMode(number: Int){
         loginMode = number
@@ -143,6 +107,7 @@ class LoginActivity : AppCompatActivity() {
         sendCode(this, target){
             if (it != null) {
                 val countDownTimer = object : CountDownTimer(60000, 1000) {
+                    @SuppressLint("SetTextI18n")
                     override fun onTick(millisUntilFinished: Long) {
                         val secondsRemaining = millisUntilFinished / 1000
                         sendButton.text = secondsRemaining.toString() + getString(R.string.second_later_resend)

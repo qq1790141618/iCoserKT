@@ -224,7 +224,7 @@ data class HistoryResponse(
 data class History(
     val id: Int,
     val type: String,
-    val content: Map<String, String>,
+    val content: Map<String, Any>,
     val time: String,
     val stay: Int
 )

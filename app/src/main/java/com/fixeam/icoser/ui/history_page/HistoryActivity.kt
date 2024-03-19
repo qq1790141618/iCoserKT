@@ -204,7 +204,7 @@ class HistoryActivity : AppCompatActivity() {
         override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
             val historyItem = userHistoryList[position]
             val item = holder.binding
-            val id = historyItem.content["id"]?.toInt()
+            val id = (historyItem.content["id"] as Double).toInt()
 
             holder.itemView.setOnClickListener {
                 var doNotSetToken = false
@@ -213,12 +213,10 @@ class HistoryActivity : AppCompatActivity() {
                         doNotSetToken = true
                     }
                 }
-                id?.let {
-                    when(historyItem.type){
-                        "VISIT_ALBUM" -> startAlbumActivity(this@HistoryActivity, id, doNotSetToken)
-                        "VISIT_MODEL" -> startModelActivity(this@HistoryActivity, id, doNotSetToken)
-                        "VISIT_MEDIA" -> startMediaActivity(this@HistoryActivity, id)
-                    }
+                when(historyItem.type){
+                    "VISIT_ALBUM" -> startAlbumActivity(this@HistoryActivity, id, doNotSetToken)
+                    "VISIT_MODEL" -> startModelActivity(this@HistoryActivity, id, doNotSetToken)
+                    "VISIT_MEDIA" -> startMediaActivity(this@HistoryActivity, id)
                 }
             }
 

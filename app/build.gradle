@@ -4,6 +4,20 @@ plugins {
 }
 
 android {
+    signingConfigs {
+        debug {
+            storeFile file('G:\\android\\icoser.jks')
+            storePassword 'Liming179'
+            keyAlias 'icoseroffs'
+            keyPassword 'Liming179'
+        }
+        release {
+            storeFile file('G:\\android\\icoser.jks')
+            storePassword 'Liming179'
+            keyPassword 'Liming179'
+            keyAlias 'icoseroffs'
+        }
+    }
     namespace 'com.fixeam.icoser'
     compileSdk 34
 
@@ -11,19 +25,29 @@ android {
         applicationId "com.fixeam.icoser"
         minSdk 28
         targetSdk 34
-        versionCode 200080
-        versionName "2.0.8"
+        versionCode 200082
+        versionName "2.0.8.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary true
         }
     }
-
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            resValue "string", "app_name", "iCoser"
+            resValue "string", "app_type", "release"
+            resValue "string", "file_provider_authority", "com.fixeam.icoser.provider"
+        }
+        debug{
+            applicationIdSuffix(".debug")
+            versionNameSuffix " Debug"
+            debuggable true
+            resValue "string", "app_name", "iCoser Debug"
+            resValue "string", "app_type", "debug"
+            resValue "string", "file_provider_authority", "com.fixeam.icoser.debug.provider"
         }
     }
     compileOptions {
@@ -45,12 +69,31 @@ android {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+    packagingOptions {
+        pickFirst 'mozilla/public-suffix-list.txt'
+        pickFirst 'META-INF/DEPENDENCIES'
+    }
+    signingConfigs {
+        release {
+            keyAlias 'icoseroffs'
+            keyPassword 'Liming179'
+            storeFile file('sig-adaptation/debug/icoser.jks')
+            storePassword 'Liming179'
+        }
+        debug {
+            keyAlias 'icoseroffs'
+            keyPassword 'Liming179'
+            storeFile file('sig-adaptation/debug/icoser.jks')
+            storePassword 'Liming179'
+        }
+    }
 }
 
 dependencies {
     implementation 'androidx.core:core-ktx:1.9.0'
     implementation 'androidx.vectordrawable:vectordrawable-animated:1.1.0'
     implementation 'androidx.exifinterface:exifinterface:1.3.7'
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
     implementation 'com.google.android.material:material:1.8.0'
@@ -69,20 +112,16 @@ dependencies {
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
     androidTestImplementation platform('androidx.compose:compose-bom:2023.08.00')
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
-
     // Glide库
     apply plugin: 'kotlin-kapt'
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     kapt 'com.github.bumptech.glide:compiler:4.16.0'
     implementation 'jp.wasabeef:glide-transformations:4.1.0'
-
     // youth轮播组件库
     implementation 'io.github.youth5201314:banner:2.2.3'
-
     // retrofit网络请求库
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-
     // AndroidX Media
     implementation 'androidx.media3:media3-exoplayer:1.3.0'
     implementation 'androidx.media3:media3-exoplayer-dash:1.3.0'
@@ -90,20 +129,16 @@ dependencies {
     implementation 'androidx.media3:media3-exoplayer-hls:1.3.0'
     implementation 'androidx.media3:media3-exoplayer-smoothstreaming:1.3.0'
     implementation 'androidx.media3:media3-datasource-okhttp:1.3.0'
-
     // 图片预览库
     implementation 'com.github.chrisbanes:PhotoView:2.0.0'
     implementation 'com.github.OneZeroYang:PreviewPictureView:1.1.0'
-
     // 下拉刷新库
     implementation  'io.github.scwang90:refresh-layout-kernel:2.1.0'
     implementation  'io.github.scwang90:refresh-header-material:2.1.0'
     implementation  'io.github.scwang90:refresh-header-classics:2.1.0'
     implementation  'io.github.scwang90:refresh-footer-classics:2.1.0'
-
     // 头像裁剪库
     implementation 'com.github.yalantis:ucrop:2.2.8'
-
     // 添加WorkManager依赖
     implementation "androidx.work:work-runtime-ktx:2.9.0"
 }
